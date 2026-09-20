@@ -128,6 +128,49 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   hub on failure. It neither fabricates native trade actions nor changes other
   objects' menus.
 
+### 2026-09-20 — civilian map status
+
+- The map UI reads existing hub snapshots: demand is current outstanding units
+  including reservations, not advertised offer availability. Fulfillment and
+  reliability are the MD rolling-window scores, not derived from current demand
+  or lifetime delivered totals. A cleared backlog can still have poor scores.
+- The bottom panel shows five unlocked wares per page. Basics use label/value
+  rows; population uses million/billion/trillion units; fulfillment and reliability
+  use native status bars with numeric labels. Empty history displays printable
+  `N/A` with empty bars; partial history is labeled collecting. Figures refresh
+  from a one-real-second cache of the minute/event MD snapshots. This does not
+  turn completed-minute scores into immediate delivery scores.
+- Native source exposes `MapMenu.createSelectedShips(frame)` as the selection
+  table slot and `refreshMainFrame` as its rebuild request. Preserve one table
+  and bottom positioning. Native percentage bars use a one-pixel anchor cell
+  with a status bar extending behind the following transparent icon/text cell,
+  following vanilla storage-bar layout. Both fill and numeric label refresh
+  through function-valued properties.
+- The adapter uses exact registered, valid, known component identity rather
+  than station class, so construction placeholders can use the same display.
+  No ownership changes or UI Extensions dependency are introduced. Mocked Lua
+  checks cover registration, identity, refresh, pagination, percentage bars and
+  preservation of native hover text. Updated bar layout remains a runtime gate.
+- MD now appends `$PauseReason` as snapshot field 12, retaining every earlier
+  index. It derives the reason alongside readiness without changing economic
+  rules: constructing, wrecked/damaged required modules, zero population,
+  ownership changed, hub unavailable or other unavailable modules. The native
+  component properties `.exists`, `.isconstruction` and `.iswreck` distinguish
+  construction from confirmed wreckage. Generic non-operational modules are not
+  automatically called damaged. Old snapshots use the generic paused label until
+  refreshed. The separate testing switch pauses new offers, not consumption.
+- User screenshots confirmed the first text-based implementation displayed hub
+  data but exposed an unsupported em-dash glyph and excessive tooltip text.
+  It is replaced by printable `N/A`, field-specific two/three-line tooltips and
+  tables without pipe separators. The detailed map tooltip was removed; at the
+  user's request, a two-line hover with only level and compact population was
+  restored. It clears on leaving the hub, special modes and map cleanup.
+- No custom-row interface for the vanilla station popover was found in extracted
+  Lua: `SetMapStationInfoBoxMargin` controls margins, while the `infobox` block in
+  `libraries/parameters.xml` controls appearance/offsets. This is a source-search
+  finding, not proof that no engine extension exists. The user chose to retain
+  basics in the bottom panel for now rather than add a separate summary card.
+
 ### Using the testing menu
 
 With **kuertee UI Extensions**, right-click the
@@ -319,6 +362,41 @@ implemented by this mod. Runtime effects require separate verification.
   `event.param2` as a trade order. Broad listener coverage/volume was not established
   by the research; CE's failed galaxy listener is evidence against assuming it.
   Use the exact-deal RML pattern described above for civilian accounting.
+
+### 2026-09-20 — civilian-hub mission research
+
+Source inspection of the local extracted game files, not an in-game test or an
+installed-mod effective-tree audit:
+
+- `md/genericmissions.xml`, `Manager` and `EvaluateSectorMissions`, explicitly
+  exclude both `faction.ownerless` and `faction.civilian` from normal offer
+  stations. CE hubs therefore need deliberate mission integration. A global
+  removal of those exclusions would affect unrelated stations too.
+- Vanilla separates the generic scheduler, `GM_*` offer/lifecycle wrappers,
+  `GMC_*` chains, and reusable `RML_*` objective libraries. RML calls commonly
+  take `MissionCue`, `EndSignalCue`, and `StartStep`, returning feedback to their
+  caller. Check each library's actual interface and failure handling.
+- `libraries/md.xsd` defines `create_offer`, `create_mission`, mission threads,
+  briefing objectives, objective updates, timers and abort handling. Offer
+  location and commissioning faction are separate inputs. `GM_SupplyFactory.Start`
+  additionally exposes client/owner overrides, localized text tables, rewards,
+  conversation/event offers and offer visibility controls. A valid client and
+  successful native offer display on an ownerless CE hub remain runtime gates.
+- `RML_SupplyFactory` checks actual cargo against cargo targets; it is not a
+  suitable direct completion test for CE's virtual civilian consumption.
+  `rml_deliver_wares.xml` explicitly deprecates itself in favour of
+  `RML_Trade_Wares`, which tracks specified trade offers. For contracts on CE's
+  continuously refreshed public offers, a dedicated completion tracker using
+  existing delivery accounting is a design candidate, not a tested feature.
+- `RML_Transport_Passengers_V2` supports an NPC, start object, destination,
+  optional automatic boarding and a timeout; destination/dock destruction is
+  handled explicitly. `RML_Harvest_Resources` allows any player-owned collector
+  or specified collectors. `RML_Protect_Object` supports groups, timers and
+  external end signals. Delegation eligibility is specific to each objective.
+- Candidate CE missions: shortage relief, sustained supply, passenger transfer,
+  convoy protection and construction support. CE-specific triggers/rewards
+  require custom MD state and accounting; mission text alone changes no economy.
+  Keep any future mission controller separate from the existing hub controller.
 
 ## Experiments and validation limits
 

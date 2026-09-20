@@ -254,6 +254,7 @@
         <set_value name="$R.$Hub" exact="null"/>
         <set_value name="$Hub" exact="null"/>
         <set_value name="$R.$Operational" exact="false"/>
+        <set_value name="$R.$PauseReason" exact="'hub_unavailable'"/>
         <set_value name="$R.$Target" exact="0"/>
         <set_value name="$R.$Build" exact="null"/>
         <set_value name="$R.$PlotReady" exact="false"/>
@@ -409,15 +410,29 @@
         <set_value name="$Hub" exact="$R.$Hub"/>
         <set_value name="$Ready" exact="false"/>
         <set_value name="$TargetReady" exact="false"/>
+        <set_value name="$R.$PauseReason" exact="'hub_unavailable'"/>
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner != faction.ownerless">
+          <set_value name="$R.$PauseReason" exact="'owner_changed'"/>
+        </do_if>
         <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless">
           <set_value name="$Sequence" exact="$Hub.constructionsequence"/>
           <set_value name="$Required" exact="$ModuleCounts.{$R.$Level}"/>
           <set_value name="$Ready" exact="$Sequence.count ge $Required and (not $R.$Population? or $R.$Population gt 0)"/>
+          <set_value name="$Constructing" exact="$Sequence.count lt $Required"/>
+          <set_value name="$Damaged" exact="false"/>
           <do_all exact="[$Required,$Sequence.count].min" counter="$i">
             <do_if value="not @$Hub.planmodule.{$Sequence.{$i}.id}.isoperational">
               <set_value name="$Ready" exact="false"/>
+              <do_if value="@$Hub.planmodule.{$Sequence.{$i}.id}.iswreck">
+                <set_value name="$Damaged" exact="true"/>
+              </do_if>
+              <do_elseif value="not @$Hub.planmodule.{$Sequence.{$i}.id}.exists or @$Hub.planmodule.{$Sequence.{$i}.id}.isconstruction">
+                <set_value name="$Constructing" exact="true"/>
+              </do_elseif>
             </do_if>
           </do_all>
+          <!-- Presentation only: retain the readiness/qualification rules above. -->
+          <set_value name="$R.$PauseReason" exact="if $Ready then 'active' else if $Damaged then 'damaged_modules' else if $Constructing then 'constructing' else if $R.$Population? and $R.$Population == 0 then 'no_population' else 'modules_unavailable'"/>
           <do_if value="$R.$Target gt 0">
             <set_value name="$TargetCount" exact="$ModuleCounts.{$R.$Target}"/>
             <set_value name="$TargetReady" exact="$Ready and $Sequence.count ge $TargetCount"/>
@@ -613,7 +628,7 @@
             <append_to_list name="$Rows" exact="[$Ware.name,$W.$Demand,$W.$Cap,$Available,$Reserved,$W.$Delivered,$W.$Paid / 1Cr,$W.$SupplyScore * 100,$W.$ServiceScore * 100,$W.$LongestBad / 60.0f,$W.$Rate]"/>
           </do_if>
         </do_for_each>
-        <set_value name="$R.$Snapshot" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$HistoryMinutes,($R.$Level + 1) * 60,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade,@$R.$Population]"/>
+        <set_value name="$R.$Snapshot" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$HistoryMinutes,($R.$Level + 1) * 60,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade,@$R.$Population,@$R.$PauseReason]"/>
       </actions>
     </library>
     <library xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="AssignBuilder">

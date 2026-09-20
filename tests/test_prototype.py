@@ -256,6 +256,39 @@ class LifecycleTests(unittest.TestCase):
         self.assertFalse(self.r.Operational)
         self.assertEqual(self.r.Level,1)
         self.assertEqual(self.r.Target,2)
+        self.assertEqual(self.r.PauseReason,'constructing')
+    def test_pause_reasons_preserve_readiness_and_snapshot_contract(self):
+        for module in self.hub.planmodule.values():
+            module.update(exists=True,isconstruction=False,iswreck=False)
+        self.run.library('UpdateHub')
+        self.assertTrue(self.r.Operational)
+        self.assertEqual(self.r.PauseReason,'active')  # Pending expansion does not pause level 1.
+        module=self.hub.planmodule['0']
+        module.update(isoperational=False,isconstruction=True)
+        self.run.library('UpdateHub')
+        self.assertEqual(self.r.PauseReason,'constructing')
+        module.update(isconstruction=False,iswreck=True)
+        self.run.library('UpdateHub')
+        self.assertEqual(self.r.PauseReason,'damaged_modules')
+        module.update(iswreck=False)
+        self.run.library('UpdateHub')
+        self.assertEqual(self.r.PauseReason,'modules_unavailable')
+        module.update(isoperational=True)
+        self.r['Population']=0
+        self.run.library('UpdateHub')
+        self.assertFalse(self.r.Operational)
+        self.assertEqual(self.r.PauseReason,'no_population')
+        del self.run.stubs['PublishDiagnostics']
+        self.run.library('PublishDiagnostics')
+        self.assertEqual(self.r.Snapshot[11],0)
+        self.assertEqual(self.r.Snapshot[12],'no_population')
+        self.r['Population']=1
+        self.hub['owner']='player'
+        self.run.library('UpdateHub')
+        self.assertEqual(self.r.PauseReason,'owner_changed')
+        self.hub['exists']=False
+        self.run.library('UpdateHub')
+        self.assertEqual(self.r.PauseReason,'hub_unavailable')
     def test_table_keys_require_explicit_list(self):
         with self.assertRaises(ValueError): self.run.expr('$R.$Wares.keys')
         self.assertEqual(set(self.run.expr('$R.$Wares.keys.list')),{'foodrations','water'})

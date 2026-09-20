@@ -14,5 +14,6 @@ schema:
 lua:
     uv run --offline --with lupa python tools/test_debug_menu.py
     uv run --offline --with lupa python tools/test_population_bridge.py
+    uv run --offline --with lupa python tools/test_map_status.py
 
 check: validate lua
