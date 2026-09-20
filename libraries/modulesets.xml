@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/modulesets">
+    <!-- No race association: faction race/type lookups retain their own sets.
+         Civilian hubs are created explicitly with cumulative construction plans. -->
+    <set id="ce_civilian_hub" name="{974201,1}" type="tradingstation" macro="ce_civilian_hub_macro" player="true" constructionvesselrequired="true" />
+  </add>
+</diff>

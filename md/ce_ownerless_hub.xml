@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_OwnerlessHub" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Keep the old namespace so legacy saved state can be detected, never run it. -->
+    <cue name="Start"><conditions><check_value value="false" /></conditions></cue>
+    <cue name="Init" checkinterval="1s">
+      <conditions><check_value value="player.age ge 1s" /></conditions>
+      <actions>
+        <set_value name="$Blocked" exact="md.CE_OwnerlessHub.Start.$Registry? or (player.entity.$ce_hub? and not player.entity.$ce_level_schema?)" />
+        <cancel_cue cue="md.CE_OwnerlessHub.Start" />
+        <do_if value="$Blocked">
+          <debug_text text="'[CE] BLOCKED: legacy prototype save. Load a save from before Civilian Economy was installed.'" />
+          <write_to_logbook category="general" title="{974201,1}" text="{974201,30}" />
+          <set_value name="player.entity.$ce_legacy_blocked" exact="true" />
+        </do_if>
+        <do_else>
+          <set_value name="$Schema" exact="2" />
+          <set_value name="player.entity.$ce_level_schema" exact="$Schema" />
+          <set_value name="player.entity.$ce_legacy_blocked" exact="false" />
+          <set_value name="$Definitions" exact="[[ware.foodrations,1,2000.0f],[ware.water,1,2000.0f],[ware.energycells,2,10000.0f],[ware.medicalsupplies,3,500.0f],[ware.refinedmetals,4,300.0f],[ware.siliconwafers,4,200.0f],[ware.microchips,5,100.0f],[ware.scanningarrays,6,40.0f],[ware.advancedcomposites,6,200.0f],[ware.advancedelectronics,7,40.0f],[ware.sojahusk,8,500.0f],[ware.nostropoil,8,500.0f],[ware.spacefuel,9,100.0f],[ware.spaceweed,9,100.0f],[ware.majadust,9,100.0f]]" />
+          <set_value name="$PlanIDs" exact="['ce_ownerless_hub_01','ce_ownerless_hub_02','ce_ownerless_hub_03','ce_ownerless_hub_04','ce_ownerless_hub_05','ce_ownerless_hub_06','ce_ownerless_hub_07','ce_ownerless_hub_08','ce_ownerless_hub_09','ce_ownerless_hub_10']" />
+          <set_value name="$ModuleCounts" exact="[4,6,8,11,13,16,19,21,23,27]" />
+          <set_value name="$Registry" exact="table[]" />
+          <set_value name="$Sector" exact="null" />
+          <set_value name="$Hub" exact="null" />
+          <set_value name="$NextReconcile" exact="0s" />
+          <create_group groupname="$Hubs" />
+          <include_actions ref="Reconcile" />
+        </do_else>
+      </actions>
+      <cues>
+        <cue name="LevelTick" instantiate="true" checkinterval="1min">
+          <conditions><check_value value="not $Blocked" /></conditions>
+          <actions>
+            <do_if value="player.age ge $NextReconcile"><include_actions ref="Reconcile" /></do_if>
+            <do_if value="$Sector and $Registry.{$Sector}?">
+              <set_value name="$R" exact="$Registry.{$Sector}" />
+              <!-- Child listeners are active now; Init cannot signal its children. -->
+              <do_if value="$R.$Hub.exists and @$R.$WatchingHubV2 != $R.$Hub">
+                <signal_cue cue="md.CE_OwnerlessHub.WatchLevelHub" />
+                <set_value name="$R.$WatchingHubV2" exact="$R.$Hub" />
+              </do_if>
+              <include_actions ref="UpdateHub" />
+              <include_actions ref="PublishDiagnostics" />
+            </do_if>
+          </actions>
+        </cue>
+        <cue name="Reload" instantiate="true">
+          <conditions><event_game_loaded /><check_value value="not $Blocked" /></conditions>
+          <actions>
+            <do_if value="$Sector and $Registry.{$Sector}?">
+              <set_value name="$R" exact="$Registry.{$Sector}" />
+              <include_actions ref="RenameHub" />
+              <include_actions ref="PublishDiagnostics" />
+            </do_if>
+          </actions>
+        </cue>
+        <cue name="LostHub" instantiate="true">
+          <conditions><event_object_destroyed group="$Hubs" /></conditions>
+          <actions>
+            <do_if value="not $Blocked and $Sector and $Registry.{$Sector}?">
+              <set_value name="$R" exact="$Registry.{$Sector}" />
+              <do_if value="event.object == $R.$Hub"><include_actions ref="ForgetHub" /></do_if>
+            </do_if>
+          </actions>
+        </cue>
+        <cue name="WatchLevelHub" instantiate="true">
+          <conditions><event_cue_signalled /></conditions>
+          <actions><set_value name="this.$Station" exact="$Hub" /></actions>
+          <cues>
+            <cue name="DeliveryStarted" instantiate="true">
+              <conditions>
+                <event_trade_started buyer="parent.$Station" />
+                <check_value value="$R.$Wares.{event.param.ware}?" />
+                <check_value value="event.param == $R.$Wares.{event.param.ware}.$Offer" />
+                <check_value value="not $R.$Transfers.{event.param2}?" />
+              </conditions>
+              <actions>
+                <set_value name="this.$Deal" exact="event.param2" />
+                <set_value name="this.$Buyer" exact="event.param2.buyer" />
+                <set_value name="this.$Seller" exact="event.param2.seller" />
+                <set_value name="$R.$Transfers.{event.param2}" exact="event.param.ware" />
+                <debug_text text="'[CE] Delivery started: deal=%s ware=%s quantity=%s'.[this.$Deal, event.param.ware, this.$Deal.amount]" />
+              </actions>
+              <cues>
+                <cue name="DeliveryFinished">
+                  <conditions>
+                    <!-- Exact vanilla RML binding, one child instance per deal. -->
+                    <event_trade_completed buyer="parent.$Buyer" seller="parent.$Seller" />
+                    <check_value value="event.param == parent.$Deal" />
+                    <check_value value="event.param.buyer == $R.$Hub and $R.$Transfers.{event.param}?" />
+                  </conditions>
+                  <actions><include_actions ref="RecordDelivery" /></actions>
+                </cue>
+              </cues>
+            </cue>
+            <cue name="StopLevelWatch">
+              <conditions><event_object_destroyed object="parent.$Station" /></conditions>
+              <actions><cancel_cue cue="parent" /></actions>
+            </cue>
+          </cues>
+        </cue>
+        <cue name="TestingCommand" instantiate="true">
+          <conditions><event_ui_triggered screen="'CELevelTesting'" /><check_value value="not $Blocked" /></conditions>
+          <actions>
+            <do_if value="$Sector and $Registry.{$Sector}?">
+              <set_value name="$R" exact="$Registry.{$Sector}" />
+              <do_if value="event.param3 == $R.$Hub and $R.$Hub.exists">
+                <do_if value="event.param2 == 'queue_upgrade'">
+                  <include_actions ref="UpdateHub" />
+                  <do_if value="$R.$Operational and $R.$Level lt 10 and $R.$Target == 0 and $R.$PlotReady">
+                    <set_value name="$R.$Target" exact="$R.$Level + 1" />
+                    <set_value name="$R.$TestUpgrade" exact="true" />
+                    <debug_text text="'[CE] TEST: qualification bypass for level %s'.[$R.$Target]" />
+                    <include_actions ref="QueueExpansion" />
+                  </do_if>
+                </do_if>
+                <do_elseif value="event.param2 == 'pause_offers'">
+                  <set_value name="$R.$PauseOffers" exact="not $R.$PauseOffers" />
+                  <include_actions ref="UpdateOffers" />
+                  <debug_text text="'[CE] TEST: new reservations paused=%s'.[$R.$PauseOffers]" />
+                </do_elseif>
+                <include_actions ref="PublishDiagnostics" />
+              </do_if>
+            </do_if>
+          </actions>
+        </cue>
+      </cues>
+    </cue>
+
+    <library name="Reconcile">
+      <actions>
+        <set_value name="$NextReconcile" exact="player.age + 5min" />
+        <do_if value="not $Sector"><find_sector name="$Sector" space="player.galaxy" macro="macro.cluster_14_sector001_macro" /></do_if>
+        <do_if value="$Sector">
+          <do_if value="not $Registry.{$Sector}?">
+            <set_value name="$Registry.{$Sector}" exact="table[$Hub=null,$Level=1,$Target=0,$Build=null,$Operational=false,$Wares=table[],$Transfers=table[],$Generation=0,$PauseOffers=false,$TestUpgrade=false,$PlotReady=false,$InitializedHub=null]" />
+            <set_value name="$R" exact="$Registry.{$Sector}" />
+            <include_actions ref="ApplyLevel" />
+          </do_if>
+          <set_value name="$R" exact="$Registry.{$Sector}" />
+          <do_if value="not $R.$Hub.exists or $R.$Hub.iswreck">
+            <do_if value="$R.$Hub != null"><include_actions ref="ForgetHub" /></do_if>
+            <do_if value="@player.entity.$ce_hub.exists and not player.entity.$ce_hub.iswreck">
+              <set_value name="$R.$Hub" exact="player.entity.$ce_hub" />
+            </do_if>
+            <do_else>
+              <create_station name="$NewHub" macro="macro.ce_civilian_hub_macro" constructionplan="$PlanIDs.{$R.$Level}" owner="faction.ownerless" sector="$Sector" state="componentstate.construction" rawname="'{974201,1}'" rawdescription="'{974201,2}'" method="default">
+                <safepos x="$Sector.coreposition.x + 50km" y="0m" z="$Sector.coreposition.z" radius="20km" includeplotbox="true" allowyaxis="false" />
+                <stage exact="0" />
+              </create_station>
+              <do_if value="$NewHub.exists">
+                <set_value name="$R.$Hub" exact="$NewHub" />
+                <set_value name="$R.$Generation" operation="add" />
+                <set_value name="$R.$PlotReady" exact="false" />
+                <set_value name="player.entity.$ce_hub" exact="$NewHub" />
+                <include_actions ref="ResetHistory" />
+                <debug_text text="'[CE] Construction site created: %s earned_level=%s generation=%s'.[$NewHub,$R.$Level,$R.$Generation]" />
+              </do_if>
+            </do_else>
+          </do_if>
+          <set_value name="$Hub" exact="$R.$Hub" />
+          <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless">
+            <set_value name="player.entity.$ce_hub" exact="$Hub" />
+            <add_to_group groupname="$Hubs" object="$Hub" />
+            <do_if value="not $R.$PlotReady and $Hub.isclass.container">
+              <include_actions ref="ReserveGrowthPlot" />
+            </do_if>
+            <include_actions ref="RenameHub" />
+            <include_actions ref="FundAccounts" />
+            <include_actions ref="QueueExpansion" />
+            <do_if value="@$Hub.buildstorage.builds.queued.{1}">
+              <process_build build="$Hub.buildstorage.builds.queued.{1}" object="$Hub.buildstorage" buildmodule="$Hub.buildstorage.buildmodule" />
+            </do_if>
+            <include_actions ref="AssignBuilder" />
+            <debug_text text="'[CE] Reconcile: level=%s target=%s queued=%s inprogress=%s builder=%s'.[$R.$Level,$R.$Target,@$Hub.buildstorage.builds.queued.count,@$Hub.buildstorage.builds.inprogress.count,@$Hub.buildstorage.buildmodule.constructionvessel]" />
+          </do_if>
+        </do_if>
+      </actions>
+    </library>
+    <library name="ForgetHub">
+      <actions>
+        <set_value name="$R.$Hub" exact="null" />
+        <set_value name="$Hub" exact="null" />
+        <set_value name="player.entity.$ce_hub" exact="null" />
+        <set_value name="$R.$Operational" exact="false" />
+        <set_value name="$R.$Target" exact="0" />
+        <set_value name="$R.$Build" exact="null" />
+        <set_value name="$R.$PlotReady" exact="false" />
+        <set_value name="$R.$InitializedHub" exact="null" />
+        <set_value name="$R.$TestUpgrade" exact="false" />
+        <clear_table table="$R.$Transfers" />
+        <do_for_each name="$Ware" in="$R.$Wares.keys.list"><set_value name="$R.$Wares.{$Ware}.$Offer" exact="null" /></do_for_each>
+        <include_actions ref="ResetHistory" />
+        <include_actions ref="PublishDiagnostics" />
+        <debug_text text="'[CE] Hub lost; retained earned level and backlogs, discarded pending upgrade'" />
+      </actions>
+    </library>
+    <library name="ApplyLevel">
+      <actions>
+        <do_for_each name="$Definition" in="$Definitions">
+          <do_if value="$Definition.{2} le $R.$Level">
+            <set_value name="$Ware" exact="$Definition.{1}" />
+            <do_if value="not $R.$Wares.{$Ware}?">
+              <set_value name="$R.$Wares.{$Ware}" exact="table[$Demand=0.0f,$Offer=null,$Delivered=0,$Paid=0Cr]" />
+            </do_if>
+            <set_value name="$W" exact="$R.$Wares.{$Ware}" />
+            <set_value name="$W.$Rate" exact="$Definition.{3}" />
+            <do_all exact="$R.$Level - $Definition.{2}"><set_value name="$W.$Rate" exact="$W.$Rate * 1.25f" /></do_all>
+            <set_value name="$W.$Cap" exact="$W.$Rate * 2" />
+            <include_actions ref="UpdateWarePrice" />
+          </do_if>
+        </do_for_each>
+        <include_actions ref="ResetHistory" />
+      </actions>
+    </library>
+    <library name="ResetHistory">
+      <actions>
+        <set_value name="$Now" exact="player.age / 1s" />
+        <set_value name="$R.$Last" exact="$Now" />
+        <set_value name="$R.$NextBucket" exact="$Now + 60" />
+        <set_value name="$R.$Qualified" exact="false" />
+        <set_value name="$R.$HistoryMinutes" exact="0" />
+        <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+          <set_value name="$W" exact="$R.$Wares.{$Ware}" />
+          <set_value name="$W.$History" exact="[]" />
+          <set_value name="$W.$Bucket" exact="table[$Generated=0.0f,$Delivered=0,$Good=0.0f,$Prefix=0.0f,$Suffix=0.0f,$MaxBad=0.0f]" />
+          <set_value name="$W.$SupplyScore" exact="0.0f" />
+          <set_value name="$W.$ServiceScore" exact="0.0f" />
+          <set_value name="$W.$LongestBad" exact="0.0f" />
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="AccrueAll">
+      <actions>
+        <set_value name="$Now" exact="player.age / 1s" />
+        <do_if value="$R.$Operational">
+          <!-- Split at exact minute boundaries; events may divide a minute further. -->
+          <do_while value="$R.$Last lt $Now">
+            <set_value name="$End" exact="[$Now,$R.$NextBucket].min" />
+            <set_value name="$Seconds" exact="$End - $R.$Last" />
+            <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+              <set_value name="$W" exact="$R.$Wares.{$Ware}" />
+              <include_actions ref="AccrueWareSegment" />
+              <do_if value="$End ge $R.$NextBucket">
+                <append_to_list name="$W.$History" exact="$W.$Bucket" />
+                <do_if value="$W.$History.count gt ($R.$Level + 1) * 60"><remove_value name="$W.$History.{1}" /></do_if>
+                <set_value name="$W.$Bucket" exact="table[$Generated=0.0f,$Delivered=0,$Good=0.0f,$Prefix=0.0f,$Suffix=0.0f,$MaxBad=0.0f]" />
+              </do_if>
+            </do_for_each>
+            <set_value name="$R.$Last" exact="$End" />
+            <do_if value="$End ge $R.$NextBucket"><set_value name="$R.$NextBucket" operation="add" exact="60" /></do_if>
+          </do_while>
+        </do_if>
+        <do_else><set_value name="$R.$Last" exact="$Now" /></do_else>
+      </actions>
+    </library>
+    <library name="AccrueWareSegment">
+      <actions>
+        <set_value name="$B" exact="$W.$Bucket" />
+        <set_value name="$Generated" exact="$W.$Rate * $Seconds / 3600.0f" />
+        <set_value name="$GoodSeconds" exact="[$Seconds,[0.0f,($W.$Rate * 0.5f - $W.$Demand) * 3600.0f / $W.$Rate].max].min" />
+        <set_value name="$BadSeconds" exact="$Seconds - $GoodSeconds" />
+        <do_if value="$B.$Good == 0 and $GoodSeconds == 0"><set_value name="$B.$Prefix" operation="add" exact="$BadSeconds" /></do_if>
+        <do_if value="$GoodSeconds gt 0"><set_value name="$B.$Suffix" exact="0.0f" /></do_if>
+        <set_value name="$B.$Suffix" operation="add" exact="$BadSeconds" />
+        <set_value name="$B.$MaxBad" exact="[$B.$MaxBad,$B.$Suffix].max" />
+        <set_value name="$B.$Good" operation="add" exact="$GoodSeconds" />
+        <set_value name="$B.$Generated" operation="add" exact="$Generated" />
+        <set_value name="$W.$Demand" exact="[$W.$Cap,$W.$Demand + $Generated].min" />
+      </actions>
+    </library>
+    <library name="EvaluateQualification">
+      <actions>
+        <set_value name="$R.$Qualified" exact="$R.$Operational and $R.$Target == 0 and $R.$Level lt 10" />
+        <set_value name="$RequiredMinutes" exact="($R.$Level + 1) * 60" />
+        <set_value name="$R.$HistoryMinutes" exact="$RequiredMinutes" />
+        <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+          <set_value name="$W" exact="$R.$Wares.{$Ware}" />
+          <set_value name="$SumGenerated" exact="0.0f" />
+          <set_value name="$SumDelivered" exact="0.0f" />
+          <set_value name="$SumGood" exact="0.0f" />
+          <set_value name="$RunBad" exact="0.0f" />
+          <set_value name="$LongestBad" exact="0.0f" />
+          <do_for_each name="$B" in="$W.$History">
+            <set_value name="$SumGenerated" operation="add" exact="$B.$Generated" />
+            <set_value name="$SumDelivered" operation="add" exact="$B.$Delivered" />
+            <set_value name="$SumGood" operation="add" exact="$B.$Good" />
+            <set_value name="$LongestBad" exact="[$LongestBad,$B.$MaxBad,$RunBad + $B.$Prefix].max" />
+            <set_value name="$RunBad" exact="if $B.$Good == 0 then $RunBad + 60 else $B.$Suffix" />
+          </do_for_each>
+          <set_value name="$W.$SupplyScore" exact="if $SumGenerated gt 0 then [1.0f,$SumDelivered / $SumGenerated].min else 0.0f" />
+          <set_value name="$W.$ServiceScore" exact="if $W.$History.count gt 0 then $SumGood / ($W.$History.count * 60.0f) else 0.0f" />
+          <set_value name="$W.$LongestBad" exact="$LongestBad" />
+          <set_value name="$R.$HistoryMinutes" exact="[$R.$HistoryMinutes,$W.$History.count].min" />
+          <do_if value="$W.$History.count lt $RequiredMinutes or $W.$SupplyScore lt 0.9f or $W.$ServiceScore lt 0.9f or $LongestBad gt 900">
+            <set_value name="$R.$Qualified" exact="false" />
+          </do_if>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="RecordDelivery">
+      <actions>
+        <include_actions ref="AccrueAll" />
+        <set_value name="$Ware" exact="$R.$Transfers.{event.param}" />
+        <set_value name="$W" exact="$R.$Wares.{$Ware}" />
+        <set_value name="$Delivered" exact="event.param.transferredamount" />
+        <!-- Consume guard before any work that can publish or signal. -->
+        <remove_value name="$R.$Transfers.{event.param}" />
+        <set_value name="$W.$Demand" exact="[0.0f,$W.$Demand - $Delivered].max" />
+        <set_value name="$W.$Delivered" operation="add" exact="$Delivered" />
+        <set_value name="$W.$Paid" operation="add" exact="$Delivered * event.param.unitprice" />
+        <do_if value="$R.$Operational"><set_value name="$W.$Bucket.$Delivered" operation="add" exact="$Delivered" /></do_if>
+        <debug_text text="'[CE] Completed delivery: ware=%s amount=%s paid=%s demand=%s delivered_total=%s'.[$Ware,$Delivered,$Delivered * event.param.unitprice,$W.$Demand,$W.$Delivered]" />
+        <include_actions ref="UpdateOffers" />
+        <include_actions ref="PublishDiagnostics" />
+      </actions>
+    </library>
+    <library name="UpdateHub">
+      <actions>
+        <set_value name="$Hub" exact="$R.$Hub" />
+        <set_value name="$Ready" exact="false" />
+        <set_value name="$TargetReady" exact="false" />
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless">
+          <set_value name="$Sequence" exact="$Hub.constructionsequence" />
+          <set_value name="$Required" exact="$ModuleCounts.{$R.$Level}" />
+          <set_value name="$Ready" exact="$Sequence.count ge $Required" />
+          <do_all exact="[$Required,$Sequence.count].min" counter="$i">
+            <do_if value="not @$Hub.planmodule.{$Sequence.{$i}.id}.isoperational"><set_value name="$Ready" exact="false" /></do_if>
+          </do_all>
+          <do_if value="$R.$Target gt 0">
+            <set_value name="$TargetCount" exact="$ModuleCounts.{$R.$Target}" />
+            <set_value name="$TargetReady" exact="$Ready and $Sequence.count ge $TargetCount" />
+            <do_all exact="[$TargetCount,$Sequence.count].min" counter="$i">
+              <do_if value="not @$Hub.planmodule.{$Sequence.{$i}.id}.isoperational"><set_value name="$TargetReady" exact="false" /></do_if>
+            </do_all>
+          </do_if>
+        </do_if>
+        <do_if value="$Ready">
+          <do_if value="not $R.$Operational">
+            <include_actions ref="ResetHistory" />
+            <set_value name="$R.$Operational" exact="true" />
+            <do_if value="$R.$InitializedHub != $Hub">
+              <signal_objects object="player.galaxy" param="'init station'" param2="$Hub" param3="false" />
+              <set_value name="$R.$InitializedHub" exact="$Hub" />
+            </do_if>
+            <debug_text text="'[CE] Completed-level modules operational: level=%s'.[$R.$Level]" />
+          </do_if>
+          <include_actions ref="AccrueAll" />
+          <do_if value="$TargetReady">
+            <set_value name="$R.$Level" exact="$R.$Target" />
+            <set_value name="$R.$Target" exact="0" />
+            <set_value name="$R.$Build" exact="null" />
+            <debug_text text="'[CE] Upgrade completed: level=%s qualification_bypassed=%s'.[$R.$Level,$R.$TestUpgrade]" />
+            <set_value name="$R.$TestUpgrade" exact="false" />
+            <include_actions ref="ApplyLevel" />
+            <include_actions ref="RenameHub" />
+          </do_if>
+          <set_value name="$ManagedObject" exact="$Hub" />
+          <include_actions ref="EnsureManager" />
+          <include_actions ref="FundAccounts" />
+          <include_actions ref="EvaluateQualification" />
+          <do_if value="$R.$Qualified and $R.$PlotReady">
+            <set_value name="$R.$Target" exact="$R.$Level + 1" />
+            <set_value name="$R.$TestUpgrade" exact="false" />
+            <debug_text text="'[CE] Naturally qualified for level %s'.[$R.$Target]" />
+            <include_actions ref="QueueExpansion" />
+          </do_if>
+        </do_if>
+        <do_else>
+          <do_if value="$R.$Operational"><debug_text text="'[CE] Required modules unavailable: demand paused, qualification reset'" /></do_if>
+          <set_value name="$R.$Operational" exact="false" />
+          <include_actions ref="ResetHistory" />
+          <do_if value="$Hub.exists and not $Hub.iswreck"><include_actions ref="FundAccounts" /></do_if>
+        </do_else>
+        <include_actions ref="UpdateOffers" />
+      </actions>
+    </library>
+    <library name="ReserveGrowthPlot">
+      <actions>
+        <!-- buildplot.max is the half-size about buildplot.center. The safety
+             action takes incremental growth, not final dimensions. Never shrink. -->
+        <set_value name="$PlotMax" exact="$Hub.buildplot.max" />
+        <set_value name="$PlotCenter" exact="$Hub.buildplot.center" />
+        <set_value name="$GrowNegX" exact="[0m,6km + $PlotCenter.x - $PlotMax.x].max" />
+        <set_value name="$GrowPosX" exact="[0m,6km - $PlotCenter.x - $PlotMax.x].max" />
+        <set_value name="$GrowNegY" exact="[0m,4km + $PlotCenter.y - $PlotMax.y].max" />
+        <set_value name="$GrowPosY" exact="[0m,4km - $PlotCenter.y - $PlotMax.y].max" />
+        <set_value name="$GrowNegZ" exact="[0m,16km + $PlotCenter.z - $PlotMax.z].max" />
+        <set_value name="$GrowPosZ" exact="[0m,16km - $PlotCenter.z - $PlotMax.z].max" />
+        <do_if value="$GrowNegX + $GrowPosX + $GrowNegY + $GrowPosY + $GrowNegZ + $GrowPosZ == 0m">
+          <set_value name="$R.$PlotReady" exact="true" />
+        </do_if>
+        <do_else>
+          <can_safely_extend_build_plot object="$Hub" negx="$GrowNegX" posx="$GrowPosX" negy="$GrowNegY" posy="$GrowPosY" negz="$GrowNegZ" posz="$GrowPosZ" result="$SafePlot" />
+          <do_if value="$SafePlot">
+            <extend_build_plot object="$Hub" negx="$GrowNegX" posx="$GrowPosX" negy="$GrowNegY" posy="$GrowPosY" negz="$GrowNegZ" posz="$GrowPosZ" />
+            <set_value name="$PlotMax" exact="$Hub.buildplot.max" />
+            <set_value name="$PlotCenter" exact="$Hub.buildplot.center" />
+            <set_value name="$R.$PlotReady" exact="$PlotMax.x - $PlotCenter.x ge 6km and $PlotMax.x + $PlotCenter.x ge 6km and $PlotMax.y - $PlotCenter.y ge 4km and $PlotMax.y + $PlotCenter.y ge 4km and $PlotMax.z - $PlotCenter.z ge 16km and $PlotMax.z + $PlotCenter.z ge 16km" />
+          </do_if>
+        </do_else>
+        <do_if value="$R.$PlotReady">
+          <debug_text text="'[CE] Growth plot ready: half-size=%s center=%s'.[$PlotMax,$PlotCenter]" />
+        </do_if>
+        <do_else>
+          <debug_text text="'[CE] BLOCKED growth plot: half-size=%s center=%s additional neg=%s/%s/%s pos=%s/%s/%s'.[$PlotMax,$PlotCenter,$GrowNegX,$GrowNegY,$GrowNegZ,$GrowPosX,$GrowPosY,$GrowPosZ]" />
+        </do_else>
+      </actions>
+    </library>
+    <library name="QueueExpansion">
+      <actions>
+        <set_value name="$Hub" exact="$R.$Hub" />
+        <do_if value="$R.$Target gt 0 and $R.$PlotReady and $Hub.exists and $Hub.buildstorage.exists and not $R.$Build.exists">
+          <!-- Never append while another native build is queued or processing. -->
+          <do_if value="$Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count == 0">
+            <add_build_to_expand_station result="$R.$Build" object="$Hub.buildstorage" buildobject="$Hub" constructionplan="$PlanIDs.{$R.$Target}"><stage exact="0" /></add_build_to_expand_station>
+            <do_if value="$R.$Build.exists">
+              <process_build build="$R.$Build" object="$Hub.buildstorage" buildmodule="$Hub.buildstorage.buildmodule" />
+              <include_actions ref="FundAccounts" />
+              <include_actions ref="AssignBuilder" />
+              <debug_text text="'[CE] Expansion queued: current=%s target=%s task=%s'.[$R.$Level,$R.$Target,$R.$Build]" />
+            </do_if>
+          </do_if>
+        </do_if>
+      </actions>
+    </library>
+    <library name="UpdateWarePrice">
+      <actions>
+        <set_value name="$RawPrice" exact="$Ware.minprice + ($Ware.maxprice - $Ware.minprice) / 10" />
+        <set_value name="$W.$Price" exact="(($RawPrice / 1Cr)i) * 1Cr" />
+        <do_if value="$W.$Price lt $RawPrice"><set_value name="$W.$Price" operation="add" exact="1Cr" /></do_if>
+      </actions>
+    </library>
+    <library name="UpdateOffers">
+      <actions>
+        <set_value name="$Hub" exact="$R.$Hub" />
+        <do_for_each name="$Deal" in="$R.$Transfers.keys.list" reverse="true">
+          <do_if value="not $Deal.exists"><remove_value name="$R.$Transfers.{$Deal}" /></do_if>
+        </do_for_each>
+        <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+          <set_value name="$W" exact="$R.$Wares.{$Ware}" />
+          <set_value name="$Unloading" exact="false" />
+          <do_for_each name="$Deal" in="$R.$Transfers.keys.list">
+            <do_if value="$R.$Transfers.{$Deal} == $Ware"><set_value name="$Unloading" exact="true" /></do_if>
+          </do_for_each>
+          <do_if value="not $Unloading and $Hub.exists and not $Hub.iswreck">
+            <!-- Refresh saved prices in place, without resetting demand/history. -->
+            <include_actions ref="UpdateWarePrice" />
+            <set_value name="$Desired" exact="($W.$Demand)i" />
+            <do_if value="$W.$Offer.exists">
+              <set_value name="$Reserved" exact="[0,$W.$Offer.offeramount - $W.$Offer.amount].max" />
+              <set_value name="$Available" exact="if $R.$Operational and not $R.$PauseOffers then [0,$Desired - $Reserved].max else 0" />
+              <update_trade trade="$W.$Offer" amount="$Available" desiredamount="$Desired" price="$W.$Price" />
+            </do_if>
+            <do_elseif value="$Desired gt 0 and $R.$Operational and not $R.$PauseOffers">
+              <create_trade_offer name="$W.$Offer" object="$Hub" buyer="$Hub" ware="$Ware" amount="$Desired" desiredamount="$Desired" price="$W.$Price" virtual="true" virtualmoney="false" playeronly="false" />
+            </do_elseif>
+          </do_if>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="FundAccounts">
+      <actions>
+        <set_value name="$Hub" exact="$R.$Hub" />
+        <do_if value="$Hub.isclass.container">
+          <set_object_account object="$Hub" />
+          <set_value name="$TargetMoney" exact="0Cr" />
+          <do_for_each name="$Ware" in="$R.$Wares.keys.list"><set_value name="$TargetMoney" operation="add" exact="$R.$Wares.{$Ware}.$Cap * $R.$Wares.{$Ware}.$Price * 2" /></do_for_each>
+          <do_if value="$Hub.money lt $TargetMoney">
+            <transfer_money from="faction.ownerless" to="$Hub" amount="$TargetMoney - $Hub.money" result="$Funded" />
+            <debug_text text="'[CE] Civilian funding=%s balance=%s'.[$Funded,$Hub.money]" />
+          </do_if>
+        </do_if>
+        <do_if value="$Hub.buildstorage.exists">
+          <set_value name="$ManagedObject" exact="$Hub.buildstorage" />
+          <include_actions ref="EnsureManager" />
+          <set_object_account object="$Hub.buildstorage" />
+          <set_value name="$BuildBudget" exact="$Hub.buildstorage.wantedmoney" />
+          <do_if value="$BuildBudget gt $Hub.buildstorage.money">
+            <transfer_money from="faction.ownerless" to="$Hub.buildstorage" amount="$BuildBudget - $Hub.buildstorage.money" result="$Funded" />
+            <debug_text text="'[CE] Construction funding=%s budget=%s'.[$Funded,$BuildBudget]" />
+          </do_if>
+        </do_if>
+      </actions>
+    </library>
+    <library name="RenameHub">
+      <actions>
+        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck"><set_object_name object="$R.$Hub" name="{974201,31}.[$Sector.knownname,$R.$Level]" /></do_if>
+      </actions>
+    </library>
+    <library name="PublishDiagnostics">
+      <actions>
+        <set_value name="$Rows" exact="[]" />
+        <do_for_each name="$Definition" in="$Definitions">
+          <set_value name="$Ware" exact="$Definition.{1}" />
+          <do_if value="$R.$Wares.{$Ware}?">
+            <set_value name="$W" exact="$R.$Wares.{$Ware}" />
+            <set_value name="$Available" exact="@$W.$Offer.amount" />
+            <set_value name="$Reserved" exact="[0,@$W.$Offer.offeramount - $Available].max" />
+            <append_to_list name="$Rows" exact="[$Ware.name,$W.$Demand,$W.$Cap,$Available,$Reserved,$W.$Delivered,$W.$Paid / 1Cr,$W.$SupplyScore * 100,$W.$ServiceScore * 100,$W.$LongestBad / 60.0f,$W.$Rate]" />
+          </do_if>
+        </do_for_each>
+        <set_value name="player.entity.$ce_level_status" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$HistoryMinutes,($R.$Level + 1) * 60,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade]" />
+      </actions>
+    </library>
+    <library xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="AssignBuilder">
+      <actions>
+        <do_if value="$Hub.buildstorage.exists and $Hub.buildstorage.buildmodule.exists and ($Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count) gt 0 and not $Hub.buildstorage.buildmodule.constructionvessel.exists">
+          <find_ship name="$Builders" space="player.galaxy" primarypurpose="purpose.build" class="class.ship_xl" multiple="true" checkoperational="true"/>
+          <set_value name="$Candidates" exact="[]"/>
+          <set_value name="$Nearest" exact="100000"/>
+          <do_for_each name="$Builder" in="$Builders">
+            <do_if value="not $Builder.isplayerowned and $Builder.pilot.exists and not $Builder.constructionmodule.exists and $Builder.order.id == 'FindBuildTasks' and not $Builder.nextorder">
+              <do_if value="(not $Sector.owner or $Sector.owner == faction.ownerless or not $Builder.owner.hasrelation.enemy.{$Sector.owner}) and $Hub.hasrelation.dock.{$Builder}">
+                <set_value name="$Distance" exact="$Builder.gatedistance.{$Hub}"/>
+                <do_if value="$Distance ge 0 and $Distance le $Nearest">
+                  <do_if value="$Distance lt $Nearest">
+                    <set_value name="$Candidates" exact="[]"/>
+                    <set_value name="$Nearest" exact="$Distance"/>
+                  </do_if>
+                  <append_to_list name="$Candidates" exact="$Builder"/>
+                </do_if>
+              </do_if>
+            </do_if>
+          </do_for_each>
+          <do_if value="$Candidates.count">
+            <set_value name="$Builder" exact="$Candidates.random"/>
+            <assign_construction_vessel object="$Builder" buildmodule="$Hub.buildstorage.buildmodule"/>
+            <create_order object="$Builder" id="'DeployToStation'" immediate="true">
+              <param name="station" value="$Hub"/>
+              <param name="waitduration" value="5min"/>
+              <param name="abandonbuildtime" value="1h"/>
+            </create_order>
+            <debug_text text="'[CE] Builder assigned=%s gate_distance=%s'.[$Builder, $Nearest]"/>
+          </do_if>
+          <do_else><debug_text text="'[CE] Waiting for an idle, non-hostile NPC builder; retry in five minutes'"/></do_else>
+        </do_if>
+      </actions>
+    </library>
+
+    
+
+    <library xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="EnsureManager">
+      <actions>
+        <do_if value="$ManagedObject.isoperational and not $ManagedObject.tradenpc.exists">
+          <!-- Explicit appearance avoids ownerless.primaryrace lookup; ownership stays ownerless. -->
+          <create_cue_actor name="$Manager" cue="md.CE_OwnerlessHub.Init">
+            <select faction="faction.argon" tags="controlpost.manager.tag"/>
+            <owner exact="faction.ownerless"/>
+          </create_cue_actor>
+          <do_if value="$Manager">
+            <assign_control_entity object="$ManagedObject" actor="$Manager" post="controlpost.manager" transfer="true"/>
+            <remove_cue_actor actor="$Manager" cue="md.CE_OwnerlessHub.Init"/>
+            <create_ai_unit object="$ManagedObject"/>
+            <debug_text text="'[CE] Ownerless manager initialised on %s'.[$ManagedObject]"/>
+          </do_if>
+          <do_else><debug_text text="'[CE] BLOCKED: could not create ownerless manager on %s'.[$ManagedObject]"/></do_else>
+        </do_if>
+      </actions>
+    </library>
+    
+
+  </cues>
+</mdscript>

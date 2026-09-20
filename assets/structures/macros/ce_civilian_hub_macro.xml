@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<macros>
+  <macro name="ce_civilian_hub_macro" class="station">
+    <component ref="station_gen_factory_base_01" />
+    <properties>
+      <identification name="{974201,1}" description="{974201,2}" unique="0" icon="mapob_tradestation" factionhqicon="mapob_tradestation_headquarter" hudicon="si_tradestation" />
+      <!-- The dedicated tradingstation set selects vanilla's 2.5 map scale.
+           No workforce, territory claim, or native trade basket is added. -->
+      <build><sets><set ref="ce_civilian_hub" /></sets></build>
+    </properties>
+    <connections>
+      <connection ref="controlroom">
+        <macro ref="control_room_macro" connection="Connection01" />
+      </connection>
+    </connections>
+  </macro>
+</macros>

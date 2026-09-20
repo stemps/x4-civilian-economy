@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<language id="44">
+  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+    <t id="1">Civilian Trade Hub</t>
+    <t id="2">A public delivery hub serving the civilian population of Argon Prime. Construction is funded by the planetary economy. Once completed, it purchases goods for immediate civilian consumption.</t>
+    <t id="10">Civilian Economy - Testing</t>
+    <t id="11">Force finish current construction</t>
+    <t id="12">Testing shortcut: invokes native instant build completion. May bypass construction materials and time. Reopen this menu for the next module.</t>
+    <t id="13">Demand: %.1f / %.0f cells</t>
+    <t id="14">Available: %.0f | Reserved: %.0f</t>
+    <t id="15">Delivered: %.0f | Paid: %.0f Cr</t>
+    <t id="16">Diagnostic snapshot updated every game minute and after recorded deliveries. Reopen the menu to refresh. Earlier uncounted deliveries cannot be reconstructed.</t>
+    <t id="30">Civilian Economy: this save contains the old energy-only prototype. Load a save from before installing Civilian Economy to test leveling. No migration or additional hub was created.</t>
+    <t id="31">%s Civilian Trade Hub \(level %s\)</t>
+    <t id="32">Level %d | Target %d (0 = none)</t>
+    <t id="33">History: %.0f / %.0f min</t>
+    <t id="34">Consumption active</t>
+    <t id="35">Building/damaged: demand paused</t>
+    <t id="36">Growth clearance blocked</t>
+    <t id="37">TEST: qualification bypassed</t>
+    <t id="38">%s\nDemand: %.1f\nCap: %.1f\nAvailable: %.0f\nReserved: %.0f</t>
+    <t id="39">Delivered: %.0f\nPaid: %.0f Cr\nSupply: %.1f%%\nService: %.1f%%\nLongest shortage: %.1f min\nConsumption: %.1f per hour\nReopen menu to refresh.</t>
+    <t id="40">TEST: Queue next upgrade</t>
+    <t id="41">TEST: Pause new offers</t>
+    <t id="42">TEST: Resume new offers</t>
+    <t id="43">The full level-10 layout needs a clear 12 x 8 x 32 km plot. The last clearance check failed. Upgrades are blocked, but current-level construction and consumption can continue. Retried every five game minutes.</t>
+  </page>
+</language>

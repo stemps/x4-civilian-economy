@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <!-- Only CE sites use our builder policy. Keep every other native build behavior. -->
+  <replace sel="/aiscript/attention/actions/do_if[@value='not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel']/@value">this.object.base != @player.entity.$ce_hub and not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel</replace>
+</diff>
