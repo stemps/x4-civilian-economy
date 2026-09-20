@@ -689,7 +689,7 @@
     </library>
     <library name="ReconcileSector">
       <actions>
-        <do_if value="$Sector and ($Population gt 0 or $Registry.{$Sector}?)">
+        <do_if value="$Sector and ($Population ge 100000000 or $Registry.{$Sector}?)">
           <do_if value="not $Registry.{$Sector}?">
             <set_value name="$Registry.{$Sector}" exact="table[$Hub=null,$Level=1,$Target=0,$Build=null,$Operational=false,$Wares=table[],$Transfers=table[],$Generation=0,$PauseOffers=false,$TestUpgrade=false,$PlotReady=false,$InitializedHub=null,$Population=$Population,$Factor=$Population / 8524100000.0f]"/>
             <set_value name="$R" exact="$Registry.{$Sector}"/>
@@ -697,7 +697,7 @@
           </do_if>
           <set_value name="$R" exact="$Registry.{$Sector}"/>
           <include_actions ref="UpdatePopulation"/>
-          <do_if value="(not $R.$Hub.exists or $R.$Hub.iswreck) and $Population gt 0">
+          <do_if value="(not $R.$Hub.exists or $R.$Hub.iswreck) and $Population ge 100000000">
             <do_if value="$R.$Hub != null">
               <include_actions ref="ForgetHub"/>
             </do_if>

@@ -23,6 +23,10 @@ Five-minute reconciliation requests population through blackboard arrays and
 Lua events. Request tokens reject duplicate/stale replies; failed reads preserve
 existing state. Minute ticks process each registry entry.
 
+Creating or replacing a hub requires at least 100,000,000 accessible population.
+Existing hubs below this threshold are retained, with demand still proportional
+to their actual population.
+
 Each hub's instantiated delivery watcher has its own namespace and captured
 record reference, preventing later loop iterations from redirecting deliveries.
 Destruction affects only the matching record. Existing leveling saves retain

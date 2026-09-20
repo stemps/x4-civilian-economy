@@ -28,14 +28,17 @@ class GalaxyTests(unittest.TestCase):
         self.run.env.update(Sector=sector,Population=pop)
         self.run.library('ReconcileSector')
         return self.registry[sector]
-    def test_positive_population_creates_once_zero_creates_none(self):
+    def test_population_threshold_is_inclusive_and_creates_once(self):
         a,b,c=self.sector(),self.sector(),self.sector()
-        self.reconcile(a,0);self.assertEqual(len(self.created),0)
-        first=self.reconcile(b,10000);second=self.reconcile(c,8524100000)
-        self.reconcile(b,10000);self.assertEqual(len(self.created),2)
+        for population in (0,10000,99999999):
+            self.reconcile(a,population)
+            self.assertEqual(len(self.created),0)
+            self.assertNotIn(a,self.registry)
+        first=self.reconcile(b,100000000);second=self.reconcile(c,8524100000)
+        self.reconcile(b,100000000);self.assertEqual(len(self.created),2)
         self.assertIsNot(first.Hub,second.Hub)
         self.assertGreater(first.Wares['foodrations'].Rate,0)
-        self.assertAlmostEqual(first.Wares['foodrations'].Rate,2000*10000/8524100000)
+        self.assertAlmostEqual(first.Wares['foodrations'].Rate,2000*100000000/8524100000)
         self.assertEqual(second.Wares['foodrations'].Rate,2000)
     def test_population_scaling_above_workforce_bonus_ceiling(self):
         r=self.reconcile(self.sector(),18000000000)
@@ -51,10 +54,20 @@ class GalaxyTests(unittest.TestCase):
         self.assertEqual(r.Wares['foodrations'].Demand,12.75)
         self.assertEqual(r.Wares['foodrations'].Rate,1000)
     def test_zero_then_repopulation_retains_existing_hub(self):
-        s=self.sector();r=self.reconcile(s,10000);hub=r.Hub
+        s=self.sector();r=self.reconcile(s,100000000);hub=r.Hub
         self.reconcile(s,0);self.assertIs(r.Hub,hub)
         self.assertEqual(r.Wares['water'].Rate,0)
-        self.reconcile(s,10000);self.assertEqual(len(self.created),1)
+        self.reconcile(s,100000000);self.assertEqual(len(self.created),1)
+    def test_existing_hub_retained_but_replacement_waits_for_threshold(self):
+        s=self.sector();r=self.reconcile(s,100000000);hub=r.Hub
+        self.reconcile(s,99999999)
+        self.assertIs(r.Hub,hub)
+        hub['exists']=False
+        self.reconcile(s,99999999)
+        self.assertEqual(len(self.created),1)
+        self.reconcile(s,100000000)
+        self.assertEqual(len(self.created),2)
+        self.assertIsNot(r.Hub,hub)
     def test_replacement_retains_only_its_own_level_and_backlog(self):
         a,b=self.sector(),self.sector()
         ra=self.reconcile(a,8524100000);rb=self.reconcile(b,8524100000)
@@ -67,12 +80,12 @@ class GalaxyTests(unittest.TestCase):
         self.assertEqual(ra.Wares['water'].Demand,123.25)
         self.assertIs(rb.Hub,bhub);self.assertEqual(rb.Wares['water'].Demand,77)
     def test_registry_survives_copy_without_duplicate_sites(self):
-        a,b=self.sector(),self.sector();self.reconcile(a,8524100000);self.reconcile(b,10000)
+        a,b=self.sector(),self.sector();self.reconcile(a,8524100000);self.reconcile(b,100000000)
         self.run.env=copy.deepcopy(self.run.env);self.registry=self.run.env['Registry']
         for sector in self.registry.keys.list:self.reconcile(sector,self.registry[sector].Population)
         self.assertEqual(len(self.created),2)
     def test_ui_snapshot_contains_both_hubs(self):
-        a,b=self.sector(),self.sector();ra=self.reconcile(a,1);rb=self.reconcile(b,2)
+        a,b=self.sector(),self.sector();ra=self.reconcile(a,100000000);rb=self.reconcile(b,200000000)
         ra['Snapshot']=List([ra.Hub,1]);rb['Snapshot']=List([rb.Hub,2])
         self.run.library('PublishAllDiagnostics')
         self.assertEqual(len(self.run.env['player'].entity.ce_hubs),2)

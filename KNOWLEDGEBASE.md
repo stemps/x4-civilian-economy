@@ -8,7 +8,7 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### Demand, payment and progression
 
-- Every sector with positive accessible population gets one ownerless hub with
+- Every sector with at least 100 million accessible population gets one ownerless hub with
   ten economic levels. Base X4 9.00 is required, with no DLC. No custom faction,
   diplomacy changes, production or habitation modules are introduced.
 - Population uses Lua `C.GetSectorPopulation`, the vanilla map's Accessible
@@ -16,8 +16,9 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   not used. Tokens reject duplicate/stale replies; failed readings are omitted
   rather than treated as zero. The bridge works without UI Extensions.
 - Rates scale by population / 8,524,100,000, preserving Argon Prime's diagnostic
-  rates. Caps remain two hours of scaled demand. No population floor: tiny
-  settlements can have caps below one tradable unit, a balance limitation.
+  rates. Caps remain two hours of scaled demand. Creation and replacement require
+  at least 100,000,000 population. Existing hubs below the threshold are retained;
+  the threshold does not clamp their demand scaling.
   Every sector still uses the Argon test ware basket; regional food is future work.
 - Registry records are keyed by sector. Each delivery watcher has its own
   namespace and captured record reference. UI/AI membership uses `$ce_hubs`;
