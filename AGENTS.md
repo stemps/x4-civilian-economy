@@ -15,12 +15,12 @@ instructions.
   - vanilla game mechanisms this mod interacts with
   - core mechanisms of this mod
   - experiments performed and their relevant findings
-- Maintain a repo-local ARCHITECTURE.md with info about code organisation and
+- Maintain a repo-root ARCHITECTURE.md with info about code organisation and
   module responsibilities.
-- Files in `docs/` are end-user focused (players and mod developers). Only put
-  key user facing information there. Keep them very brief, easy to understand
-  and avoid programming jargon.
-- Maintain up-to-date architecture documentation in `ui/ARCHITECTURE.md`
+- README.md and all files in `docs/` are end-user focused (players and mod
+  developers) and maintained by the repo owner. Leave them alone.
+- Keep useful UI architecture notes in the root `ARCHITECTURE.md`; do not create
+  a separate UI architecture document.
 - Keep code modules to a focused single reponsibility. Recommend refactorings if
   you spot code that violates this.
 - Make sure to keep all language translation files in sync with the English
