@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<content id="civilian_economy" name="Civilian Economy — Leveling Prototype" description="Ten-level ownerless civilian hub in Argon Prime. Requires a save from before installing the energy-only prototype." author="Civilian Economy" version="200" date="2026-09-19" save="true" enabled="true">
+<content id="civilian_economy" name="Civilian Economy - Galaxy Test" description="Ownerless civilian hubs in populated sectors, with ten levels and demand scaled by accessible population." author="Civilian Economy" version="300" date="2026-09-20" save="true" enabled="true">
   <dependency version="900" />
 </content>

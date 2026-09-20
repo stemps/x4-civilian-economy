@@ -28,15 +28,16 @@ menu={componentSlot={component=42},Add_Custom_Actions_Group=function() end,
 Helper={getMenu=function() return menu end}
 GetNPCBlackboard=function(id,key)
  assert(id==1)
- if key=="$ce_hub" then return marked and 42 or nil end
+ if key=="$ce_hubs" then return marked and {42, 43} or {} end
  if key=="$ce_legacy_blocked" then return legacy end
- if key=="$ce_level_status" then return status end
+ if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 360, false, true, {}, false}} end
  error(key)
 end
 ConvertStringToLuaID=tonumber
 ConvertStringTo64Bit=tonumber
 ReadText=function(_,id) assert(translations[id]);return translations[id] end
 DebugError=function() end
+RegisterEvent=function() end
 AddUITriggeredEvent=function(screen,command,id)
  assert(screen=="CELevelTesting" and id==42);commands[#commands+1]=command
 end
@@ -83,5 +84,11 @@ status[4]=1;status[8]=1;open();assert(action(40).active)
 status[2]=nil;open();assert(not action(40).active)
 status[2]=1
 status[1]=99;open();assert(#entries==3 and not action(40).active and not action(41).active)
+menu.componentSlot.component=43;open();assert(action(40).active)
+assert(entries[1].text:find("Level 5",1,true))
+menu.componentSlot.component=77;open();assert(#entries==0)
+menu.componentSlot.component=42;status[1]=42;status[11]=18000000000;open()
+assert(entries[4].text==translations[44])
+assert(entries[4].mouseOverText:find('18000000000',1,true))
 ''')
 print('LuaJIT syntax, localized diagnostics, stale-object guards and testing commands passed')

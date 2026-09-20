@@ -21,12 +21,15 @@ local function text(id, ...)
 end
 local function isHub(id)
     if not id or id == 0 or not C.IsValidComponent(id) or yes(read('$ce_legacy_blocked')) then return false end
-    local hub = read('$ce_hub')
-    return hub and ConvertStringTo64Bit(tostring(hub)) == id
+    for _, hub in ipairs(read('$ce_hubs') or {}) do
+        if ConvertStringTo64Bit(tostring(hub)) == id then return true end
+    end
+    return false
 end
 local function statusFor(id)
-    local s = read('$ce_level_status')
-    if type(s) == 'table' and s[1] and ConvertStringTo64Bit(tostring(s[1])) == id then return s end
+    for _, s in ipairs(read('$ce_hub_statuses') or {}) do
+        if type(s) == 'table' and s[1] and ConvertStringTo64Bit(tostring(s[1])) == id then return s end
+    end
 end
 local function canFinish(id)
     return isHub(id) and (C.GetCurrentBuildProgress(id) >= 0 or C.IsBuildWaitingForSecondaryComponentResources(id))
@@ -49,6 +52,7 @@ local function buildActions()
         row(text(32, tonumber(s[2]) or 1, tonumber(s[3]) or 0))
         row(text(yes(s[4]) and 34 or 35))
         row(text(33, tonumber(s[5]) or 0, tonumber(s[6]) or 0))
+        if tonumber(s[11]) then row(text(44), text(45, tonumber(s[11]))) end
         if not yes(s[8]) then row(text(36), text(43)) end
         if yes(s[10]) then row(text(37)) end
         for _, w in ipairs(type(s[9]) == 'table' and s[9] or {}) do
@@ -106,3 +110,5 @@ local function register()
     return true
 end
 if not register() and type(Register_OnLoad_Init) == 'function' then Register_OnLoad_Init(register, 'ce_debug_tools') end
+-- Retry after all addons are loaded, without making population depend on UIX.
+RegisterEvent('CEPopulationRequest', function() if not registered then register() end end)

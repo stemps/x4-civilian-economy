@@ -2,7 +2,7 @@
 <language id="44">
   <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
     <t id="1">Civilian Trade Hub</t>
-    <t id="2">A public delivery hub serving the civilian population of Argon Prime. Construction is funded by the planetary economy. Once completed, it purchases goods for immediate civilian consumption.</t>
+    <t id="2">A public delivery hub serving the sector's civilian population. Construction is funded by the planetary economy. Once completed, it purchases goods for immediate civilian consumption.</t>
     <t id="10">Civilian Economy - Testing</t>
     <t id="11">Force finish current construction</t>
     <t id="12">Testing shortcut: invokes native instant build completion. May bypass construction materials and time. Reopen this menu for the next module.</t>
@@ -24,5 +24,7 @@
     <t id="41">TEST: Pause new offers</t>
     <t id="42">TEST: Resume new offers</t>
     <t id="43">The full level-10 layout needs a clear 12 x 8 x 32 km plot. The last clearance check failed. Upgrades are blocked, but current-level construction and consumption can continue. Retried every five game minutes.</t>
+    <t id="44">Accessible population</t>
+    <t id="45">Accessible population: %.0f\nDemand is proportional to population.\nBaseline: 8,524,100,000 inhabitants.</t>
   </page>
 </language>

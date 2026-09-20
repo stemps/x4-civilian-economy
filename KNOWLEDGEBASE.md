@@ -8,9 +8,24 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### Demand, payment and progression
 
-- One ownerless Argon Prime hub has ten completed economic levels. Base X4 9.00
-  is required, with no DLC. No custom faction, diplomacy changes, production or
-  habitation modules, galaxy placement or population scaling are included.
+- Every sector with positive accessible population gets one ownerless hub with
+  ten economic levels. Base X4 9.00 is required, with no DLC. No custom faction,
+  diplomacy changes, production or habitation modules are introduced.
+- Population uses Lua `C.GetSectorPopulation`, the vanilla map's Accessible
+  population source, queried every five game minutes. Workforce growth/bonus is
+  not used. Tokens reject duplicate/stale replies; failed readings are omitted
+  rather than treated as zero. The bridge works without UI Extensions.
+- Rates scale by population / 8,524,100,000, preserving Argon Prime's diagnostic
+  rates. Caps remain two hours of scaled demand. No population floor: tiny
+  settlements can have caps below one tradable unit, a balance limitation.
+  Every sector still uses the Argon test ware basket; regional food is future work.
+- Registry records are keyed by sector. Each delivery watcher has its own
+  namespace and captured record reference. UI/AI membership uses `$ce_hubs`;
+  snapshots are selected by hub ID. The singleton marker is only read for adoption.
+- Population changes accrue at the old rate before recomputing completed-level
+  rates and resetting qualification, retaining backlogs. Zero population pauses
+  an existing hub; it never creates a new one. Native galaxy rollout and Lua/MD
+  object roundtrips still need in-game validation.
 - Civilian demand activates only after construction; construction purchases
   never count as fulfillment. Each unlocked ware has one public virtual-cargo,
   real-money offer, a two-hour backlog cap and price

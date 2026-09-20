@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <addon name="ce_debug_tools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../ui/core/addon.xsd">
   <environment type="menus">
-    <file name="ui/ce_debug_tools.lua" />
+    <file name="ui/ce_population.lua" />
     <dependency name="ego_detailmonitorhelper" />
     <dependency name="ego_detailmonitor" />
-    <dependency name="kuertee_ui_extensions" />
+    <file name="ui/ce_debug_tools.lua" />
   </environment>
 </addon>

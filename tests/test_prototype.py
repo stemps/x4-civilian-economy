@@ -11,6 +11,8 @@ REF=ROOT.parent.parent/'reference'
 class Ware(str):
     minprice=1000
     maxprice=2200
+    @property
+    def name(self): return str(self)
 
 def definitions(run):
     types=Table({w.get('id'):Ware(w.get('id')) for w in E.parse(str(REF/'libraries/wares.xml')).xpath('/wares/ware[price]')})
@@ -98,12 +100,12 @@ class ControllerTests(unittest.TestCase):
             __hash__=object.__hash__
         deal=Deal(deal);self.r.Transfers[deal]='food'
         self.run.env['event']=Table(param=deal)
-        self.run.stubs.update(UpdateOffers=lambda:None,PublishDiagnostics=lambda:None)
+        self.run.stubs.update(UpdateOffers=lambda:None,PublishDiagnostics=lambda:None,PublishAllDiagnostics=lambda:None)
         self.run.library('RecordDelivery')
         self.assertAlmostEqual(self.w.Demand,2000/60-10)
         self.assertEqual(self.w.Delivered,10);self.assertEqual(self.w.Paid,13000)
         self.assertNotIn(deal,self.r.Transfers)
-        checks=self.run.tree.xpath('//cue[@name="DeliveryFinished"]/conditions/check_value/@value')
+        checks=self.run.tree.xpath('//cue[@name="SectorDeliveryFinished"]/conditions/check_value/@value')
         self.assertIn('event.param.buyer == $R.$Hub and $R.$Transfers.{event.param}?',checks)
     def test_pending_and_top_level_never_requalify(self):
         self.r['Target']=2;self.evaluate();self.assertFalse(self.r.Qualified)
@@ -205,7 +207,7 @@ class ContentTests(unittest.TestCase):
         patch=E.parse(str(ROOT/'aiscripts/build.buildstorage.xml')).find('replace')
         base=E.parse(str(REF/'aiscripts/build.buildstorage.xml'))
         self.assertEqual(len(base.xpath(patch.get('sel'))),1)
-        self.assertTrue(patch.text.startswith('this.object.base != @player.entity.$ce_hub and '))
+        self.assertTrue(patch.text.startswith('not @player.entity.$ce_hubs.indexof.{this.object.base} and '))
 
 class LifecycleTests(unittest.TestCase):
     def setUp(self):

@@ -1,6 +1,6 @@
 # Development of the Mod
 
-See [Runtime architecture](ARCHITECTURE.md) for module responsibilities, state
+See [Runtime architecture](../ARCHITECTURE.md) for module responsibilities, state
 lifetimes, compatibility contracts and the native acceptance checklist.
 
 ## Dependencies

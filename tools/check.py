@@ -28,6 +28,7 @@ def main():
     for file in ROOT.rglob("*.xml"):
         if not any(p.startswith(".") for p in file.relative_to(ROOT).parts):
             etree.parse(str(file))
+    etree.XMLSchema(etree.parse(str(reference / "ui/core/addon.xsd"))).assertValid(etree.parse(str(ROOT / "ui.xml")))
     toolkit = args.toolkit.resolve()
     package = toolkit / "tools" / "x4validate"
     sys.path.insert(0, str(package))
