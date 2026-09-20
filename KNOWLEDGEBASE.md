@@ -2,7 +2,7 @@
 
 Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 [README](README.md) for an introduction and the
-[runtime test guide](docs/RUNTIME_TESTS.md) for in-game checks.
+[developer documentation](docs/DEVELOPMENT.md) for development guidance.
 
 ## How this Mod Works
 
@@ -215,6 +215,95 @@ hub and open **Custom Actions → Civilian Economy — Testing**.
   conditions and guards exact hub identity. CE adds no gamestart restriction;
   internal native restrictions remain unverified. Forced completion proves
   neither material delivery nor ordinary builder behavior.
+
+### Population, workforce and sector state (design research)
+
+These findings came from the extracted vanilla/DLC schemas and scripts during
+civilian-economy design. They describe possible integration points, not features
+implemented by this mod. Runtime effects require separate verification.
+
+- Planetary population is not merely flavour. `libraries/mapdefaults.xml` and DLC
+  equivalents define planet/moon `maxpopulation`; vanilla `menu_map.lua` calls
+  `GetSectorPopulation()` and reads `populationworkforcefactor`. Absence of a
+  population property on the MD sector datatype does not imply engine absence.
+- Sector `worlds/world` entries associate sectors with celestial parts and can
+  weight their contribution with `factor` (for example, Ianamus Zura VII uses
+  `0.5` for a body also referenced by Ianamus Zura IV). Resolve shared system
+  definitions as well: Sol bodies are defined in `Cluster_106_macro`, while Earth
+  and Mars sectors reside in other clusters. Do not assign a cluster-wide sum to
+  every sector, treat missing `maxpopulation` as zero, or mix Timelines mission
+  definitions with sandbox populations.
+- Station workforce, planetary definitions, engine-derived sector population and
+  the mutable terraforming population stat are distinct. Workforce is available
+  through `container.workforce.amount/.capacity/.amounts`; terraforming population
+  through `cluster.terraforming.stat.population.value` and `set_terraforming_stat`.
+  Their runtime interaction is unverified; `maxpopulation` is not an established
+  writable live population counter and does not imply a simulated civilian economy.
+- `parameters.xml` defines workforce growth's population contribution as
+  `<population limit="10000000000" step="1000000" max="1000" />`, with a +1,000%
+  availability cap; the UI multiplies the factor by 100 for display. The same
+  workforce block defines sustain, update cadence and capacity-dependent growth.
+- `race.workforce.resources` maps to `food_<race>` baskets in `baskets.xml`:
+  Argon uses food rations/medical supplies, Paranid soja husk/medical supplies,
+  and Teladi nostrop oil/medical supplies. The Terran DLC supplies `food_terran`.
+  These are native workforce-resource definitions; changing them has race-wide
+  scope rather than per-sector control and needs consumption/sustain testing.
+- `space.economy` and `space.security` have `mapdefaults.xml` defaults and MD
+  `set_space_*` / `reset_space_*` actions. Explicit values supersede parent spaces.
+  Vanilla uses them in station placement (`finalisestations.xml`), hostile encounter
+  chances (`encounters.xml`) and war eligibility (`x4ep1_war_subscriptions.xml`,
+  security threshold `0.75`). They affect existing systems; they are not independent
+  civilian prosperity scores.
+- Sector ownership is derived from claiming stations, with
+  `sector.iscontested`, `.contestingfactions` and `faction.willclaimspace` exposing
+  related state. Changing a claiming station's owner can affect sector ownership;
+  do not assume a direct sector-owner setter.
+- Vanilla `boarding.xml` uses per-object MD variables on actors. That precedent
+  does not establish support or persistence on sectors/clusters, nor does it
+  override CE's observed station-blackboard failure. Retain the proven registry.
+
+### Terraforming as a possible supply-contract mechanism
+
+- `libraries/terraforming.xml` provides native recurring supply examples:
+  `eco_clinic_supply` uses medical supplies, population-scaled resources, a payout,
+  cooldown and delivery drone. `eco_campus_supply` selects 2–3 wares from a larger
+  list and pays 250% of its price. These are useful analogues, not CE dependencies.
+- The MD API includes `initialise_terraforming` with a cluster and environment
+  part name, project/event/stat actions and project lifecycle events.
+  `add_terraforming_project` accepts inline conditions, effects, resources,
+  deliveries and related project data. Resource `pricescale="population"` is
+  defined per 100,000 inhabitants; repeat/cooldown, payout and ware-selection
+  options support recurring contracts.
+- Sector `worlds/world` entries help locate celestial part names; they are not
+  proof that every body is a supported terraforming target. Initialization on
+  arbitrary clusters and access to the UI without a terraforming mission remain
+  unverified. Prototype those gates before adopting this mechanism.
+
+### Scripted offers and NPC economy integration
+
+- Vanilla scripted-offer precedents include `rml_barterwares.xml`,
+  `gm_barterwares.xml` and `order.mining.routine.xml`. `create_trade_offer` selects
+  buy/sell direction through `buyer`/`seller`, a host through `object`, virtual
+  cargo through `virtual`, and public eligibility through `playeronly="false"`.
+  This does not bypass normal faction/trader eligibility or guarantee delivery.
+- `trade.find.free.xml` scans `find_buy_offer` without an offer-origin filter.
+  Its gates include the trader's ware basket, operating spaces, known/eligible
+  trade partners and minimum offer volume. `excludemissions` defaults to true;
+  attaching a `missioncue` can exclude an offer from ordinary NPC trading.
+  Source eligibility alone does not prove identical handling of virtual offers.
+- Free traders consult `global.$EconLogic_NotableBuyOfferTable.{faction}` before
+  their generic scan. `factionlogic_economy.xml` rebuilds it during shortage
+  evaluation; injected entries would be transient and could displace priorities.
+  CE does not use this channel.
+- `factionlogic_economy.xml` evaluates sector/ware shortages, weights nearby
+  sectors and can request production modules/factories. This works through faction
+  economy managers, so it does not establish that CE's ownerless demand triggers
+  NPC expansion. Vanilla also staggers sector evaluation with short delays.
+- `common.xsd` permits `event_trade_completed space=`, mutually exclusive with
+  buyer/seller filters, and documents `event.param` as a trade offer and
+  `event.param2` as a trade order. Broad listener coverage/volume was not established
+  by the research; CE's failed galaxy listener is evidence against assuming it.
+  Use the exact-deal RML pattern described above for civilian accounting.
 
 ## Experiments and validation limits
 
