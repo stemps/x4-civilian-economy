@@ -123,3 +123,27 @@ class GalaxyTests(unittest.TestCase):
         ra=self.reconcile(a,8524100000);rb=self.reconcile(b,8524100000)
         self.assertIs(ra.Hub,old);self.assertIsNot(rb.Hub,old)
         self.assertEqual(len(self.created),1)
+
+    def test_delivery_publishes_wares_without_controller_local_definitions(self):
+        r=self.reconcile(self.sector(),8524100000)
+        other=self.reconcile(self.sector(),100000000)
+        self.run.env['R']=other
+        self.run.library('PublishDiagnostics')
+        other_snapshot=other.Snapshot
+        r['Operational']=True
+        r.Wares['water']['Demand']=100
+        deal=Object(buyer=r.Hub,transferredamount=15,unitprice=1200)
+        r.Transfers[deal]=Ware('water')
+        # Match the watcher's namespace: no local Definitions. Only native offer
+        # writes are stubbed; execute the entire delivery-to-blackboard path.
+        del self.run.env['Definitions']
+        self.run.env.update(R=r,Hub=r.Hub,event=Table(param=deal))
+        self.run.stubs['UpdateOffers']=lambda:None
+        self.run.library('RecordDelivery')
+        rows=r.Snapshot[9]
+        self.assertEqual([row[1] for row in rows],['foodrations','water'])
+        self.assertEqual(rows[2][2],85)
+        self.assertEqual(rows[2][6],15)
+        self.assertEqual(rows[2][7],180)
+        self.assertEqual(len(self.run.env['player'].entity.ce_hub_statuses),2)
+        self.assertIs(other.Snapshot,other_snapshot)

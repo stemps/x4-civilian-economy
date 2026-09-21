@@ -29,6 +29,8 @@ to their actual population.
 
 Each hub's instantiated delivery watcher has its own namespace and captured
 record reference, preventing later loop iterations from redirecting deliveries.
+Shared diagnostic ware definitions are read explicitly from `Init`; callers in
+delivery namespaces cannot rely on controller-local variables.
 Destruction affects only the matching record. Existing leveling saves retain
 their registry; energy-only prototype saves remain blocked.
 

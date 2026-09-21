@@ -18,6 +18,7 @@ def definitions(run):
     types=Table({w.get('id'):Ware(w.get('id')) for w in E.parse(str(REF/'libraries/wares.xml')).xpath('/wares/ware[price]')})
     run.env['ware']=types
     run.env['Definitions']=run.expr(run.tree.xpath('//set_value[@name="$Definitions"]/@exact')[0])
+    run.env['md']=Table(CE_OwnerlessHub=Table(Init=Table(Definitions=run.env['Definitions'])))
 
 class ControllerTests(unittest.TestCase):
     def setUp(self):

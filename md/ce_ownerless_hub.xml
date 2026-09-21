@@ -615,7 +615,8 @@
     <library name="PublishDiagnostics">
       <actions>
         <set_value name="$Rows" exact="[]"/>
-        <do_for_each name="$Definition" in="$Definitions">
+        <!-- Delivery watchers have their own namespace; definitions belong to Init. -->
+        <do_for_each name="$Definition" in="md.CE_OwnerlessHub.Init.$Definitions">
           <set_value name="$Ware" exact="$Definition.{1}"/>
           <do_if value="$R.$Wares.{$Ware}?">
             <set_value name="$W" exact="$R.$Wares.{$Ware}"/>

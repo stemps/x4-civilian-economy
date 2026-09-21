@@ -23,6 +23,11 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 - Registry records are keyed by sector. Each delivery watcher has its own
   namespace and captured record reference. UI/AI membership uses `$ce_hubs`;
   snapshots are selected by hub ID. The singleton marker is only read for adoption.
+- Delivery watchers do not inherit Init's local `$Definitions`. A bare lookup in
+  `PublishDiagnostics` produced an empty ware snapshot after each delivery until
+  the minute tick repaired it; debug.txt confirmed the failed lookup. Reference
+  `md.CE_OwnerlessHub.Init.$Definitions` explicitly. Regression coverage executes
+  delivery accounting and snapshot publication without local definitions.
 - Population changes accrue at the old rate before recomputing completed-level
   rates and resetting qualification, retaining backlogs. Zero population pauses
   an existing hub; it never creates a new one. Native galaxy rollout and Lua/MD
