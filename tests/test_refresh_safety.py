@@ -29,20 +29,20 @@ class RefreshSafetyTests(unittest.TestCase):
         self.assertEqual(self.protected(),before)
         self.assertTrue(self.run.env['CandidateComplete'])
 
-    def test_missing_discovery_keeps_last_valid_state_and_recovers(self):
+    def initial_attempt(self):
+        self.r.pop('Definitions')
+        self.run.env['SectorProfiles']=Table()
+        self.run.env['RaceProfiles']=Table()
+
+    def test_missing_discovery_does_not_change_frozen_state(self):
         before=self.protected()
-        lookup=self.run.env['lookup']
         self.run.env['lookup']=Table(ware=Table(list=List()),race=Table(list=List()))
         self.run.library('RefreshProfile')
-        self.assertTrue(self.r.ProfileError)
         self.assertEqual(self.protected(),before)
-        self.run.env['lookup']=lookup
-        self.run.library('RefreshProfile')
         self.assertFalse(self.r.ProfileError)
-        self.assertEqual(self.protected(),before)
 
-    def test_interrupted_candidate_cannot_commit_previous_scratch(self):
-        before=self.protected()
+    def test_interrupted_initial_candidate_cannot_commit_previous_scratch(self):
+        self.initial_attempt();before=self.protected()
         self.run.env.update(CandidateComplete=True,CandidateValid=True,CandidateDefinitions=List())
         self.run.stubs['md.CE_PopulationProfiles.Build']=lambda:None
         self.run.library('RefreshProfile')
@@ -50,7 +50,7 @@ class RefreshSafetyTests(unittest.TestCase):
         self.assertEqual(self.protected(),before)
 
     def test_invalid_string_key_continues_like_engine_without_committing(self):
-        before=self.protected()
+        self.initial_attempt();before=self.protected()
         node=self.run.profiles.xpath('//set_value[starts-with(@name,"$ProfileWares.{")]')[0]
         node.set('name','$ProfileWares.{$ProfileWare.id}')
         self.run.continue_on_invalid_key=True
@@ -60,28 +60,29 @@ class RefreshSafetyTests(unittest.TestCase):
         self.assertEqual(self.protected(),before)
 
     def test_interrupted_rate_preparation_cannot_commit(self):
-        before=self.protected()
+        self.initial_attempt();before=self.protected()
         self.run.env['CandidateRatesComplete']=True
         self.run.stubs['PrepareRates']=lambda:None
         self.run.library('RefreshProfile')
         self.assertTrue(self.r.ProfileError)
         self.assertEqual(self.protected(),before)
 
-    def test_malformed_configuration_is_not_an_intentionally_empty_profile(self):
-        before=self.protected()
+    def test_malformed_initial_configuration_cannot_commit(self):
+        self.initial_attempt();before=self.protected()
         node=self.run.profiles.xpath('//library[@name="Configure"]//set_value[@name="$ProfileCommon"]')[0]
         node.set('exact','null')
         self.run.library('RefreshProfile')
         self.assertTrue(self.r.ProfileError)
         self.assertEqual(self.protected(),before)
 
-    def test_duplicate_or_invalid_rate_candidate_never_changes_live_state(self):
-        before=self.protected()
+    def test_duplicate_or_invalid_initial_rates_cannot_commit(self):
+        self.initial_attempt();before=self.protected()
         def candidate(rows):
             self.run.env.update(CandidateComplete=True,CandidateValid=True,
                                 CandidateDefinitions=rows,CandidateRace='argon')
         for rows in (List([List([Ware('water'),1,2000]),List([Ware('water'),1,3000])]),
                      List([List([Ware('water'),1,-1])])):
+            self.run.env['SectorProfiles']=Table();self.run.env['RaceProfiles']=Table()
             self.run.stubs['md.CE_PopulationProfiles.Build']=lambda: candidate(rows)
             self.run.library('RefreshProfile')
             self.assertEqual(self.protected(),before)
@@ -123,6 +124,7 @@ class RefreshSafetyTests(unittest.TestCase):
         self.assertEqual([row[1] for row in self.r.Snapshot[9]],['foodrations','water'])
 
     def test_intentionally_empty_profile_is_valid_but_failed_first_profile_is_not(self):
+        self.initial_attempt()
         self.run.env['lookup'].race.list=List([Table(id='argon',workforce=Table(resources=List()))])
         configure=self.run.profiles.xpath('//library[@name="Configure"]/actions/set_value[@name="$ProfileCommon"]')[0]
         configure.set('exact','[]')

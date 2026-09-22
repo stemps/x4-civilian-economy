@@ -39,11 +39,25 @@ class Table(dict):
     def __getitem__(self, key): return self.get(key, NIL)
     def __bool__(self): return True
 
+class Component(Table):
+    __hash__=object.__hash__
+    def __eq__(self,other): return self is other
+    def __ne__(self,other): return self is not other
+
 class List(list):
     @property
     def list(self): return self
     @property
     def count(self): return len(self)
+    @property
+    def clone(self): return List(self)
+    @property
+    def indexof(self):
+        source=self
+        class Index:
+            def __getitem__(self, value):
+                return next((i for i,x in enumerate(source,1) if x == value),0)
+        return Index()
     def __getitem__(self, key):
         if isinstance(key, slice): return super().__getitem__(key)
         return super().__getitem__(key - 1) if 1 <= key <= len(self) else NIL
@@ -69,6 +83,7 @@ class Runner:
     def __init__(self):
         self.tree=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_ownerless_hub.xml'))
         self.profiles=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_population_profiles.xml'))
+        self.construction=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_construction.xml'))
         self.reserves=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_reserves.xml'))
         self.env={'player':Table(age=0), 'null':NIL, 'true':True, 'false':False}
         self.env['datatype']=Table(list=DataType('list'),table=DataType('table'))
@@ -119,7 +134,7 @@ class Runner:
         else: obj[key]=wrap(v)
     def library(self,name):
         if name in self.stubs: return self.stubs[name]()
-        tree = self.reserves if name.startswith('md.CE_Reserves.') else self.profiles if name.startswith('md.CE_PopulationProfiles.') else self.tree
+        tree = self.construction if name.startswith('md.CE_Construction.') else self.reserves if name.startswith('md.CE_Reserves.') else self.profiles if name.startswith('md.CE_PopulationProfiles.') else self.tree
         nodes=tree.xpath('//library[@name=$n]/actions',n=name.rsplit('.',1)[-1])
         if not nodes: raise ValueError(name)
         self.actions(nodes[0])

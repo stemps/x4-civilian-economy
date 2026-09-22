@@ -631,3 +631,26 @@ implemented or runtime-tested CE rewards:
 - Regression checks now require exactly one table from the selection hook. A UI
   /reload is needed after this Lua repair; restart if the damaged UI cannot reload.
   Actual in-game recovery remains to be confirmed.
+
+
+## 2026-09-22 — frozen sector profiles and native racial construction
+
+- Schema 4 snapshots every sector before population filtering; race-level demand and
+  component choices persist through conquest, later eligibility, reload and replacement.
+  Sector overrides were removed. Existing construction schemas require a fresh game.
+- Native `get_module_definition` supports race/category discovery without faction
+  filtering. `macro.numpierdocks` measures capital pier capacity; `numdocks` S/M tags
+  measure dock areas. Choose functional capacity, not hardcoded race names/macros.
+- `create_construction_sequence` is asynchronous unless `immediate` is supplied;
+  `event_object_construction_sequence_created` supplies the resulting sequence/null.
+  Native finalisestations.xml provides the pattern. `base` preserves existing layout;
+  verify entry IDs/macros and the functional basket before queueing expansion.
+- Readiness now uses saved sequence entry IDs, including generated connectors. Static
+  Argon module-count arrays are not applicable to racial layouts. Target layouts and
+  build tasks are separate state; a lost task reuses the saved target layout.
+- Source/test evidence: every macro in native Terran dock, storage, pier-base and
+  connector groups has a default recipe using only Terran construction materials
+  (plus energy cells). This verifies recipe compatibility, not actual NPC deliveries.
+- Runtime acceptance still required: empty station shell/build storage, native geometry
+  for all loaded races, construction with NPC deliveries, save/load during generation
+  and builds, and subsequent expansions. Mock tests do not prove engine behavior.

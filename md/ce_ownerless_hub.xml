@@ -21,12 +21,12 @@
           <set_value name="player.entity.$ce_legacy_blocked" exact="true"/>
         </do_if>
         <do_else>
-          <set_value name="$Schema" exact="3"/>
+          <set_value name="$Schema" exact="4"/>
           <set_value name="player.entity.$ce_level_schema" exact="$Schema"/>
           <set_value name="player.entity.$ce_legacy_blocked" exact="false"/>
-          <set_value name="$PlanIDs" exact="['ce_ownerless_hub_01','ce_ownerless_hub_02','ce_ownerless_hub_03','ce_ownerless_hub_04','ce_ownerless_hub_05','ce_ownerless_hub_06','ce_ownerless_hub_07','ce_ownerless_hub_08','ce_ownerless_hub_09','ce_ownerless_hub_10']"/>
-          <set_value name="$ModuleCounts" exact="[4,6,8,11,13,16,19,21,23,27]"/>
           <set_value name="$Registry" exact="table[]"/>
+          <set_value name="$SectorProfiles" exact="table[]"/>
+          <set_value name="$RaceProfiles" exact="table[]"/>
           <set_value name="$Sector" exact="null"/>
           <set_value name="$Hub" exact="null"/>
           <set_value name="$NextReconcile" exact="0s"/>
@@ -61,15 +61,28 @@
             <check_value value="not $Blocked"/>
           </conditions>
           <actions>
-            <cancel_cue cue="md.CE_OwnerlessHub.WatchLevelHub"/>
-            <include_actions ref="Reconcile"/>
-            <do_for_each name="$Sector" in="$Registry.keys.list">
-              <set_value name="$R" exact="$Registry.{$Sector}"/>
-              <include_actions ref="RefreshProfile"/>
-              <include_actions ref="RenameHub"/>
-              <include_actions ref="PublishDiagnostics"/>
-            </do_for_each>
-            <include_actions ref="PublishAllDiagnostics"/>
+            <do_if value="not $SectorProfiles? or not $RaceProfiles? or $Schema != 4">
+              <set_value name="$Blocked" exact="true"/>
+              <write_to_logbook category="general" title="{974201,1}" text="{974201,122}"/>
+              <debug_text text="'[CE] BLOCKED: racial construction requires a fresh game with Civilian Economy installed.'"/>
+            </do_if>
+            <do_else>
+              <cancel_cue cue="md.CE_OwnerlessHub.WatchLevelHub"/>
+              <include_actions ref="Reconcile"/>
+              <do_for_each name="$Sector" in="$Registry.keys.list">
+                <set_value name="$R" exact="$Registry.{$Sector}"/>
+                <do_if value="@$R.$LayoutPending">
+                  <do_if value="@$R.$LayoutCue">
+                    <cancel_cue cue="$R.$LayoutCue"/>
+                  </do_if>
+                  <set_value name="$R.$LayoutPending" exact="false"/>
+                </do_if>
+                <include_actions ref="RefreshProfile"/>
+                <include_actions ref="RenameHub"/>
+                <include_actions ref="PublishDiagnostics"/>
+              </do_for_each>
+              <include_actions ref="PublishAllDiagnostics"/>
+            </do_else>
           </actions>
         </cue>
         <cue name="LostHub" instantiate="true">
@@ -244,6 +257,9 @@
       <actions>
         <set_value name="$NextReconcile" exact="player.age + 5min"/>
         <find_sector name="$PopulationSectors" space="player.galaxy" multiple="true"/>
+        <do_for_each name="$Sector" in="$PopulationSectors">
+          <include_actions ref="CaptureSectorProfile"/>
+        </do_for_each>
         <set_value name="$PopulationRequest" exact="if $PopulationRequest? then $PopulationRequest + 1 else 1"/>
         <set_value name="player.entity.$ce_population_request" exact="[$PopulationRequest,$PopulationSectors]"/>
         <raise_lua_event name="'CEPopulationRequest'"/>
@@ -251,6 +267,12 @@
     </library>
     <library name="ForgetHub">
       <actions>
+        <do_if value="@$R.$LayoutCue">
+          <cancel_cue cue="$R.$LayoutCue"/>
+        </do_if>
+        <set_value name="$R.$LayoutPending" exact="false"/>
+        <set_value name="$R.$CompletedSequence" exact="null"/>
+        <set_value name="$R.$TargetSequence" exact="null"/>
         <include_actions ref="md.CE_Reserves.Migrate"/>
         <include_actions ref="AccrueAll"/>
         <set_value name="$R.$Hub" exact="null"/>
@@ -274,58 +296,66 @@
     </library>
     <library name="RefreshProfile">
       <actions>
-        <include_actions ref="md.CE_Reserves.Migrate"/>
-        <!-- Requires R and Sector. Preparation has no writes to R. -->
-        <set_value name="$CandidateComplete" exact="false"/>
-        <set_value name="$CandidateStage" exact="'start'"/>
-        <include_actions ref="md.CE_PopulationProfiles.Build"/>
-        <do_if value="$CandidateComplete and $CandidateValid">
-          <set_value name="$CandidateRatesComplete" exact="false"/>
-          <include_actions ref="PrepareRates"/>
-        </do_if>
-        <do_if value="$CandidateComplete and $CandidateValid and $CandidateRatesComplete">
-          <set_value name="$ProfileChanged" exact="not $R.$Definitions?"/>
-          <set_value name="$PreviousDefinitions" exact="table[]"/>
-          <do_if value="$R.$Definitions?">
-            <do_for_each name="$Definition" in="$R.$Definitions">
-              <set_value name="$Ware" exact="$Definition.{1}"/>
-              <set_value name="$PreviousDefinitions.{$Ware}" exact="$Definition"/>
-            </do_for_each>
+        <do_if value="not $R.$Definitions?">
+          <include_actions ref="md.CE_Reserves.Migrate"/>
+          <!-- Requires R and Sector. Preparation has no writes to R. -->
+          <set_value name="$CandidateComplete" exact="false"/>
+          <set_value name="$CandidateStage" exact="'start'"/>
+          <include_actions ref="CaptureSectorProfile"/>
+          <set_value name="$FrozenProfile" exact="$SectorProfiles.{$Sector}"/>
+          <set_value name="$CandidateRace" exact="$FrozenProfile.$Race"/>
+          <set_value name="$CandidateDefinitions" exact="$FrozenProfile.$Definitions"/>
+          <set_value name="$CandidateComplete" exact="true"/>
+          <set_value name="$CandidateValid" exact="$FrozenProfile.$Valid"/>
+          <set_value name="$R.$Construction" exact="$FrozenProfile.$Construction"/>
+          <do_if value="$CandidateComplete and $CandidateValid">
+            <set_value name="$CandidateRatesComplete" exact="false"/>
+            <include_actions ref="PrepareRates"/>
           </do_if>
-          <do_if value="$PreviousDefinitions.keys.count != $CandidateDefinitions.count">
-            <set_value name="$ProfileChanged" exact="true"/>
-          </do_if>
-          <do_for_each name="$Definition" in="$CandidateDefinitions">
-            <set_value name="$Ware" exact="$Definition.{1}"/>
-            <do_if value="not $PreviousDefinitions.{$Ware}?">
+          <do_if value="$CandidateComplete and $CandidateValid and $CandidateRatesComplete">
+            <set_value name="$ProfileChanged" exact="not $R.$Definitions?"/>
+            <set_value name="$PreviousDefinitions" exact="table[]"/>
+            <do_if value="$R.$Definitions?">
+              <do_for_each name="$Definition" in="$R.$Definitions">
+                <set_value name="$Ware" exact="$Definition.{1}"/>
+                <set_value name="$PreviousDefinitions.{$Ware}" exact="$Definition"/>
+              </do_for_each>
+            </do_if>
+            <do_if value="$PreviousDefinitions.keys.count != $CandidateDefinitions.count">
               <set_value name="$ProfileChanged" exact="true"/>
             </do_if>
-            <do_elseif value="$PreviousDefinitions.{$Ware}.{2} != $Definition.{2} or $PreviousDefinitions.{$Ware}.{3} != $Definition.{3}">
-              <set_value name="$ProfileChanged" exact="true"/>
-            </do_elseif>
-          </do_for_each>
-          <do_if value="$ProfileChanged and $R.$Last?">
-            <include_actions ref="AccrueAll"/>
+            <do_for_each name="$Definition" in="$CandidateDefinitions">
+              <set_value name="$Ware" exact="$Definition.{1}"/>
+              <do_if value="not $PreviousDefinitions.{$Ware}?">
+                <set_value name="$ProfileChanged" exact="true"/>
+              </do_if>
+              <do_elseif value="$PreviousDefinitions.{$Ware}.{2} != $Definition.{2} or $PreviousDefinitions.{$Ware}.{3} != $Definition.{3}">
+                <set_value name="$ProfileChanged" exact="true"/>
+              </do_elseif>
+            </do_for_each>
+            <do_if value="$ProfileChanged and $R.$Last?">
+              <include_actions ref="AccrueAll"/>
+            </do_if>
+            <set_value name="$R.$Definitions" exact="$CandidateDefinitions"/>
+            <set_value name="$R.$ProfileRace" exact="$CandidateRace"/>
+            <set_value name="$R.$ProfileVersion" exact="2"/>
+            <do_if value="$ProfileChanged">
+              <include_actions ref="CommitRates"/>
+            </do_if>
+            <include_actions ref="EnsureDisplayMetadata"/>
+            <do_if value="@$R.$ProfileError">
+              <debug_text text="'[CE] Profile recovered: %s'.[$R.$Hub]"/>
+            </do_if>
+            <set_value name="$R.$ProfileError" exact="false"/>
           </do_if>
-          <set_value name="$R.$Definitions" exact="$CandidateDefinitions"/>
-          <set_value name="$R.$ProfileRace" exact="$CandidateRace"/>
-          <set_value name="$R.$ProfileVersion" exact="2"/>
-          <do_if value="$ProfileChanged">
-            <include_actions ref="CommitRates"/>
-          </do_if>
-          <include_actions ref="EnsureDisplayMetadata"/>
-          <do_if value="@$R.$ProfileError">
-            <debug_text text="'[CE] Profile recovered: %s'.[$R.$Hub]"/>
-          </do_if>
-          <set_value name="$R.$ProfileError" exact="false"/>
+          <do_else>
+            <do_if value="not @$R.$ProfileError or @$R.$ProfileErrorStage != $CandidateStage">
+              <debug_text text="'[CE] Profile refresh failed: hub=%s sector=%s stage=%s; retaining last valid state'.[$R.$Hub,$Sector,$CandidateStage]"/>
+            </do_if>
+            <set_value name="$R.$ProfileError" exact="true"/>
+            <set_value name="$R.$ProfileErrorStage" exact="$CandidateStage"/>
+          </do_else>
         </do_if>
-        <do_else>
-          <do_if value="not @$R.$ProfileError or @$R.$ProfileErrorStage != $CandidateStage">
-            <debug_text text="'[CE] Profile refresh failed: hub=%s sector=%s stage=%s; retaining last valid state'.[$R.$Hub,$Sector,$CandidateStage]"/>
-          </do_if>
-          <set_value name="$R.$ProfileError" exact="true"/>
-          <set_value name="$R.$ProfileErrorStage" exact="$CandidateStage"/>
-        </do_else>
       </actions>
     </library>
     <library name="ApplyLevel">
@@ -384,41 +414,7 @@
       <actions>
         <include_actions ref="md.CE_Reserves.Migrate"/>
         <set_value name="$Hub" exact="$R.$Hub"/>
-        <set_value name="$Ready" exact="false"/>
-        <set_value name="$TargetReady" exact="false"/>
-        <set_value name="$R.$PauseReason" exact="'hub_unavailable'"/>
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner != faction.ownerless">
-          <set_value name="$R.$PauseReason" exact="'owner_changed'"/>
-        </do_if>
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless">
-          <set_value name="$Sequence" exact="$Hub.constructionsequence"/>
-          <set_value name="$Required" exact="$ModuleCounts.{$R.$Level}"/>
-          <set_value name="$Ready" exact="$Sequence.count ge $Required and (not $R.$Population? or $R.$Population gt 0) and $R.$Definitions?"/>
-          <set_value name="$Constructing" exact="$Sequence.count lt $Required"/>
-          <set_value name="$Damaged" exact="false"/>
-          <do_all exact="[$Required,$Sequence.count].min" counter="$i">
-            <do_if value="not @$Hub.planmodule.{$Sequence.{$i}.id}.isoperational">
-              <set_value name="$Ready" exact="false"/>
-              <do_if value="@$Hub.planmodule.{$Sequence.{$i}.id}.iswreck">
-                <set_value name="$Damaged" exact="true"/>
-              </do_if>
-              <do_elseif value="not @$Hub.planmodule.{$Sequence.{$i}.id}.exists or @$Hub.planmodule.{$Sequence.{$i}.id}.isconstruction">
-                <set_value name="$Constructing" exact="true"/>
-              </do_elseif>
-            </do_if>
-          </do_all>
-          <!-- Presentation only: retain the readiness/qualification rules above. -->
-          <set_value name="$R.$PauseReason" exact="if $Ready then 'active' else if $Damaged then 'damaged_modules' else if $Constructing then 'constructing' else if $R.$Population? and $R.$Population == 0 then 'no_population' else 'modules_unavailable'"/>
-          <do_if value="$R.$Target gt 0">
-            <set_value name="$TargetCount" exact="$ModuleCounts.{$R.$Target}"/>
-            <set_value name="$TargetReady" exact="$Ready and $Sequence.count ge $TargetCount"/>
-            <do_all exact="[$TargetCount,$Sequence.count].min" counter="$i">
-              <do_if value="not @$Hub.planmodule.{$Sequence.{$i}.id}.isoperational">
-                <set_value name="$TargetReady" exact="false"/>
-              </do_if>
-            </do_all>
-          </do_if>
-        </do_if>
+        <include_actions ref="md.CE_Construction.Readiness"/>
         <do_if value="$Ready">
           <do_if value="not $R.$Operational">
             <include_actions ref="ResetHistory"/>
@@ -431,6 +427,8 @@
           </do_if>
           <include_actions ref="AccrueAll"/>
           <do_if value="$TargetReady">
+            <set_value name="$R.$CompletedSequence" exact="$R.$TargetSequence"/>
+            <set_value name="$R.$TargetSequence" exact="null"/>
             <set_value name="$R.$Level" exact="$R.$Target"/>
             <set_value name="$R.$GrowthSeconds" exact="0.0f"/>
             <set_value name="$R.$Target" exact="0"/>
@@ -498,21 +496,7 @@
     </library>
     <library name="QueueExpansion">
       <actions>
-        <set_value name="$Hub" exact="$R.$Hub"/>
-        <do_if value="$R.$Target gt 0 and $R.$PlotReady and $Hub.exists and $Hub.buildstorage.exists and not $R.$Build.exists">
-          <!-- Never append while another native build is queued or processing. -->
-          <do_if value="$Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count == 0">
-            <add_build_to_expand_station result="$R.$Build" object="$Hub.buildstorage" buildobject="$Hub" constructionplan="$PlanIDs.{$R.$Target}">
-              <stage exact="0"/>
-            </add_build_to_expand_station>
-            <do_if value="$R.$Build.exists">
-              <process_build build="$R.$Build" object="$Hub.buildstorage" buildmodule="$Hub.buildstorage.buildmodule"/>
-              <include_actions ref="FundAccounts"/>
-              <include_actions ref="AssignBuilder"/>
-              <debug_text text="'[CE] Expansion queued: current=%s target=%s task=%s'.[$R.$Level,$R.$Target,$R.$Build]"/>
-            </do_if>
-          </do_if>
-        </do_if>
+        <include_actions ref="md.CE_Construction.Queue"/>
       </actions>
     </library>
     <library name="UpdateWarePrice">
@@ -722,6 +706,7 @@
     </library>
     <library name="ReconcileSector">
       <actions>
+        <include_actions ref="CaptureSectorProfile"/>
         <do_if value="$Sector and ($Population ge 100000000 or $Registry.{$Sector}?)">
           <do_if value="not $Registry.{$Sector}?">
             <set_value name="$Registry.{$Sector}" exact="table[$Hub=null,$Level=1,$Target=0,$Build=null,$Operational=false,$Wares=table[],$Transfers=table[],$Generation=0,$PauseOffers=false,$TestUpgrade=false,$PlotReady=false,$InitializedHub=null,$Population=$Population,$Factor=$Population / 8524100000.0f]"/>
@@ -734,13 +719,9 @@
             <do_if value="$R.$Hub != null">
               <include_actions ref="ForgetHub"/>
             </do_if>
-            <do_if value="@player.entity.$ce_hub.exists and not player.entity.$ce_hub.iswreck and player.entity.$ce_hub.sector == $Sector">
-              <set_value name="$R.$Hub" exact="player.entity.$ce_hub"/>
-            </do_if>
-            <do_else>
-              <create_station name="$NewHub" macro="macro.ce_civilian_hub_macro" constructionplan="$PlanIDs.{$R.$Level}" owner="faction.ownerless" sector="$Sector" state="componentstate.construction" rawname="'{974201,1}'" rawdescription="'{974201,2}'" method="default">
+            <do_if value="$R.$Definitions? and $R.$Construction.$Valid">
+              <create_station name="$NewHub" macro="macro.ce_civilian_hub_macro" owner="faction.ownerless" sector="$Sector" state="componentstate.operational" rawname="'{974201,1}'" rawdescription="'{974201,2}'" method="default">
                 <safepos x="$Sector.coreposition.x + 50km" y="0m" z="$Sector.coreposition.z" radius="20km" includeplotbox="true" allowyaxis="false"/>
-                <stage exact="0"/>
               </create_station>
               <do_if value="$NewHub.exists">
                 <set_value name="$R.$Hub" exact="$NewHub"/>
@@ -749,6 +730,9 @@
                 <include_actions ref="ResetHistory"/>
                 <debug_text text="'[CE] Construction site created: %s earned_level=%s generation=%s'.[$NewHub,$R.$Level,$R.$Generation]"/>
               </do_if>
+            </do_if>
+            <do_else>
+              <include_actions ref="md.CE_Construction.ReportFailure"/>
             </do_else>
           </do_if>
           <set_value name="$Hub" exact="$R.$Hub"/>
@@ -882,6 +866,28 @@
               <append_to_list name="$R.$DisplayOrder" exact="$Ware"/>
             </do_if>
           </do_for_each>
+        </do_if>
+      </actions>
+    </library>
+    <library name="CaptureSectorProfile">
+      <actions>
+        <do_if value="not $SectorProfiles.{$Sector}?">
+          <set_value name="$SavedRecord" exact="@$R"/>
+          <set_value name="$ProfileRace" exact="@$Sector.owner.primaryrace"/>
+          <set_value name="$CapturedRace" exact="$ProfileRace"/>
+          <set_value name="$ProfileKey" exact="if $ProfileRace then '$' + $ProfileRace.id else '$unknown'"/>
+          <do_if value="not $RaceProfiles.{$ProfileKey}?">
+            <set_value name="$R" exact="table[$ProfileRace=if $ProfileRace then $ProfileRace.id else '']"/>
+            <set_value name="$CandidateComplete" exact="false"/>
+            <set_value name="$CandidateValid" exact="false"/>
+            <set_value name="$CandidateDefinitions" exact="[]"/>
+            <include_actions ref="md.CE_PopulationProfiles.Build"/>
+            <set_value name="$ProfileRace" exact="$CapturedRace"/>
+            <include_actions ref="md.CE_Construction.Resolve"/>
+            <set_value name="$RaceProfiles.{$ProfileKey}" exact="table[$Race=$R.$ProfileRace,$Definitions=$CandidateDefinitions,$Valid=$CandidateComplete and $CandidateValid,$Construction=$Construction]"/>
+          </do_if>
+          <set_value name="$SectorProfiles.{$Sector}" exact="$RaceProfiles.{$ProfileKey}"/>
+          <set_value name="$R" exact="$SavedRecord"/>
         </do_if>
       </actions>
     </library>

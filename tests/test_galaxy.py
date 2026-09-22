@@ -116,13 +116,13 @@ class GalaxyTests(unittest.TestCase):
         self.assertEqual(rb.Wares['water'].Reserve,100)
         self.assertEqual(rb.Wares['water'].Delivered,0)
         self.assertFalse(self.run.expr(guard))
-    def test_singleton_save_is_adopted_only_in_its_sector(self):
+    def test_fresh_construction_does_not_adopt_legacy_singleton(self):
         a,b=self.sector(),self.sector()
         old=Object(exists=True,iswreck=False,sector=a,owner='ownerless',isclass=Table(container=False),buildstorage=NIL)
         self.run.env['player'].entity['ce_hub']=old
         ra=self.reconcile(a,8524100000);rb=self.reconcile(b,8524100000)
-        self.assertIs(ra.Hub,old);self.assertIsNot(rb.Hub,old)
-        self.assertEqual(len(self.created),1)
+        self.assertIsNot(ra.Hub,old);self.assertIsNot(rb.Hub,old)
+        self.assertEqual(len(self.created),2)
 
     def test_delivery_publishes_wares_without_controller_local_definitions(self):
         r=self.reconcile(self.sector(),8524100000)

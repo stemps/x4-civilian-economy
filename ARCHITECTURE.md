@@ -6,7 +6,8 @@
 | --- | --- |
 | `md/ce_ownerless_hub.xml` | Persistent sector registry, native construction, ten-level construction lifecycle and captured native delivery listeners. |
 | `md/ce_reserves.xml` | Synchronous reserve migration, consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
-| `md/ce_population_profiles.xml` | Synchronous population-profile configuration and resolution from live race workforce resources; no persistent cue state. |
+| `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
+| `md/ce_construction.xml` | Racial component selection, asynchronous native layout generation, validation, queue recovery and module readiness. |
 | `ui/ce_population.lua` | Native accessible-population reader; no economic state. |
 | `ui/ce_debug_tools.lua` | Optional UI Extensions testing menu and scoped ownerless interaction fallback. |
 | `ui/ce_hub_status.lua` | Read-only cached hub snapshots, metric formatting and explanatory text for the map. |
@@ -33,8 +34,7 @@ Each hub's instantiated delivery watcher has its own namespace and captured
 record reference, preventing later loop iterations from redirecting deliveries.
 Live demand records own `$Active` membership and `$DisplayOrder`. Diagnostics
 read those records through the captured hub context, independently of definitions.
-Destruction affects only the matching record. Existing leveling saves retain
-their registry; energy-only prototype saves remain blocked.
+Destruction affects only the matching record. Schema 4 requires a fresh game; earlier hub saves remain blocked without conversion.
 
 Demand scales by accessible population / 8,524,100,000. Population changes accrue
 at the previous rate before updating rates, retaining reserves and growth. Zero
@@ -43,8 +43,7 @@ are selected by exact hub identity.
 
 ## Local demand profiles
 
-`CE_PopulationProfiles.Build` is included synchronously by reconciliation/save-load
-`RefreshProfile`. It returns candidate data without modifying the saved record. It enumerates `lookup.race.list` and `lookup.ware.list`, using
+`CE_PopulationProfiles.Build` is included synchronously by startup `CaptureSectorProfile`. It returns candidate data without modifying the saved record. It enumerates `lookup.race.list` and `lookup.ware.list`, using
 `race.workforce.resources.list` for local sustain. Pharmaceutical resources unlock
 at level 3; other sustain resources at level 1. Common water and energy unlock at
 levels 1 and 2. Industrial goods unlock at levels 4–7 and luxuries at level 9;
@@ -54,11 +53,13 @@ medicine. First definition wins: local staples cannot be downgraded or duplicate
 by common/imported demand. Each native staple gets the existing 2,000 units/hour
 baseline; each foreign staple gets 500. Multiple staples are additive requirements.
 
-The initial sector owner's primary race is a population proxy, not a measurement
-of planetary ethnicity. `$ProfileRace` is retained across conquest and hub loss.
-An unknown owner receives common demand without invented local food; explicit
-sector overrides can resolve this. This is a single-culture profile, not a weighted
-racial demographic simulation. Existing saves capture their current owner on migration.
+`Init.$SectorProfiles` captures every discovered sector before requesting population,
+including sectors below the hub threshold. `Init.$RaceProfiles` caches one immutable
+demand/component snapshot per race. The sector owner's primary race is a population
+proxy, not a measurement of ethnicity. Conquest, reload, replacement and later
+eligibility reuse that snapshot. Newly introduced sectors capture on first discovery.
+Unknown owners cannot construct a hub without valid components. No sector overrides
+or migration of earlier construction schemas are supported.
 
 Conversion adapters patch `md/ce_population_profiles.xml` through the usual nested
 extension path and append `set_value` actions to library `Configure`:
@@ -67,7 +68,6 @@ extension path and append `set_value` actions to library `Configure`:
 - `$ProfileMedicines.{'$raceid'}`: replacement list of medicine ware-ID strings.
 - `$ProfileRaceDemands.{'$raceid'}`: replacement list of `[ware-ID, unlock-level,
   baseline-units/hour]` for common/industrial/luxury demand.
-- `$ProfileSectorRaces.{'$sector_macro_id'}`: race-ID string for a sector.
 - `$ProfileCommon`: default common/industrial/luxury rows for other races.
 
 An absent override inherits the native/default list; an explicit empty list disables
@@ -81,16 +81,49 @@ For example, an adapter can append:
 ```xml
 <set_value name="$ProfileStaples.{'$customrace'}" exact="['customgrain','customrations']"/>
 <set_value name="$ProfileMedicines.{'$customrace'}" exact="['custommedicine']"/>
-<set_value name="$ProfileSectorRaces.{'$custom_sector_macro'}" exact="'customrace'"/>
 ```
 
-Save loads rebuild definitions and compare ware/unlock/rate membership independent
-of ordering. Changed profiles and ordinary reloads retain reserves and growth. Retired ware records keep reserves, paid/delivered totals and unloading
-references, but have zero rates/caps, no new reservations and no growth/UI
-requirement. Existing unloading finishes through the original watcher. Leveling
-and population scaling still run through `ApplyLevel`. Resolver tests mock native
-lookups, including conversion-only wares and races; live engine validation remains
-necessary, especially save migration with reserved trades.
+Save loads reuse saved definitions. `RefreshProfile` initializes a hub record from
+its sector snapshot only if definitions are absent. `ApplyLevel` changes rates and
+unlocks against that saved basket; population changes scale rates without rebuilding
+preferences. Adapters must be installed before starting a new game.
+
+## Racial construction
+
+`CE_Construction.Resolve` queries native `get_module_definition` categories for the
+captured race, without filtering by the ownerless hub faction. It chooses the
+smallest positive container storage, S/M dock (by combined docking capacity), and
+capital pier (`numpierdocks`). Ties use native enumeration order; saved choices never
+reroll. All racial connection modules become the allowed connector pool.
+
+Adapters can append to `CE_Construction.Configure` a race-keyed table such as:
+
+```xml
+<set_value name="$ConstructionOverrides.{'$customrace'}"
+  exact="table[$Dock=macro.custom_dock_macro,$Storage=macro.custom_storage_macro,$Pier=macro.custom_pier_macro,$Connectors=[macro.custom_connector_macro]]"/>
+```
+
+Each field is optional and replaces that role. Modules must support the required
+class/capacity. Defaults follow loaded module definitions, including conversion
+replacements. No fallback to Argon components is allowed.
+
+A new hub is an empty station shell with build storage and a reserved growth plot.
+`Generate` has an instantiated namespace holding the record, station, token, level,
+and completed base sequence. `create_construction_sequence` runs asynchronously
+without `immediate`, with a ten-second timeout and `failsafe=false`. Completion
+checks identity/token, exact functional module multiplicities, allowed connectors,
+and preservation of every base entry ID/macro before queuing normal construction.
+Level 1 requires dock/storage/pier; every later level adds storage, 4/7/10 add docks,
+and 6/10 add piers. Generated connector counts are deliberately unconstrained.
+
+Saved `CompletedSequence` and `TargetSequence` define readiness by native plan entry
+IDs, including connectors. Expansion retains completed-level demand. On reload an
+unfinished generation watcher is cancelled and its request retried; queued builds
+retain their sequence. A lost build task is requeued from the saved target sequence.
+Hub destruction clears sequences but retains the sector preferences and earned level.
+Invalid components/layouts log a diagnostic and block without substitution.
+The packaged static Argon plans and generator remain reference fixtures; racial
+runtime construction does not select them.
 
 ## UI and population bridge
 
@@ -152,7 +185,7 @@ in-game acceptance.
 Automated tests mock native actions. Native construction, object marshalling
 through blackboards, unloading and save/load still need disposable-save tests.
 The MD controller covers several subsystems; a future refactor should separate
-reconciliation, construction and demand libraries while preserving saved cue
+reconciliation and demand libraries while preserving saved cue
 namespaces and record references.
 
 String keys in MD profile tables require a literal `$` prefix. Raw ware/race IDs
@@ -169,13 +202,11 @@ is replaced only after both stages complete. Missing discovery is an error;
 explicitly empty resolved configuration is valid. Optional unavailable wares can
 still be skipped when a useful profile resolves.
 
-`RefreshProfile` compares validated definitions with the saved set. A changed
-profile accrues old consumption before committing prepared rates; both paths
-preserve reserves and growth. `ApplyLevel` uses committed definitions without rebuilding
-profiles. `CommitRates` keeps ware/offer/deal identities and lifetime counters,
-updates active membership/order and rebases the simulation clock.
-Failures retain existing state, log only transitions/stage changes, and retry on
-five-minute reconciliation. New hubs without a valid profile wait without offers.
+`RefreshProfile` commits validated saved-snapshot definitions only to records without
+an existing basket. `ApplyLevel` uses committed definitions without rediscovery.
+`CommitRates` retains ware/offer/deal identities and lifetime counters. Failed startup
+snapshots remain invalid rather than changing preferences later; correct the adapter
+and start a fresh game. Failed rate preparation preserves the last committed state.
 
 `EnsureDisplayMetadata` migrates saved records without resetting progress or rates.
 `PublishDiagnostics` reads live active records, validates row completeness and

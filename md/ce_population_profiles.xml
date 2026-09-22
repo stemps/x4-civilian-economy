@@ -9,10 +9,9 @@
              String table keys use a $ prefix (e.g. $terran).
              RaceDemands replaces the common industrial/luxury list for that race.
              Staples/Medicines override native workforce baskets, including empty lists.
-             SectorRaces maps sector macro names to race IDs. -->
+             All preferences are captured once at game initialization. -->
         <set_value name="$ProfileStaples" exact="table[]"/>
         <set_value name="$ProfileMedicines" exact="table[]"/>
-        <set_value name="$ProfileSectorRaces" exact="table[]"/>
         <set_value name="$ProfileRaceDemands" exact="table[]"/>
         <set_value name="$ProfileCommon" exact="[['water',1,2000.0f],['energycells',2,10000.0f],['refinedmetals',4,300.0f],['siliconwafers',4,200.0f],['microchips',5,100.0f],['scanningarrays',6,40.0f],['advancedcomposites',6,200.0f],['advancedelectronics',7,40.0f],['spacefuel',9,100.0f],['spaceweed',9,100.0f],['majadust',9,100.0f]]"/>
         <set_value name="$ProfileRaceDemands.{'$terran'}" exact="[['water',1,2000.0f],['energycells',2,10000.0f],['metallicmicrolattice',4,300.0f],['siliconcarbide',5,200.0f],['computronicsubstrate',7,40.0f],['stimulants',9,100.0f]]"/>
@@ -27,7 +26,7 @@
         <set_value name="$CandidateRequested" exact="0"/>
         <set_value name="$CandidateStage" exact="'discovery'"/>
         <include_actions ref="md.CE_PopulationProfiles.Configure"/>
-        <do_if value="typeof lookup.ware.list == datatype.list and typeof lookup.race.list == datatype.list and typeof $ProfileCommon == datatype.list and typeof $ProfileStaples == datatype.table and typeof $ProfileMedicines == datatype.table and typeof $ProfileRaceDemands == datatype.table and typeof $ProfileSectorRaces == datatype.table">
+        <do_if value="typeof lookup.ware.list == datatype.list and typeof lookup.race.list == datatype.list and typeof $ProfileCommon == datatype.list and typeof $ProfileStaples == datatype.table and typeof $ProfileMedicines == datatype.table and typeof $ProfileRaceDemands == datatype.table">
           <set_value name="$ProfileWares" exact="table[]"/>
           <do_for_each name="$ProfileWare" in="lookup.ware.list">
             <do_if value="$ProfileWare.iscargo and $ProfileWare.waretransport == waretransport.container">
@@ -75,9 +74,6 @@
             <do_if value="@$Sector.owner.primaryrace">
               <set_value name="$CandidateRace" exact="$Sector.owner.primaryrace.id"/>
             </do_if>
-          </do_if>
-          <do_if value="@$Sector.macro and $ProfileSectorRaces.{'$' + $Sector.macro.id}?">
-            <set_value name="$CandidateRace" exact="$ProfileSectorRaces.{'$' + $Sector.macro.id}"/>
           </do_if>
           <set_value name="$CandidateDefinitions" exact="[]"/>
           <set_value name="$ProfileSeen" exact="table[]"/>

@@ -3,7 +3,7 @@
 Native race.workforce.resources is mocked with extracted workunit recipes; this
 does not assert that the engine bridge or a particular overhaul has been tested.
 """
-from test_prototype import Runner, Table, List, Ware, NIL, REF, definitions, E
+from test_prototype import Runner, Table, List, Ware, NIL, REF, definitions, E, Component
 import unittest
 
 
@@ -29,7 +29,7 @@ class ProfileTests(unittest.TestCase):
         return race
 
     def select(self, race):
-        self.run.env['Sector'] = Table(owner=Table(primaryrace=race))
+        self.run.env['Sector'] = Component(owner=Table(primaryrace=race))
 
     def apply(self, level=1):
         self.r['Level'] = level
@@ -112,11 +112,10 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(self.r.Wares['foreignfood'].Rate, 500)
         self.assertEqual(self.r.Wares['foodrations'].Rate, 2000 * 1.25 ** 7)
 
-    def test_overrides_replace_empty_lists_and_sector_identity(self):
+    def test_race_overrides_replace_empty_lists(self):
         self.ware('rationreplacement', 'customgroup')
-        self.run.env['Sector']['macro'] = Table(id='custom_sector')
+        self.select(self.run.env['lookup'].race.list[2])
         self.configure([
-            '<set_value name="$ProfileSectorRaces.{\'$custom_sector\'}" exact="\'paranid\'"/>',
             '<set_value name="$ProfileStaples.{\'$paranid\'}" exact="[\'rationreplacement\',\'missing\']"/>',
             '<set_value name="$ProfileMedicines.{\'$paranid\'}" exact="[]"/>',
             '<set_value name="$ProfileRaceDemands.{\'$paranid\'}" exact="[]"/>',
@@ -137,48 +136,35 @@ class ProfileTests(unittest.TestCase):
         self.select(self.run.env['lookup'].race.list[2])
         self.assertEqual(self.apply(), {'foodrations', 'water'})
         self.setUp()
-        self.run.env['Sector'] = Table(owner=NIL)
+        self.run.env['Sector'] = Component(owner=NIL)
         self.assertEqual(self.apply(), {'water'})
         self.assertEqual(self.r.ProfileRace, '')
 
-    def test_unchanged_reload_preserves_history_changed_basket_retires_demand(self):
+    def test_changed_basket_does_not_change_frozen_preferences(self):
         self.apply(3)
         old = self.r.Wares['foodrations']
         old.update(Reserve=50, Delivered=25, Paid=1000)
         self.r['GrowthSeconds'] = 720
-        reserve = old.Reserve
-        self.run.library('RefreshProfile')
-        self.assertEqual(self.r.GrowthSeconds, 720)
-        self.assertEqual(old.Reserve, reserve)
-        self.run.library('PublishDiagnostics')
-        self.assertEqual([row[1] for row in self.r.Snapshot[9]],
-                         ['foodrations','medicalsupplies','water','energycells'])
         replacement = self.ware('newrations')
-        argon = self.run.env['lookup'].race.list[1]
-        argon.workforce['resources'] = List([replacement, self.run.env['ware'].medicalsupplies])
+        self.run.env['lookup'].race.list[1].workforce['resources'] = List([replacement])
         self.run.library('RefreshProfile')
-        self.assertEqual(self.r.GrowthSeconds, 720)
-        self.assertEqual((old.Rate, old.Cap, old.Reserve, old.Delivered, old.Paid), (0, 0, 50, 25, 1000))
-        self.assertGreater(self.r.Wares['newrations'].Rate, 0)
-        self.run.env['player']['age'] = 60
-        self.run.library('AccrueAll')  # retired zero-rate record must not divide by zero
-        self.assertEqual(old.Reserve, 50)
-        self.run.library('PublishDiagnostics')
-        self.assertNotIn('foodrations', [row[1] for row in self.r.Snapshot[9]])
+        self.assertEqual(self.r.GrowthSeconds,720)
+        self.assertEqual((old.Rate,old.Reserve,old.Delivered,old.Paid),(3125,50,25,1000))
+        self.assertNotIn('newrations',self.r.Wares)
+        self.run.library('ApplyLevel')
+        self.assertNotIn('newrations',self.r.Wares)
 
-    def test_legacy_profile_migrates_without_losing_level_or_counters(self):
+    def test_lost_record_definitions_recover_from_saved_sector_not_new_owner(self):
         self.apply(4)
-        self.r['Target'] = 5
-        self.r.Wares['foodrations'].update(Demand=12, Delivered=9)
+        self.r['Target']=5
+        self.r.Wares['foodrations']['Delivered']=9
         del self.r['Definitions']
-        del self.r['ProfileVersion']
-        del self.r['ProfileRace']
-        self.select(self.run.env['lookup'].race.list[2])
+        self.run.env['Sector'].owner.primaryrace=self.run.env['lookup'].race.list[2]
         self.run.library('RefreshProfile')
-        self.assertEqual((self.r.Level, self.r.Target), (4, 5))
-        self.assertGreater(self.r.Wares['sojahusk'].Rate, 0)
-        self.assertEqual(self.r.Wares['foodrations'].Rate, 0)
-        self.assertEqual(self.r.Wares['foodrations'].Delivered, 9)
+        self.assertEqual((self.r.Level,self.r.Target),(4,5))
+        self.assertEqual(self.r.ProfileRace,'argon')
+        self.assertGreater(self.r.Wares['foodrations'].Rate,0)
+        self.assertEqual(self.r.Wares['foodrations'].Delivered,9)
 
     def test_retired_offer_stops_new_reservations_but_finishes_unloading(self):
         self.apply()

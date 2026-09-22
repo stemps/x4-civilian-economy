@@ -4,7 +4,7 @@ from pathlib import Path
 from lxml import etree as E
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
-from md_test_runtime import Runner, Table, List, NIL, wrap
+from md_test_runtime import Runner, Table, List, NIL, wrap, Component
 from generate_plans import plans
 REF=ROOT.parent.parent/'reference'
 
@@ -27,7 +27,11 @@ def definitions(run):
         types[n.get('ware')] for n in recipes.xpath('/wares/ware[@id="workunit_busy"]/production[@method=$method]/primary/ware',method='default' if name == 'argon' else name)
     ]))) for name in ('argon','paranid','teladi')])
     run.env.update(ware=types, lookup=Table(ware=Table(list=List(list(types.values()))),race=Table(list=races)),
-                   waretransport=Table(container='container'), Sector=Table(owner=Table(primaryrace=races[1])))
+                   waretransport=Table(container='container'), Sector=Component(owner=Table(primaryrace=races[1])))
+    run.env.update(SectorProfiles=Table(),RaceProfiles=Table(),Schema=4)
+    def resolve():
+        run.env['Construction']=Table(Valid=True,Dock='dock',Storage='storage',Pier='pier',Connectors=List(['connector']))
+    run.stubs['md.CE_Construction.Resolve']=resolve
     previous=run.env.get('R',NIL)
     run.env['R']=Table()
     run.library('md.CE_PopulationProfiles.Build')
@@ -151,7 +155,7 @@ class ContentTests(unittest.TestCase):
         listener=t.xpath('//cue[@name="DeliveryFinished"]/conditions/event_trade_completed')[0]
         self.assertEqual(set(listener.attrib),{'buyer','seller'})
         self.assertTrue(t.xpath('//cue[@name="Init"]//set_value[@name="$Blocked"]'))
-        self.assertTrue(t.xpath('//library[@name="QueueExpansion"]//do_if[contains(@value,"builds.queued.count")]'))
+        self.assertTrue(Runner().construction.xpath('//library[@name="Queue"]//do_if[contains(@value,"builds.queued.count")]'))
         self.assertFalse(t.xpath('//reward_player|//set_faction_relation|//destroy_object|//remove_trade_offer'))
         patch=E.parse(str(ROOT/'aiscripts/build.buildstorage.xml')).find('replace')
         base=E.parse(str(REF/'aiscripts/build.buildstorage.xml'))
@@ -169,7 +173,8 @@ class LifecycleTests(unittest.TestCase):
                        planmodule=Table({str(i):Table(isoperational=i<4) for i in range(6)}),
                        buildstorage=Table(exists=True,builds=Table(queued=List(),inprogress=List()),buildmodule='module'))
         self.r=Table(Level=1,Target=2,Build=NIL,Hub=self.hub,InitializedHub=self.hub,Operational=True,
-                     Wares=Table(),Transfers=Table(),PlotReady=True,PauseOffers=False,TestUpgrade=False)
+                     Wares=Table(),Transfers=Table(),PlotReady=True,PauseOffers=False,TestUpgrade=False,
+                     CompletedSequence=List(self.hub.constructionsequence[:4]),TargetSequence=self.hub.constructionsequence)
         self.run.env['R']=self.r;self.run.library('ApplyLevel')
         for name in ('FundAccounts','EnsureManager','RenameHub','UpdateOffers','PublishDiagnostics','AssignBuilder'):
             self.run.stubs[name]=lambda:None
@@ -199,6 +204,7 @@ class LifecycleTests(unittest.TestCase):
             self.r.Wares['water']['Reserve']=777.25
             self.hub['constructionsequence']=List([Table(id=str(i)) for i in range(count)])
             self.hub['planmodule']=Table({str(i):Table(isoperational=True) for i in range(count)})
+            self.r['TargetSequence']=self.hub.constructionsequence
             self.run.library('UpdateHub')
             self.assertEqual((self.r.Level,self.r.Target,self.r.GrowthSeconds),(target,0,0))
             self.assertEqual(self.r.Wares['water'].Reserve,777.25)
