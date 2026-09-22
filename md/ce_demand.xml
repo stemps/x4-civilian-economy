@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Demand" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Synchronous libraries in the caller namespace. Controller entry points remain stable. -->
+    <library name="RefreshProfile">
+      <actions>
+        <do_if value="not $R.$Definitions?">
+          <include_actions ref="md.CE_Reserves.SyncAll"/>
+          <!-- Requires R and Sector. Preparation has no writes to R. -->
+          <set_value name="$CandidateComplete" exact="false"/>
+          <set_value name="$CandidateStage" exact="'start'"/>
+          <include_actions ref="md.CE_OwnerlessHub.CaptureSectorProfile"/>
+          <set_value name="$FrozenProfile" exact="$SectorProfiles.{$Sector}"/>
+          <set_value name="$CandidateRace" exact="$FrozenProfile.$Race"/>
+          <set_value name="$CandidateDefinitions" exact="$FrozenProfile.$Definitions"/>
+          <set_value name="$CandidateComplete" exact="true"/>
+          <set_value name="$CandidateValid" exact="$FrozenProfile.$Valid"/>
+          <set_value name="$R.$Construction" exact="$FrozenProfile.$Construction"/>
+          <do_if value="$CandidateComplete and $CandidateValid">
+            <set_value name="$CandidateRatesComplete" exact="false"/>
+            <include_actions ref="md.CE_OwnerlessHub.PrepareRates"/>
+          </do_if>
+          <do_if value="$CandidateComplete and $CandidateValid and $CandidateRatesComplete">
+            <set_value name="$R.$Definitions" exact="$CandidateDefinitions"/>
+            <set_value name="$R.$ProfileRace" exact="$CandidateRace"/>
+            <include_actions ref="md.CE_OwnerlessHub.CommitRates"/>
+            <do_if value="@$R.$ProfileError">
+              <debug_text text="'[CE] Profile recovered: %s'.[$R.$Hub]"/>
+            </do_if>
+            <set_value name="$R.$ProfileError" exact="false"/>
+          </do_if>
+          <do_else>
+            <do_if value="not @$R.$ProfileError or @$R.$ProfileErrorStage != $CandidateStage">
+              <debug_text text="'[CE] Profile refresh failed: hub=%s sector=%s stage=%s; retaining last valid state'.[$R.$Hub,$Sector,$CandidateStage]"/>
+            </do_if>
+            <set_value name="$R.$ProfileError" exact="true"/>
+            <set_value name="$R.$ProfileErrorStage" exact="$CandidateStage"/>
+          </do_else>
+        </do_if>
+      </actions>
+    </library>
+    <library name="ApplyLevel">
+      <actions>
+        <include_actions ref="md.CE_Reserves.SyncAll"/>
+        <!-- Level/population changes use committed definitions, never rebuild profiles. -->
+        <do_if value="$R.$Definitions?">
+          <set_value name="$CandidateDefinitions" exact="$R.$Definitions"/>
+          <set_value name="$CandidateValid" exact="true"/>
+          <set_value name="$CandidateRatesComplete" exact="false"/>
+          <include_actions ref="md.CE_OwnerlessHub.PrepareRates"/>
+          <do_if value="$CandidateValid and $CandidateRatesComplete">
+            <include_actions ref="md.CE_OwnerlessHub.CommitRates"/>
+          </do_if>
+        </do_if>
+        <do_else>
+          <include_actions ref="md.CE_OwnerlessHub.RefreshProfile"/>
+        </do_else>
+      </actions>
+    </library>
+    <library name="PrepareRates">
+      <actions>
+        <set_value name="$CandidateStage" exact="'rates'"/>
+        <set_value name="$CandidateRates" exact="[]"/>
+        <set_value name="$CandidateSeen" exact="table[]"/>
+        <set_value name="$CandidateChecked" exact="0"/>
+        <do_for_each name="$Definition" in="$CandidateDefinitions">
+          <set_value name="$Ware" exact="$Definition.{1}"/>
+          <do_if value="$CandidateSeen.{$Ware}? or $Definition.{2} lt 1 or $Definition.{2} gt 10 or $Definition.{2} != ($Definition.{2})i or not ($Definition.{3} gt 0 and $Definition.{3} le 1000000000000.0f)">
+            <set_value name="$CandidateValid" exact="false"/>
+          </do_if>
+          <set_value name="$CandidateSeen.{$Ware}" exact="true"/>
+          <do_if value="$Definition.{2} le $R.$Level">
+            <set_value name="$Rate" exact="$Definition.{3}"/>
+            <do_if value="$R.$Factor?">
+              <set_value name="$Rate" exact="$Rate * $R.$Factor"/>
+            </do_if>
+            <do_all exact="$R.$Level - $Definition.{2}">
+              <set_value name="$Rate" exact="$Rate * 1.25f"/>
+            </do_all>
+            <do_if value="not ($Rate ge 0 and $Rate le 1000000000000.0f)">
+              <set_value name="$CandidateValid" exact="false"/>
+            </do_if>
+            <set_value name="$W" exact="table[]"/>
+            <include_actions ref="md.CE_OwnerlessHub.UpdateWarePrice"/>
+            <do_if value="not $W.$Price? or not ($W.$Price ge 0Cr)">
+              <set_value name="$CandidateValid" exact="false"/>
+            </do_if>
+            <append_to_list name="$CandidateRates" exact="[$Ware,$Rate,$W.$Price]"/>
+          </do_if>
+          <set_value name="$CandidateChecked" operation="add"/>
+        </do_for_each>
+        <do_if value="$CandidateChecked != $CandidateDefinitions.count">
+          <set_value name="$CandidateValid" exact="false"/>
+        </do_if>
+        <set_value name="$CandidateRatesComplete" exact="true"/>
+      </actions>
+    </library>
+    <library name="CommitRates">
+      <actions>
+        <!-- Synchronous commit of validated rates; keep record/offer/deal identities. -->
+        <set_value name="$R.$DisplayOrder" exact="[]"/>
+        <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+          <set_value name="$R.$Wares.{$Ware}.$Active" exact="false"/>
+          <set_value name="$R.$Wares.{$Ware}.$Rate" exact="0.0f"/>
+        </do_for_each>
+        <do_for_each name="$Entry" in="$CandidateRates">
+          <set_value name="$Ware" exact="$Entry.{1}"/>
+          <do_if value="not $R.$Wares.{$Ware}?">
+            <set_value name="$R.$Wares.{$Ware}" exact="table[$Reserve=0.0f,$Demand=0.0f,$Offer=null,$Delivered=0,$Paid=0Cr]"/>
+          </do_if>
+          <set_value name="$W" exact="$R.$Wares.{$Ware}"/>
+          <set_value name="$W.$Active" exact="true"/>
+          <set_value name="$W.$Rate" exact="$Entry.{2}"/>
+          <set_value name="$W.$Price" exact="$Entry.{3}"/>
+          <append_to_list name="$R.$DisplayOrder" exact="$Ware"/>
+        </do_for_each>
+        <include_actions ref="md.CE_OwnerlessHub.RebaseAccrual"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

@@ -1,14 +1,14 @@
 """Failure boundaries: use actual MD actions, including continued engine errors."""
 import copy
 import unittest
-import test_profiles
-from test_prototype import Table, List, Ware, NIL
-from test_galaxy import Object
+from support import ProfileFixture
+from support import Table, List, Ware, NIL
+from support import Object
 
 
 class RefreshSafetyTests(unittest.TestCase):
     def setUp(self):
-        fixture=test_profiles.ProfileTests()
+        fixture=ProfileFixture()
         fixture.setUp()
         fixture.apply()
         self.run,self.r=fixture.run,fixture.r

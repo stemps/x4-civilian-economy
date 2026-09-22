@@ -3,45 +3,12 @@
 Native race.workforce.resources is mocked with extracted workunit recipes; this
 does not assert that the engine bridge or a particular overhaul has been tested.
 """
-from test_prototype import Runner, Table, List, Ware, NIL, REF, definitions, E, Component
+from support import Runner, Table, List, Ware, NIL, REF, definitions, E, Component
+from support import ProfileFixture
 import unittest
 
 
-class ProfileTests(unittest.TestCase):
-    def setUp(self):
-        self.run = Runner()
-        definitions(self.run)
-        self.r = Table(GrowthSeconds=0.0, Last=0.0, Level=1, Target=0, Operational=True, Wares=Table(),
-                       Transfers=Table(), Hub=NIL, Factor=1, Population=8524100000,
-                       PauseOffers=False, PlotReady=False, TestUpgrade=False)
-        self.run.env['R'] = self.r
-
-    def ware(self, name, group='food', transport='container'):
-        ware = Ware(name)
-        ware.group = Table(id=group)
-        ware.waretransport = transport
-        self.run.env['lookup'].ware.list.append(ware)
-        return ware
-
-    def race(self, name, wares):
-        race = Table(id=name, workforce=Table(resources=List(wares)))
-        self.run.env['lookup'].race.list.append(race)
-        return race
-
-    def select(self, race):
-        self.run.env['Sector'] = Component(owner=Table(primaryrace=race))
-
-    def apply(self, level=1):
-        self.r['Level'] = level
-        self.run.library('RefreshProfile')
-        self.run.library('ApplyLevel')
-        return {w for w, state in self.r.Wares.items() if state.Rate > 0}
-
-    def configure(self, statements):
-        actions = self.run.profiles.xpath('//library[@name="Configure"]/actions')[0]
-        for statement in statements:
-            actions.append(E.fromstring(statement))
-
+class ProfileTests(ProfileFixture, unittest.TestCase):
     def test_mock_rejects_unprefixed_profile_keys_and_preserves_literal_sigil(self):
         self.run.env['ProfileFoods']=Table()
         self.assertEqual(self.run.expr("'$' + 'argon'"),'$argon')
@@ -177,7 +144,7 @@ class ProfileTests(unittest.TestCase):
         self.run.native['update_trade'] = lambda n: calls.append((self.run.expr(n.get('amount')), self.run.expr(n.get('desiredamount'))))
         self.run.library('UpdateOffers')
         self.assertEqual(calls, [(0, 0)])
-        from test_galaxy import Object
+        from support import Object
         deal = Object(exists=True, transferredamount=20, unitprice=1200, buyer=self.r.Hub)
         self.r.Transfers[deal] = Ware('foodrations')
         calls.clear()
@@ -200,13 +167,7 @@ class ProfileTests(unittest.TestCase):
         self.assertFalse(self.r.Qualified)
 
 
-class BudgetBalanceTests(unittest.TestCase):
-    setUp = ProfileTests.setUp
-    apply = ProfileTests.apply
-    select = ProfileTests.select
-    configure = ProfileTests.configure
-    ware = ProfileTests.ware
-    race = ProfileTests.race
+class BudgetBalanceTests(ProfileFixture, unittest.TestCase):
 
     EXPECTED = {
         'foodrations': (1, 7140), 'water': (1, 1420), 'energycells': (2, 9380),

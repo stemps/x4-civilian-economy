@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Diagnostics" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Synchronous libraries in the caller namespace. Controller entry points remain stable. -->
+    <library name="PublishDiagnostics">
+      <actions>
+        <include_actions ref="md.CE_Reserves.SyncAll"/>
+        <set_value name="$SnapshotValid" exact="true"/>
+        <do_if value="not ($R.$Level? and $R.$Target? and $R.$Operational? and $R.$GrowthSeconds? and $R.$PauseOffers? and $R.$PlotReady? and $R.$TestUpgrade?)">
+          <set_value name="$SnapshotValid" exact="false"/>
+        </do_if>
+        <set_value name="$Rows" exact="[]"/>
+        <!-- Presentation reads committed demand records, never rebuilds a profile. -->
+        <set_value name="$SnapshotSeen" exact="table[]"/>
+        <set_value name="$ActiveCount" exact="0"/>
+        <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+          <do_if value="@$R.$Wares.{$Ware}.$Active">
+            <set_value name="$ActiveCount" operation="add"/>
+          </do_if>
+        </do_for_each>
+        <do_if value="not $R.$Definitions? and $ActiveCount == 0">
+          <set_value name="$SnapshotValid" exact="false"/>
+        </do_if>
+        <do_for_each name="$Ware" in="$R.$DisplayOrder">
+          <do_if value="$SnapshotSeen.{$Ware}?">
+            <set_value name="$SnapshotValid" exact="false"/>
+          </do_if>
+          <set_value name="$SnapshotSeen.{$Ware}" exact="true"/>
+          <do_if value="$R.$Wares.{$Ware}? and $R.$Wares.{$Ware}.$Active">
+            <set_value name="$W" exact="$R.$Wares.{$Ware}"/>
+            <do_if value="not ($W.$Reserve? and $W.$Cap? and $W.$Rate? and $W.$Delivered? and $W.$Paid?)">
+              <set_value name="$SnapshotValid" exact="false"/>
+            </do_if>
+            <do_if value="not ($W.$Reserve ge 0 and $W.$Cap ge 0 and $W.$Rate ge 0 and $W.$Delivered ge 0 and $W.$Paid ge 0Cr)">
+              <set_value name="$SnapshotValid" exact="false"/>
+            </do_if>
+            <set_value name="$Available" exact="0"/>
+            <set_value name="$Reserved" exact="0"/>
+            <do_if value="$W.$Offer.exists">
+              <set_value name="$Available" exact="$W.$Offer.amount"/>
+              <set_value name="$Reserved" exact="[0,$W.$Offer.offeramount - $Available].max"/>
+            </do_if>
+            <set_value name="$RemainingSeconds" exact="if $W.$Rate gt 0 then $W.$Reserve * 3600.0f / $W.$Rate else 0.0f"/>
+            <append_to_list name="$Rows" exact="[$Ware.name,$W.$Reserve,$W.$Cap,$Available,$Reserved,$W.$Delivered,$W.$Paid / 1Cr,$RemainingSeconds,$W.$Rate,$Ware.id]"/>
+          </do_if>
+        </do_for_each>
+        <do_if value="$Rows.count != $R.$DisplayOrder.count or $Rows.count != $ActiveCount">
+          <set_value name="$SnapshotValid" exact="false"/>
+        </do_if>
+        <do_if value="$SnapshotValid">
+          <set_value name="$Unlocks" exact="[]"/>
+          <do_if value="$R.$Definitions?">
+            <do_for_each name="$NextDefinition" in="$R.$Definitions">
+              <do_if value="$NextDefinition.{2} == $R.$Level + 1">
+                <append_to_list name="$Unlocks" exact="$NextDefinition.{1}.name"/>
+              </do_if>
+            </do_for_each>
+          </do_if>
+          <set_value name="$R.$Snapshot" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$GrowthSeconds,($R.$Level + 1) * 3600.0f,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade,@$R.$Population,@$R.$PauseReason,3,@$R.$ProfileError,false,$Unlocks]"/>
+          <do_if value="@$R.$SnapshotError">
+            <debug_text text="'[CE] Details recovered: %s'.[$R.$Hub]"/>
+          </do_if>
+          <set_value name="$R.$SnapshotError" exact="false"/>
+        </do_if>
+        <do_else>
+          <do_if value="not @$R.$SnapshotError">
+            <debug_text text="'[CE] Details refresh failed: hub=%s stage=rows; retaining previous snapshot'.[$R.$Hub]"/>
+          </do_if>
+          <set_value name="$R.$SnapshotError" exact="true"/>
+          <do_if value="$R.$Snapshot?">
+            <set_value name="$R.$Snapshot" exact="[$R.$Snapshot.{1},$R.$Snapshot.{2},$R.$Snapshot.{3},$R.$Snapshot.{4},$R.$Snapshot.{5},$R.$Snapshot.{6},$R.$Snapshot.{7},$R.$Snapshot.{8},$R.$Snapshot.{9},$R.$Snapshot.{10},@$R.$Snapshot.{11},@$R.$Snapshot.{12},@$R.$Snapshot.{13},@$R.$ProfileError,true,@$R.$Snapshot.{16}]"/>
+          </do_if>
+        </do_else>
+      </actions>
+    </library>
+    <library name="PublishAllDiagnostics">
+      <actions>
+        <set_value name="$HubList" exact="[]"/>
+        <set_value name="$Snapshots" exact="[]"/>
+        <do_for_each name="$RegisteredSector" in="$Registry.keys.list">
+          <set_value name="$Registered" exact="$Registry.{$RegisteredSector}"/>
+          <do_if value="$Registered.$Hub.exists and not $Registered.$Hub.iswreck">
+            <append_to_list name="$HubList" exact="$Registered.$Hub"/>
+            <do_if value="$Registered.$Snapshot?">
+              <append_to_list name="$Snapshots" exact="$Registered.$Snapshot"/>
+            </do_if>
+          </do_if>
+        </do_for_each>
+        <set_value name="player.entity.$ce_hubs" exact="$HubList"/>
+        <set_value name="player.entity.$ce_hub_statuses" exact="$Snapshots"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

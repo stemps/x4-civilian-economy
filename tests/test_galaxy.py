@@ -1,12 +1,9 @@
 """Multi-sector state and scaling checks executing shipped MD libraries."""
 import copy, math
-from test_prototype import Runner, Table, List, NIL, definitions, Ware
+from support import Runner, Table, List, NIL, definitions, Ware
 import unittest
 
-class Object(Table):
-    __hash__=object.__hash__
-    def __eq__(self,other):return self is other
-    def __ne__(self,other):return self is not other
+from support import Object
 
 class GalaxyTests(unittest.TestCase):
     def setUp(self):

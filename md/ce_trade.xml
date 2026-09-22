@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Trade" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Synchronous libraries in the caller namespace. Controller entry points remain stable. -->
+    <library name="RecordDelivery">
+      <actions>
+        <include_actions ref="md.CE_OwnerlessHub.AccrueAll"/>
+        <set_value name="$Ware" exact="$R.$Transfers.{event.param}"/>
+        <set_value name="$W" exact="$R.$Wares.{$Ware}"/>
+        <set_value name="$Delivered" exact="event.param.transferredamount"/>
+        <!-- Consume guard before any work that can publish or signal. -->
+        <remove_value name="$R.$Transfers.{event.param}"/>
+        <set_value name="$W.$Reserve" exact="$Delivered" operation="add"/>
+        <set_value name="$ReserveState" exact="$W"/>
+        <include_actions ref="md.CE_Reserves.SyncWare"/>
+        <set_value name="$W.$Delivered" operation="add" exact="$Delivered"/>
+        <set_value name="$W.$Paid" operation="add" exact="$Delivered * event.param.unitprice"/>
+        <debug_text text="'[CE] Completed delivery: ware=%s amount=%s paid=%s reserve=%s delivered_total=%s'.[$Ware,$Delivered,$Delivered * event.param.unitprice,$W.$Reserve,$W.$Delivered]"/>
+        <include_actions ref="md.CE_OwnerlessHub.UpdateOffers"/>
+        <include_actions ref="md.CE_OwnerlessHub.PublishDiagnostics"/>
+        <include_actions ref="md.CE_OwnerlessHub.PublishAllDiagnostics"/>
+      </actions>
+    </library>
+    <library name="UpdateWarePrice">
+      <actions>
+        <set_value name="$RawPrice" exact="$Ware.minprice + ($Ware.maxprice - $Ware.minprice) / 10"/>
+        <set_value name="$W.$Price" exact="(($RawPrice / 1Cr)i) * 1Cr"/>
+        <do_if value="$W.$Price lt $RawPrice">
+          <set_value name="$W.$Price" operation="add" exact="1Cr"/>
+        </do_if>
+      </actions>
+    </library>
+    <library name="UpdateOffers">
+      <actions>
+        <include_actions ref="md.CE_Reserves.SyncAll"/>
+        <set_value name="$Hub" exact="$R.$Hub"/>
+        <do_for_each name="$Deal" in="$R.$Transfers.keys.list" reverse="true">
+          <do_if value="not $Deal.exists">
+            <remove_value name="$R.$Transfers.{$Deal}"/>
+          </do_if>
+        </do_for_each>
+        <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+          <set_value name="$W" exact="$R.$Wares.{$Ware}"/>
+          <set_value name="$Unloading" exact="false"/>
+          <do_for_each name="$Deal" in="$R.$Transfers.keys.list">
+            <do_if value="$R.$Transfers.{$Deal} == $Ware">
+              <set_value name="$Unloading" exact="true"/>
+            </do_if>
+          </do_for_each>
+          <do_if value="not $Unloading and $Hub.exists and not $Hub.iswreck">
+            <!-- Retired wares keep their last price and accounting record. -->
+            <do_if value="$W.$Rate gt 0">
+              <include_actions ref="md.CE_OwnerlessHub.UpdateWarePrice"/>
+            </do_if>
+            <set_value name="$Desired" exact="if $W.$Rate gt 0 then ($W.$Demand)i else 0"/>
+            <do_if value="$W.$Offer.exists">
+              <set_value name="$Reserved" exact="[0,$W.$Offer.offeramount - $W.$Offer.amount].max"/>
+              <set_value name="$Available" exact="if $R.$Operational and not $R.$PauseOffers then [0,$Desired - $Reserved].max else 0"/>
+              <update_trade trade="$W.$Offer" amount="$Available" desiredamount="$Desired" price="$W.$Price"/>
+            </do_if>
+            <do_elseif value="$Desired gt 0 and $R.$Operational and not $R.$PauseOffers">
+              <create_trade_offer name="$W.$Offer" object="$Hub" buyer="$Hub" ware="$Ware" amount="$Desired" desiredamount="$Desired" price="$W.$Price" virtual="true" virtualmoney="false" playeronly="false"/>
+            </do_elseif>
+          </do_if>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="FundAccounts">
+      <actions>
+        <set_value name="$Hub" exact="$R.$Hub"/>
+        <do_if value="$Hub.isclass.container">
+          <set_object_account object="$Hub"/>
+          <set_value name="$TargetMoney" exact="0Cr"/>
+          <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+            <set_value name="$TargetMoney" operation="add" exact="$R.$Wares.{$Ware}.$Cap * $R.$Wares.{$Ware}.$Price * 2"/>
+          </do_for_each>
+          <do_if value="$Hub.money lt $TargetMoney">
+            <transfer_money from="faction.ownerless" to="$Hub" amount="$TargetMoney - $Hub.money" result="$Funded"/>
+            <debug_text text="'[CE] Civilian funding=%s balance=%s'.[$Funded,$Hub.money]"/>
+          </do_if>
+        </do_if>
+        <do_if value="$Hub.buildstorage.exists">
+          <set_value name="$ManagedObject" exact="$Hub.buildstorage"/>
+          <include_actions ref="md.CE_OwnerlessHub.EnsureManager"/>
+          <set_object_account object="$Hub.buildstorage"/>
+          <set_value name="$BuildBudget" exact="$Hub.buildstorage.wantedmoney"/>
+          <do_if value="$BuildBudget gt $Hub.buildstorage.money">
+            <transfer_money from="faction.ownerless" to="$Hub.buildstorage" amount="$BuildBudget - $Hub.buildstorage.money" result="$Funded"/>
+            <debug_text text="'[CE] Construction funding=%s budget=%s'.[$Funded,$BuildBudget]"/>
+          </do_if>
+        </do_if>
+      </actions>
+    </library>
+    <library name="EnsureManager">
+      <actions>
+        <do_if value="$ManagedObject.isoperational and not $ManagedObject.tradenpc.exists">
+          <!-- Explicit appearance avoids ownerless.primaryrace lookup; ownership stays ownerless. -->
+          <create_cue_actor name="$Manager" cue="md.CE_OwnerlessHub.Init">
+            <select faction="faction.argon" tags="controlpost.manager.tag"/>
+            <owner exact="faction.ownerless"/>
+          </create_cue_actor>
+          <do_if value="$Manager">
+            <assign_control_entity object="$ManagedObject" actor="$Manager" post="controlpost.manager" transfer="true"/>
+            <remove_cue_actor actor="$Manager" cue="md.CE_OwnerlessHub.Init"/>
+            <create_ai_unit object="$ManagedObject"/>
+            <debug_text text="'[CE] Ownerless manager initialised on %s'.[$ManagedObject]"/>
+          </do_if>
+          <do_else>
+            <debug_text text="'[CE] BLOCKED: could not create ownerless manager on %s'.[$ManagedObject]"/>
+          </do_else>
+        </do_if>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

@@ -15,6 +15,7 @@ status = {42, 1, 0, true, 60, 120, false, true,
 local C = {
  GetPlayerID=function() return 1 end,
  IsValidComponent=function() return valid end,
+ IsObjectKnown=function() return true end,
  GetCurrentBuildProgress=function() return progress end,
  IsBuildWaitingForSecondaryComponentResources=function() return waiting end,
  ForceBuildCompletion=function(id) assert(id==42);calls=calls+1 end,
@@ -32,6 +33,7 @@ GetNPCBlackboard=function(id,key)
  if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 21600, false, true, {}, false, nil, nil, 3}} end
  error(key)
 end
+getElapsedTime=function() return 0 end
 ConvertStringToLuaID=tonumber
 ConvertStringTo64Bit=tonumber
 ReadText=function(_,id) assert(translations[id]);return translations[id] end
@@ -89,5 +91,27 @@ menu.componentSlot.component=77;open();assert(#entries==0)
 menu.componentSlot.component=42;status[1]=42;status[11]=18000000000;open()
 assert(entries[4].text==translations[44])
 assert(entries[4].mouseOverText:find('18000000000',1,true))
+
+-- Display caching must never authorize a command after the underlying state changes.
+CEHubStatus.reset()
+status[3]=0;status[4]=true;status[8]=true
+local cached=CEHubStatus.get(42)
+assert(cached.available and cached.target==0)
+open();local queued=action(40);local count=#commands
+local previous=status;status={};for key,value in pairs(previous) do status[key]=value end
+status[3]=2
+assert(CEHubStatus.get(42).target==0)
+queued.script();assert(#commands==count)
+status[3]=0;open();queued=action(40)
+status[13]=2;queued.script();assert(#commands==count)
+status[13]=3;open();queued=action(40)
+marked=false;queued.script();assert(#commands==count)
+marked=true;status[13]=3
+-- Fresh and cached consumers share named decoding, including test-only fields.
+CEHubStatus.reset();status[10]=true
+local display,fresh=CEHubStatus.get(42),CEHubStatus.getFresh(42)
+assert(display.testUpgrade and fresh.testUpgrade)
+assert(display.wares[1].reserve==fresh.wares[1].reserve)
+assert(display.wares[1].key==fresh.wares[1].key)
 ''')
 print('LuaJIT syntax, localized diagnostics, stale-object guards and testing commands passed')

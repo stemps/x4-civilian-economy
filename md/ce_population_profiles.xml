@@ -24,7 +24,8 @@
       <actions>
         <set_value name="$CandidateComplete" exact="false"/>
         <set_value name="$CandidateValid" exact="true"/>
-        <set_value name="$CandidateRace" exact="@$R.$ProfileRace"/>
+        <!-- Input ProfileRace (native race or null); never changes the caller record. -->
+        <set_value name="$CandidateRace" exact="if $ProfileRace then $ProfileRace.id else ''"/>
         <set_value name="$CandidateDefinitions" exact="[]"/>
         <set_value name="$CandidateRequested" exact="0"/>
         <set_value name="$CandidateStage" exact="'discovery'"/>
@@ -41,43 +42,36 @@
           </do_for_each>
           <set_value name="$ProfileFoods" exact="table[]"/>
           <set_value name="$ProfileMeds" exact="table[]"/>
-          <do_for_each name="$ProfileRace" in="lookup.race.list">
-            <set_value name="$ProfileFoods.{'$' + $ProfileRace.id}" exact="[]"/>
-            <do_if value="not @$ProfileFoods.{'$' + $ProfileRace.id}?">
+          <do_for_each name="$DiscoveredRace" in="lookup.race.list">
+            <set_value name="$ProfileFoods.{'$' + $DiscoveredRace.id}" exact="[]"/>
+            <do_if value="not @$ProfileFoods.{'$' + $DiscoveredRace.id}?">
               <set_value name="$CandidateValid" exact="false"/>
             </do_if>
-            <set_value name="$ProfileMeds.{'$' + $ProfileRace.id}" exact="[]"/>
-            <do_if value="not @$ProfileMeds.{'$' + $ProfileRace.id}?">
+            <set_value name="$ProfileMeds.{'$' + $DiscoveredRace.id}" exact="[]"/>
+            <do_if value="not @$ProfileMeds.{'$' + $DiscoveredRace.id}?">
               <set_value name="$CandidateValid" exact="false"/>
             </do_if>
-            <do_for_each name="$ProfileWare" in="$ProfileRace.workforce.resources.list">
+            <do_for_each name="$ProfileWare" in="$DiscoveredRace.workforce.resources.list">
               <do_if value="$ProfileWare.group.id == 'pharmaceutical'">
-                <append_to_list name="$ProfileMeds.{'$' + $ProfileRace.id}" exact="$ProfileWare.id"/>
+                <append_to_list name="$ProfileMeds.{'$' + $DiscoveredRace.id}" exact="$ProfileWare.id"/>
               </do_if>
               <do_else>
-                <append_to_list name="$ProfileFoods.{'$' + $ProfileRace.id}" exact="$ProfileWare.id"/>
+                <append_to_list name="$ProfileFoods.{'$' + $DiscoveredRace.id}" exact="$ProfileWare.id"/>
               </do_else>
             </do_for_each>
-            <do_if value="$ProfileStaples.{'$' + $ProfileRace.id}?">
-              <set_value name="$ProfileFoods.{'$' + $ProfileRace.id}" exact="$ProfileStaples.{'$' + $ProfileRace.id}"/>
-              <do_if value="not @$ProfileFoods.{'$' + $ProfileRace.id}?">
+            <do_if value="$ProfileStaples.{'$' + $DiscoveredRace.id}?">
+              <set_value name="$ProfileFoods.{'$' + $DiscoveredRace.id}" exact="$ProfileStaples.{'$' + $DiscoveredRace.id}"/>
+              <do_if value="not @$ProfileFoods.{'$' + $DiscoveredRace.id}?">
                 <set_value name="$CandidateValid" exact="false"/>
               </do_if>
             </do_if>
-            <do_if value="$ProfileMedicines.{'$' + $ProfileRace.id}?">
-              <set_value name="$ProfileMeds.{'$' + $ProfileRace.id}" exact="$ProfileMedicines.{'$' + $ProfileRace.id}"/>
-              <do_if value="not @$ProfileMeds.{'$' + $ProfileRace.id}?">
+            <do_if value="$ProfileMedicines.{'$' + $DiscoveredRace.id}?">
+              <set_value name="$ProfileMeds.{'$' + $DiscoveredRace.id}" exact="$ProfileMedicines.{'$' + $DiscoveredRace.id}"/>
+              <do_if value="not @$ProfileMeds.{'$' + $DiscoveredRace.id}?">
                 <set_value name="$CandidateValid" exact="false"/>
               </do_if>
             </do_if>
           </do_for_each>
-          <!-- Capture once: conquest does not instantly change civilian culture. -->
-          <do_if value="$CandidateRace == null">
-            <set_value name="$CandidateRace" exact="''"/>
-            <do_if value="@$Sector.owner.primaryrace">
-              <set_value name="$CandidateRace" exact="$Sector.owner.primaryrace.id"/>
-            </do_if>
-          </do_if>
           <set_value name="$CandidateDefinitions" exact="[]"/>
           <set_value name="$ProfileSeen" exact="table[]"/>
           <!-- Local foods precede shared and imported wares, preventing duplicates. -->
@@ -97,9 +91,9 @@
           <do_for_each name="$ProfileDefinition" in="$ProfileCommon">
             <include_actions ref="md.CE_PopulationProfiles.Add"/>
           </do_for_each>
-          <do_for_each name="$ProfileRace" in="lookup.race.list">
-            <do_if value="$ProfileRace.id != $CandidateRace">
-              <do_for_each name="$ProfileID" in="$ProfileFoods.{'$' + $ProfileRace.id}">
+          <do_for_each name="$DiscoveredRace" in="lookup.race.list">
+            <do_if value="$DiscoveredRace.id != $CandidateRace">
+              <do_for_each name="$ProfileID" in="$ProfileFoods.{'$' + $DiscoveredRace.id}">
                 <!-- Water and medicine are sustain, never exotic cuisine. -->
                 <do_if value="$ProfileWares.{'$' + $ProfileID}? and $ProfileWares.{'$' + $ProfileID}.group.id != 'water' and $ProfileWares.{'$' + $ProfileID}.group.id != 'pharmaceutical'">
                   <set_value name="$ProfileDefinition" exact="[$ProfileID,8,75000.0f,'budget']"/>

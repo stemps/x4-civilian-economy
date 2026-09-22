@@ -1,5 +1,5 @@
 """Exercise racial selection and asynchronous layout contracts, without emulating X4."""
-from test_prototype import Runner, Table, List, NIL, Component, definitions, REF
+from support import Runner, Table, List, NIL, Component, definitions, REF
 from lxml import etree as E
 import unittest
 

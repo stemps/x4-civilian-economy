@@ -2,44 +2,8 @@
 import unittest, sys, copy, math
 from pathlib import Path
 from lxml import etree as E
-ROOT=Path(__file__).resolve().parents[1]
-sys.path.insert(0,str(ROOT/'tools'))
-from md_test_runtime import Runner, Table, List, NIL, wrap, Component
+from support import ROOT, REF, Runner, Table, List, NIL, wrap, Component, Ware, definitions
 from generate_plans import plans
-REF=ROOT.parent.parent/'reference'
-
-class Ware(str):
-    averageprice=1600
-    minprice=1000
-    maxprice=2200
-    iscargo=True
-    waretransport="container"
-    @property
-    def id(self): return str(self)
-    @property
-    def name(self): return str(self)
-
-def definitions(run):
-    types=Table({w.get('id'):Ware(w.get('id')) for w in E.parse(str(REF/'libraries/wares.xml')).xpath('/wares/ware[price]')})
-    for node in E.parse(str(REF/'libraries/wares.xml')).xpath('/wares/ware[price]'):
-        types[node.get('id')].group=Table(id=node.get('group',''))
-        types[node.get('id')].averageprice=int(node.find('price').get('average')) * 100
-    recipes=E.parse(str(REF/'libraries/wares.xml'))
-    races=List([Table(id=name,workforce=Table(resources=List([
-        types[n.get('ware')] for n in recipes.xpath('/wares/ware[@id="workunit_busy"]/production[@method=$method]/primary/ware',method='default' if name == 'argon' else name)
-    ]))) for name in ('argon','paranid','teladi')])
-    run.env.update(ware=types, lookup=Table(ware=Table(list=List(list(types.values()))),race=Table(list=races)),
-                   waretransport=Table(container='container'), Sector=Component(owner=Table(primaryrace=races[1])))
-    run.env.update(SectorProfiles=Table(),RaceProfiles=Table())
-    def resolve():
-        run.env['Construction']=Table(Valid=True,Dock='dock',Storage='storage',Pier='pier',Connectors=List(['connector']))
-    run.stubs['md.CE_Construction.Resolve']=resolve
-    previous=run.env.get('R',NIL)
-    run.env['R']=Table()
-    run.library('md.CE_PopulationProfiles.Build')
-    run.env['Definitions']=run.env['CandidateDefinitions']
-    run.env['R']=previous
-    run.env['md']=Table(CE_OwnerlessHub=Table(Init=Table()))
 
 class ControllerTests(unittest.TestCase):
     def setUp(self):
@@ -152,13 +116,13 @@ class ContentTests(unittest.TestCase):
             self.assertGreater(d[3],0)
     def test_safety_and_native_contracts(self):
         t=Runner().tree
-        offers=t.xpath('//create_trade_offer');self.assertEqual(len(offers),1)
+        offers=Runner().trade.xpath('//create_trade_offer');self.assertEqual(len(offers),1)
         self.assertEqual(offers[0].get('virtualmoney'),'false');self.assertEqual(offers[0].get('virtual'),'true')
         listener=t.xpath('//cue[@name="SectorDeliveryFinished"]/conditions/event_trade_completed')[0]
         self.assertEqual(set(listener.attrib),{'buyer','seller'})
         self.assertFalse(t.xpath('//cue[@name="Start" or @name="WatchLevelHub"]'))
         self.assertTrue(Runner().construction.xpath('//library[@name="Queue"]//do_if[contains(@value,"builds.queued.count")]'))
-        self.assertFalse(t.xpath('//reward_player|//set_faction_relation|//destroy_object|//remove_trade_offer'))
+        self.assertFalse(any(tree.xpath('//reward_player|//set_faction_relation|//destroy_object|//remove_trade_offer') for tree in Runner().scripts.values()))
         patch=E.parse(str(ROOT/'aiscripts/build.buildstorage.xml')).find('replace')
         base=E.parse(str(REF/'aiscripts/build.buildstorage.xml'))
         self.assertEqual(len(base.xpath(patch.get('sel'))),1)

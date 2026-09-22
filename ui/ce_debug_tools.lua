@@ -4,63 +4,42 @@ ffi.cdef[[
     void ForceBuildCompletion(uint64_t containerid);
     float GetCurrentBuildProgress(uint64_t containerid);
     bool IsBuildWaitingForSecondaryComponentResources(uint64_t containerid);
-    bool IsValidComponent(uint64_t componentid);
-    uint64_t GetPlayerID(void);
 ]]
 local C = ffi.C
 local section = 'actions_ce_debug'
 local registered = false
-local function read(key)
-    return GetNPCBlackboard(ConvertStringToLuaID(tostring(C.GetPlayerID())), key)
-end
-local function yes(value) return value == true or value == 1 end
-local function text(id, ...)
-    local s = ReadText(974201, id)
-    if select('#', ...) == 0 then return s end
-    return string.format(s, ...)
-end
-local function isHub(id)
-    if not id or id == 0 or not C.IsValidComponent(id) then return false end
-    for _, hub in ipairs(read('$ce_hubs') or {}) do
-        if ConvertStringTo64Bit(tostring(hub)) == id then return true end
-    end
-    return false
-end
-local function statusFor(id)
-    for _, s in ipairs(read('$ce_hub_statuses') or {}) do
-        if CEHubStatus.validSnapshot(s) and s[1] and ConvertStringTo64Bit(tostring(s[1])) == id then return s end
-    end
-end
+local M = CEHubStatus
+local text, isHub, statusFor = M.text, M.isHub, M.getFresh
 local function canFinish(id)
     return isHub(id) and (C.GetCurrentBuildProgress(id) >= 0 or C.IsBuildWaitingForSecondaryComponentResources(id))
 end
 local function canQueue(id)
     local s = statusFor(id)
-    return isHub(id) and s and yes(s[4]) and (tonumber(s[2]) or 10) < 10 and tonumber(s[3]) == 0 and yes(s[8])
+    return s and s.active and s.level < 10 and s.target == 0 and s.plotReady
 end
 local function buildActions()
     local menu = Helper.getMenu('InteractMenu')
     local raw = menu and menu.componentSlot and menu.componentSlot.component
     if not raw then return end
-    local id = ConvertStringTo64Bit(tostring(raw))
+    local id = M.id(raw)
     if not isHub(id) then return end
     local function row(label, hint)
         menu.insertInteractionContent(section, {text=label, active=false, mouseOverText=hint or (label .. '\n' .. text(16))})
     end
     local s = statusFor(id)
     if s then
-        if yes(s[15]) then row(text(88)) end
-        if yes(s[14]) then row(text(89)) end
-        row(text(32, tonumber(s[2]) or 1, tonumber(s[3]) or 0))
-        row(text(yes(s[4]) and 34 or 35))
-        if tonumber(s[3]) > 0 then row(text(99, s[3]), text(105))
-        elseif tonumber(s[2]) == 10 then row(text(100))
-        else row(text(113, s[5]/60, s[6]/60)) end
-        if tonumber(s[11]) then row(text(44), text(45, tonumber(s[11]))) end
-        if not yes(s[8]) then row(text(36), text(43)) end
-        if yes(s[10]) then row(text(37)) end
-        for _, w in ipairs(type(s[9]) == 'table' and s[9] or {}) do
-            row(tostring(w[1]),text(111,tostring(w[1]),string.format('%.1f',w[2]),string.format('%.1f',w[9]),string.format('%.0f',w[3]),w[4],w[5]))
+        if s.stale then row(text(88)) end
+        if s.profileError then row(text(89)) end
+        row(text(32, s.level, s.target))
+        row(text(s.active and 34 or 35))
+        if s.target > 0 then row(text(99, s.target), text(105))
+        elseif s.level == 10 then row(text(100))
+        else row(text(113, s.growth/60, s.required/60)) end
+        if s.population then row(text(44), text(45, s.population)) end
+        if not s.plotReady then row(text(36), text(43)) end
+        if s.testUpgrade then row(text(37)) end
+        for _, w in ipairs(s.wares) do
+            row(w.name, M.wareHint(s, w))
         end
     else
         row(text(68))
@@ -81,7 +60,7 @@ local function buildActions()
     action(text(40), function() return canQueue(id) end, function()
         AddUITriggeredEvent('CELevelTesting', 'queue_upgrade', ConvertStringToLuaID(tostring(id)))
     end)
-    action(text(s and yes(s[7]) and 42 or 41), function() return isHub(id) and statusFor(id) ~= nil end, function()
+    action(text(s and s.pausedOffers and 42 or 41), function() return statusFor(id) ~= nil end, function()
         AddUITriggeredEvent('CELevelTesting', 'pause_offers', ConvertStringToLuaID(tostring(id)))
     end)
 end
@@ -102,7 +81,7 @@ local function register()
             if result then return result end
             local raw = menu.componentSlot and menu.componentSlot.component
             local entries = menu.actions and menu.actions[section]
-            if raw and isHub(ConvertStringTo64Bit(tostring(raw))) and type(entries) == 'table' and #entries > 0 then
+            if raw and isHub(M.id(raw)) and type(entries) == 'table' and #entries > 0 then
                 DebugError('[CE] Hub has no native menu actions; displaying civilian testing section')
                 return true
             end

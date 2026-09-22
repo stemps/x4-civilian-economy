@@ -4,7 +4,10 @@
 
 | Module | Responsibility and lifetime |
 | --- | --- |
-| `md/ce_ownerless_hub.xml` | Persistent sector registry, native construction, ten-level construction lifecycle and captured native delivery listeners. |
+| `md/ce_ownerless_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
+| `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
+| `md/ce_trade.xml` | Delivery accounting, guarded native offers, pricing, account funding and manager setup. |
+| `md/ce_diagnostics.xml` | Validated per-hub snapshots and blackboard publication. |
 | `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
 | `md/ce_construction.xml` | Racial component selection, asynchronous native layout generation, validation, queue recovery and module readiness. |
@@ -45,7 +48,7 @@ are selected by exact hub identity.
 
 ## Local demand profiles
 
-`CE_PopulationProfiles.Build` is included synchronously by startup `CaptureSectorProfile`. It returns candidate data without modifying the saved record. It enumerates `lookup.race.list` and `lookup.ware.list`, using
+`CE_PopulationProfiles.Build` is included synchronously by startup `CaptureSectorProfile`. Its explicit `$ProfileRace` input is a native race or null, also used by construction discovery. `$DiscoveredRace` is loop scratch. It returns candidate data without replacing `$R` or modifying the saved record. It enumerates `lookup.race.list` and `lookup.ware.list`, using
 `race.workforce.resources.list` for local sustain. Pharmaceutical resources unlock
 at level 3; other sustain resources at level 1. Common water and energy unlock at
 levels 1 and 2. Industrial goods unlock at levels 4–7 and luxuries at level 9;
@@ -167,10 +170,14 @@ and on cleanup, preserving special-mode tooltips. Native station popovers are
 untouched. Registration is idempotent, with the same
 load/population-request retry convention as testing UI.
 
-`ce_hub_status.lua` caches player blackboard membership/snapshots for one real
+`ce_hub_status.lua` owns membership normalization and the shared positional-to-named
+snapshot decoder. Map `get` caches player blackboard membership/snapshots for one real
 second; object validity and player knowledge are checked at use. Snapshot version 3
 is required by all UI consumers; incompatible versions show details unavailable.
-The shared validator rejects incomplete/duplicate rows. Malformed version-3 input
+The shared validator rejects incomplete/duplicate rows. Testing UI uses `getFresh`
+for display and action eligibility, and `isHub` for construction completion. These
+read current blackboards without consuming or updating the display cache; map-only
+knowledge filtering and retained stale snapshots are not command authority. Malformed version-3 input
 can retain a copied last-valid snapshot with an explicit stale warning.
 
 Header positions: 1 hub, 2 completed level, 3 pending target, 4 operational,
@@ -197,9 +204,10 @@ in-game acceptance.
 
 Automated tests mock native actions. Native construction, object marshalling
 through blackboards, unloading and save/load still need disposable-save tests.
-The MD controller covers several subsystems; a future refactor should separate
-reconciliation and demand libraries while preserving saved cue
-namespaces and record references.
+The controller retains persistent cue namespaces and captured record references.
+Demand, trade and diagnostics implementations are synchronous libraries behind
+the existing controller entry points. Their calls use explicit cross-script refs;
+no new persistent cue namespace or saved state is introduced.
 
 String keys in MD profile tables require a literal `$` prefix. Raw ware/race IDs
 remain unprefixed values; dynamic lookups use `{'$' + id}`. The profile test
@@ -235,8 +243,9 @@ concurrent-trade acceptance tests.
 ## Reserve accounting
 
 `CE_Reserves` libraries run synchronously in the controller/listener namespace
-with explicit `$R`. `ResetHistory`, `AccrueAll` and `EvaluateQualification` delegate
-to reserve rebasing, accrual and qualification respectively.
+with explicit `$R`. `RebaseAccrual`, `AccrueAll` and `EvaluateQualification` delegate
+to reserve rebasing, accrual and qualification respectively. `ResetHistory` remains
+a compatibility alias for rebasing; neither name clears earned growth.
 
 `ReconcileSector` initializes growth to zero and last accrual to the current
 simulation age when creating each record. `CommitRates` initializes new wares
@@ -244,6 +253,9 @@ with empty reserves. `SyncAll` only refreshes derived targets and shortfalls;
 it never converts or initializes saved data. Normal saves keep `$Last` across
 reload; wall-clock offline time never enters calculations.
 
+`CE_Reserves.SyncWare` is the sole target/shortfall calculator. Prepared rate rows
+contain `[ware, rate, price]`; commit rebases and synchronizes after applying them.
+The existing synchronization boundaries remain in place.
 For each active positive-rate ware, target = ceil(2 * hourly rate). `$Cap` remains
 an internal target alias and `$Demand=max(0,target-reserve)` a derived shortfall.
 Offers use floor(shortfall) minus native reservations, retaining unloading guards.
@@ -263,37 +275,6 @@ earned level, and discards the pending expansion before reconstruction.
 Native restart/save-load, unloading, construction and rendering remain runtime
 acceptance gates; the action interpreter and Lua mocks do not emulate X4.
 
-## Two-pane selection layout
-
-The civilian map panel retains one native selection table (eight columns) with a
-shared title and a gutter. The left pane contains population, a level/status label over the growth bar,
-and next-level unlocks. Timing and guidance are in the level tooltip; errors and
-test overrides remain visible. The right pane contains four ware columns and pagination. Native cargo `cellBGColor` styling uses
-`rowgroup_background_default` for data and `row_title_background` for headings.
-One-pixel anchors place reserve/growth bars behind explicitly full-width transparent
-icon/text cells. Reserve bars use native start/current segments: delivered stock
-is blue and reserved incoming stock is green (clamped to the target); remaining
-time excludes reservations. Background spans bridge column gutters. Buying uses
-native ConvertIntegerString(value, true, 2, true), matching cargo quantity formatting.
-Local opaque dark fills have zero glow, preserving white-text contrast without
-modifying global game colors. Warning text retains
-native red/yellow colors. Changes are presentation-only; snapshots and economics
-are unchanged.
-
-The ware pane now has three visual columns: Civilian good, Status, Buying.
-The first column spans an anchor plus separate left/right text cells, allowing
-ware name and remaining time to share one continuous delivered/incoming bar
-without text overlap. Both text areas have explicit icon widths; the bar width
-includes both cells and their native inter-cell border. The separate internal
-cells are layout details, not separate player-visible column headings.
-
-Ware name/time are plain text cells, matching status and buying alignment.
-Only the growth label retains a transparent icon over its bar. A wrapped left-pane
-summary can enlarge a shared row; using one text widget type across the ware row
-keeps its labels on the same baseline. The reserve bar remains behind both name
-and time using the preceding anchor column.
-
-
 ## Current layout: one table, summary above wares
 
 `MapMenu.viewCreated` binds widget IDs positionally and expects exactly one table
@@ -307,3 +288,18 @@ rows above the ware heading. Ware rows cannot inherit the summary's wrapped heig
 The three visual ware columns still use a bar anchor plus name/time text cells.
 Do not add tables here without updating and testing the native callback contract.
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
+
+Reserve bars use native start/current segments: delivered stock is blue and
+reserved incoming stock is green, clamped to the target. Remaining time excludes
+reservations. Plain text ware cells share a baseline; the growth label uses a
+transparent icon. Native cargo backgrounds and explicit anchor widths preserve
+the combined ware-name/time column. Buying uses native `ConvertIntegerString`.
+
+## Test support and configured paths
+
+`tests/support.py` owns fixture data, reference resolution and the reusable
+profile fixture. Test suites do not import helpers from other test suites.
+`tools/check.py --reference` passes its resolved path through `CE_REFERENCE` to
+all fixtures; `X4_REFERENCE` and `X4_TOOLKIT` set defaults for isolated worktrees.
+`tools/md_test_runtime.py` dispatches fully qualified library calls by the shipped
+MD script name. Controller forwarding calls preserve existing test interception.

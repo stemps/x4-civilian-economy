@@ -5,6 +5,7 @@ Run with a Python containing lxml (the Codex bundled Python works).
 """
 from pathlib import Path
 import argparse
+import os
 import sys
 import unittest
 from lxml import etree
@@ -14,13 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reference", type=Path, default=ROOT.parent.parent / "reference")
-    parser.add_argument("--toolkit", type=Path, default=ROOT.parent.parent)
+    parser.add_argument("--reference", type=Path, default=Path(os.environ.get("X4_REFERENCE", ROOT.parent.parent / "reference")))
+    parser.add_argument("--toolkit", type=Path, default=Path(os.environ.get("X4_TOOLKIT", ROOT.parent.parent)))
     parser.add_argument("--schema", action="store_true")
     args = parser.parse_args()
     reference = args.reference.resolve()
     # Tests load the exact deployed XML, not a separate runtime implementation.
-    import os
     os.environ["CE_REFERENCE"] = str(reference)
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
     if not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful():

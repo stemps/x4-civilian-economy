@@ -46,17 +46,28 @@ local function copy(value)
     for key, item in pairs(value) do result[key] = copy(item) end
     return result
 end
+local function read(key)
+    return GetNPCBlackboard(ConvertStringToLuaID(tostring(C.GetPlayerID())), key)
+end
+local function membership(list)
+    local result = {}
+    for _, raw in ipairs(type(list) == 'table' and list or {}) do
+        local id = M.id(raw)
+        if id then result[tostring(id)] = true end
+    end
+    return result
+end
+-- Testing commands must recheck live membership; do not consult the display cache.
+function M.isHub(raw)
+    local id = M.id(raw)
+    return id and C.IsValidComponent(id) and membership(read('$ce_hubs'))[tostring(id)] == true
+end
 local function refresh()
     local now = getElapsedTime()
     if expires and now < expires and now >= expires - 1 then return end
     expires, hubs, snapshots = now + 1, {}, {}
-    local player = ConvertStringToLuaID(tostring(C.GetPlayerID()))
-    local function read(key) return GetNPCBlackboard(player, key) end
-    local list, statuses = read('$ce_hubs'), read('$ce_hub_statuses')
-    for _, raw in ipairs(type(list) == 'table' and list or {}) do
-        local id = M.id(raw)
-        if id then hubs[tostring(id)] = true end
-    end
+    local statuses = read('$ce_hub_statuses')
+    hubs = membership(read('$ce_hubs'))
     for _, s in ipairs(type(statuses) == 'table' and statuses or {}) do
         local id = type(s) == 'table' and M.id(s[1])
         if id then
@@ -73,16 +84,13 @@ local function refresh()
     end
     for key in pairs(lastValid) do if not hubs[key] then lastValid[key] = nil end end
 end
-function M.get(raw)
-    local id = M.id(raw)
-    if not id or not C.IsValidComponent(id) or not C.IsObjectKnown(id) then return end
-    refresh()
-    if not hubs[tostring(id)] then return end
-    local s = snapshots[tostring(id)]
+-- One positional wire-format decoder for every UI consumer.
+local function decode(id, s)
     local result = {id=id, wares={}, available=s ~= nil}
     if not s then return result end
     result.level, result.population = number(s[2]), number(s[11])
     result.active, result.pausedOffers = yes(s[4]), yes(s[7])
+    result.testUpgrade = yes(s[10])
     result.pauseReason = s[12]
     result.profileError, result.stale = yes(s[14]), yes(s[15])
     result.growth, result.required = number(s[5]), number(s[6])
@@ -97,6 +105,23 @@ function M.get(raw)
         end
     end
     return result
+end
+function M.get(raw)
+    local id = M.id(raw)
+    if not id or not C.IsValidComponent(id) or not C.IsObjectKnown(id) then return end
+    refresh()
+    if not hubs[tostring(id)] then return end
+    return decode(id, snapshots[tostring(id)])
+end
+-- Fresh reads deliberately neither consume nor update retained display snapshots.
+-- Knowledge filtering remains a map concern; command membership matches the native menu.
+function M.getFresh(raw)
+    local id = M.id(raw)
+    if not M.isHub(id) then return end
+    local statuses = read('$ce_hub_statuses')
+    for _, s in ipairs(type(statuses) == 'table' and statuses or {}) do
+        if M.validSnapshot(s) and M.id(s[1]) == id then return decode(id, s) end
+    end
 end
 function M.amount(value)
     return value and string.format('%.1f', value) or M.text(69)

@@ -700,3 +700,31 @@ implemented or runtime-tested CE rewards:
   snapshots reference text 30; unused catalog entries remain to keep those
   snapshots resolvable. No runtime code references their old-save warnings.
 - VALIDATED: just schema passed 90 action tests, runtime MD schemas, reference checks and the merged build-storage AI schema; just lua passed all three suites. Native in-game acceptance remains untested.
+
+
+## 2026-09-22 — synchronous-library-refactor
+
+- IMPLEMENTED: demand preparation/commit, native trading/funding and diagnostics
+  now live in CE_Demand, CE_Trade and CE_Diagnostics. Existing controller library
+  entry points forward synchronously; persistent cues and captured records stay
+  in CE_OwnerlessHub. No save migration or schema change was added.
+- Profile Build takes explicit native ProfileRace/null and uses DiscoveredRace
+  for iteration. CaptureSectorProfile never temporarily replaces the caller's R.
+- SyncWare owns derived targets and shortfalls. Candidate rate rows carry only
+  ware/rate/price. RebaseAccrual names clock rebasing accurately; ResetHistory
+  remains a compatibility alias. Existing synchronization boundaries remain.
+- Both UI consumers share snapshot decoding. getFresh/isHub bypass the map cache
+  for testing commands; retained display snapshots do not authorize commands.
+- READ: checker --reference previously set CE_REFERENCE while fixtures hardcoded
+  a different path. Shared tests/support.py now consumes that configuration, with
+  X4_REFERENCE/X4_TOOLKIT defaults supporting isolated checkouts.
+- Supersedes the earlier two-pane architecture notes: the supported map hook
+  still emits one five-column table, with summary rows above the ware rows.
+- Native save/load, trading and rendering remain in-game acceptance gates.
+  Full game restart is required for these MD changes; /reload is insufficient.
+- VALIDATED: just schema passed 93 action tests, all seven runtime MD schemas,
+  merged data/reference checks and the merged build-storage AI schema. just lua
+  passed all three suites, including fresh-command-versus-cached-display checks.
+  Canonical source comparison preserved the full persistent Init cue tree and
+  all seven extracted trade/diagnostics action bodies (qualified refs normalized).
+  No native in-game acceptance test was performed.

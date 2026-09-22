@@ -81,10 +81,16 @@ def split(s):
 
 class Runner:
     def __init__(self):
-        self.tree=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_ownerless_hub.xml'))
-        self.profiles=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_population_profiles.xml'))
-        self.construction=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_construction.xml'))
-        self.reserves=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_reserves.xml'))
+        root = Path(__file__).resolve().parents[1] / 'md'
+        self.scripts = {}
+        for path in sorted(root.glob('*.xml')):
+            tree = E.parse(str(path))
+            self.scripts[tree.getroot().get('name')] = tree
+        self.tree = self.scripts['CE_OwnerlessHub']
+        self.profiles = self.scripts['CE_PopulationProfiles']
+        self.construction = self.scripts['CE_Construction']
+        self.reserves = self.scripts['CE_Reserves']
+        self.trade = self.scripts['CE_Trade']
         self.env={'player':Table(age=0), 'null':NIL, 'true':True, 'false':False}
         self.env['datatype']=Table(list=DataType('list'),table=DataType('table'))
         self.stubs={}
@@ -133,8 +139,11 @@ class Runner:
         if remove: del obj[key]
         else: obj[key]=wrap(v)
     def library(self,name):
+        local_name = name.removeprefix('md.CE_OwnerlessHub.')
         if name in self.stubs: return self.stubs[name]()
-        tree = self.construction if name.startswith('md.CE_Construction.') else self.reserves if name.startswith('md.CE_Reserves.') else self.profiles if name.startswith('md.CE_PopulationProfiles.') else self.tree
+        if local_name in self.stubs: return self.stubs[local_name]()
+        script = name.split('.')[1] if name.startswith('md.') else 'CE_OwnerlessHub'
+        tree = self.scripts[script]
         nodes=tree.xpath('//library[@name=$n]/actions',n=name.rsplit('.',1)[-1])
         if not nodes: raise ValueError(name)
         self.actions(nodes[0])

@@ -1,8 +1,8 @@
 """Reserve accounting executes the shipped MD, not a duplicate Python model."""
 import copy
 import unittest
-from test_prototype import Runner, Table, List, Ware, NIL
-from test_galaxy import Object
+from support import Runner, Table, List, Ware, NIL
+from support import Object
 
 
 class ReserveTests(unittest.TestCase):
