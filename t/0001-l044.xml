@@ -1,23 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <language id="44">
   <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
     <t id="1">Civilian Trade Hub</t>
-    <t id="2">A public delivery hub serving the sector's civilian population. Construction is funded by the planetary economy. Once completed, it purchases goods for immediate civilian consumption.</t>
+    <t id="2">A public delivery hub serving the sector's civilian population. Construction is funded by the planetary economy. Once completed, it purchases goods to maintain civilian reserves.</t>
     <t id="10">Civilian Economy - Testing</t>
     <t id="11">Force finish current construction</t>
     <t id="12">Testing shortcut: invokes native instant build completion. May bypass construction materials and time. Reopen this menu for the next module.</t>
     <t id="13">Demand: %.1f / %.0f cells</t>
     <t id="14">Available: %.0f | Reserved: %.0f</t>
     <t id="15">Delivered: %.0f | Paid: %.0f Cr</t>
-    <t id="16">Diagnostic snapshot updated every game minute and after recorded deliveries. Reopen the menu to refresh. Earlier uncounted deliveries cannot be reconstructed.</t>
+    <t id="16">Diagnostic snapshot updated every game minute and after recorded deliveries. Reopen the menu to refresh. Incoming goods count as supplies only after delivery.</t>
     <t id="30">Civilian Economy: this save contains the old energy-only prototype. Load a save from before installing Civilian Economy to test leveling. No migration or additional hub was created.</t>
     <t id="31">%s Civilian Trade Hub \(level %s\)</t>
     <t id="32">Level %d | Target %d (0 = none)</t>
     <t id="33">History: %.0f / %.0f min</t>
     <t id="34">Consumption active</t>
-    <t id="35">Building/damaged: demand paused</t>
+    <t id="35">Building/damaged: usage paused</t>
     <t id="36">Growth clearance blocked</t>
-    <t id="37">TEST: qualification bypassed</t>
+    <t id="37">TEST: growth requirement bypassed</t>
     <t id="38">%s\nDemand: %.1f\nCap: %.1f\nAvailable: %.0f\nReserved: %.0f</t>
     <t id="39">Delivered: %.0f\nPaid: %.0f Cr\nSupply: %.1f%%\nService: %.1f%%\nLongest shortage: %.1f min\nConsumption: %.1f per hour\nReopen menu to refresh.</t>
     <t id="40">TEST: Queue next upgrade</t>
@@ -26,14 +26,14 @@
     <t id="43">The full level-10 layout needs a clear 12 x 8 x 32 km plot. The last clearance check failed. Upgrades are blocked, but current-level construction and consumption can continue. Retried every five game minutes.</t>
     <t id="44">Accessible population</t>
     <t id="45">Accessible population: %.0f\nDemand is proportional to population.\nBaseline: 8,524,100,000 inhabitants.</t>
-    <t id="50">Ware</t>
+    <t id="50">Civilian good</t>
     <t id="51">Demand / cap</t>
     <t id="52">Fulfillment</t>
     <t id="53">Reliability</t>
     <t id="54">Unlocked civilian consumption wares, in unlock order.</t>
     <t id="55">Civilian hub</t>
     <t id="56">Consumption active</t>
-    <t id="57">Consumption paused</t>
+    <t id="57">Paused</t>
     <t id="58">%.1f / %.1f game hours</t>
     <t id="59">Collecting history</t>
     <t id="60">Supply history</t>
@@ -64,5 +64,39 @@
     <t id="85">Paused: ownership changed</t>
     <t id="86">Paused: hub unavailable</t>
     <t id="87">Paused: modules unavailable</t>
+    <t id="88">Details stale - refresh failed</t>
+    <t id="89">Using previous demands - refresh failed</t>
+    <t id="90">Supplies remaining</t>
+    <t id="91">Buying</t>
+    <t id="92">%dm</t>
+    <t id="93">%dh %dm</t>
+    <t id="94">Needed</t>
+    <t id="95">Low</t>
+    <t id="96">Supplied</t>
+    <t id="97">Full</t>
+    <t id="98">Empty</t>
+    <t id="99">Expanding to level %d</t>
+    <t id="100">Maximum level reached</t>
+    <t id="101">Upgrade earned - preparing expansion</t>
+    <t id="102">Upgrade earned - growth plot unavailable</t>
+    <t id="103">Growth paused - %s needed</t>
+    <t id="104">Growing - all required goods supplied</t>
+    <t id="105">Construction in progress. New demands begin after completion.</t>
+    <t id="106">Progress toward level %d: %s / %s</t>
+    <t id="107">Deliver %s to resume growth. Earned progress is preserved.</t>
+    <t id="108">Keep every required good in stock. Progress is preserved during shortages.</t>
+    <t id="109">Next level: increased demand \(+25%%\), unlocks %s.</t>
+    <t id="110">Next level: increased demand \(+25%\).</t>
+    <t id="111">%s\nIn reserve: %s units\nConsumption: %s units per game hour\nReplenishment target: %s units\nBuying now: %.0f units\nIncoming: %.0f units; count only after delivery.</t>
+    <t id="112">Incoming</t>
+    <t id="113">Growth: %.1f / %.0f minutes</t>
+    <t id="114">Keep every required good in stock to supply civilians.</t>
+    <t id="115">Progress toward level %d</t>
+    <t id="116">Population</t>
+    <t id="117">growing</t>
+    <t id="118">stagnating</t>
+    <t id="119">expanding</t>
+    <t id="120">maximum</t>
+    <t id="121">Level %d \(%s\)</t>
   </page>
 </language>

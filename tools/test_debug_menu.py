@@ -11,7 +11,7 @@ marked, valid, legacy, progress, waiting = true, true, false, 0, false
 calls, closes = 0, 0
 entries, commands = {}, {}
 status = {42, 1, 0, true, 60, 120, false, true,
-    {{"Food Rations",500.5,4000,300,200,1000,13000,95,99,2,2000}}, false}
+    {{"Food Rations",500.5,4000,300,200,1000,13000,900.9,2000,"foodrations"}}, false, nil, nil, 3}
 local C = {
  GetPlayerID=function() return 1 end,
  IsValidComponent=function() return valid end,
@@ -30,7 +30,7 @@ GetNPCBlackboard=function(id,key)
  assert(id==1)
  if key=="$ce_hubs" then return marked and {42, 43} or {} end
  if key=="$ce_legacy_blocked" then return legacy end
- if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 360, false, true, {}, false}} end
+ if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 21600, false, true, {}, false, nil, nil, 3}} end
  error(key)
 end
 ConvertStringToLuaID=tonumber
@@ -47,6 +47,7 @@ function action(id)
  error("missing action "..id)
 end
 ''')
+lua.execute((root/'ui/ce_hub_status.lua').read_text(encoding='utf-8-sig'))
 source=(root/'ui/ce_debug_tools.lua').read_text(encoding='utf-8-sig')
 lua.execute('assert(loadstring(...))',source)
 lua.execute(source)
@@ -60,9 +61,9 @@ marked=true;valid=false;open();assert(#entries==0)
 valid=true;legacy=true;open();assert(#entries==0)
 legacy=false;open();assert(#entries==7)
 assert(entries[4].text == "Food Rations")
-assert(entries[4].mouseOverText:find("95.0%",1,true))
+assert(entries[4].mouseOverText:find("Consumption:",1,true))
 assert(entries[4].mouseOverText:find("500.5",1,true))
-assert(entries[4].mouseOverText:find("Reserved: 200",1,true))
+assert(entries[4].mouseOverText:find("Incoming: 200",1,true))
 for _,e in ipairs(entries) do assert(#e.text <= 34 and not e.text:find("—",1,true)) end
 assert(action(40).active)
 local a=action(40);a.script();a.script();assert(#commands==1 and commands[1]=="queue_upgrade")
@@ -83,7 +84,7 @@ status[4]=0;status[7]=0;open();assert(not action(40).active and action(41))
 status[4]=1;status[8]=1;open();assert(action(40).active)
 status[2]=nil;open();assert(not action(40).active)
 status[2]=1
-status[1]=99;open();assert(#entries==3 and not action(40).active and not action(41).active)
+status[1]=99;open();assert(#entries==4 and not action(40).active and not action(41).active)
 menu.componentSlot.component=43;open();assert(action(40).active)
 assert(entries[1].text:find("Level 5",1,true))
 menu.componentSlot.component=77;open();assert(#entries==0)

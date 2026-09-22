@@ -16,49 +16,47 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   not used. Tokens reject duplicate/stale replies; failed readings are omitted
   rather than treated as zero. The bridge works without UI Extensions.
 - Rates scale by population / 8,524,100,000, preserving Argon Prime's diagnostic
-  rates. Caps remain two hours of scaled demand. Creation and replacement require
+  rates. Replenishment targets are ceil(two hours of scaled consumption). Creation and replacement require
   at least 100,000,000 population. Existing hubs below the threshold are retained;
   the threshold does not clamp their demand scaling.
-  Every sector still uses the Argon test ware basket; regional food is future work.
+  Local staples now resolve from the saved population race and live workforce resources.
 - Registry records are keyed by sector. Each delivery watcher has its own
   namespace and captured record reference. UI/AI membership uses `$ce_hubs`;
   snapshots are selected by hub ID. The singleton marker is only read for adoption.
 - Delivery watchers do not inherit Init's local `$Definitions`. A bare lookup in
   `PublishDiagnostics` produced an empty ware snapshot after each delivery until
   the minute tick repaired it; debug.txt confirmed the failed lookup. Reference
-  `md.CE_OwnerlessHub.Init.$Definitions` explicitly. Regression coverage executes
+  committed live demand records and display order (formerly definitions). Regression coverage executes
   delivery accounting and snapshot publication without local definitions.
 - Population changes accrue at the old rate before recomputing completed-level
-  rates and resetting qualification, retaining backlogs. Zero population pauses
+  rates, preserving reserves and growth. Zero population pauses
   an existing hub; it never creates a new one. Native galaxy rollout and Lua/MD
   object roundtrips still need in-game validation.
 - Civilian demand activates only after construction; construction purchases
-  never count as fulfillment. Each unlocked ware has one public virtual-cargo,
-  real-money offer, a two-hour backlog cap and price
+  never replenish civilian reserves. Each unlocked ware has one public virtual-cargo,
+  real-money offer, a two-hour reserve target and price
   `ceil(min + (max - min) / 10)`. `UpdateWarePrice` runs on unlock and normal
   offer refresh, so price changes can reach saved hubs without resetting
-  qualification through `ApplyLevel`.
-- New wares start with zero demand; existing rates rise 25% only after a completed upgrade. All unlocked
+  progress through `ApplyLevel`.
+- New wares start with empty reserves; existing rates rise 25% only after a completed upgrade. All unlocked
   wares, including intoxicants, count toward qualification; level 10 adds no new
   ware. These quantities and prices are diagnostic balance, not final tuning.
-- Advancement from level L needs a full rolling L+1 game-hour window for every
-  ware: at least 90% of scheduled consumption delivered, backlog no greater than
-  30 minutes of consumption for at least 90% of the window, and no continuous
-  breach longer than 15 minutes. Cap-discarded demand remains scheduled
-  consumption and never counts as fulfillment.
-- Per-ware history has closed 60-second buckets plus a partial bucket excluded
-  from evaluation. Accrual splits at exact boundaries and computes
-  threshold-crossing times before capping. Buckets retain generation,
-  deliveries, good seconds, leading/trailing bad seconds and longest internal
-  breach. Joining adjacent bad runs prevents late bulk deliveries or tick
-  boundaries from erasing shortages.
+- Advancement from level L requires L+1 cumulative supplied game hours. All
+  active positive-rate wares must have reserve stock; no requirements means no
+  growth. Shortages pause progress without resetting it. Consumption drains each
+  ware independently to zero. Earliest exhaustion determines exact supplied time.
+- `CE_Reserves` owns fractional balances, target/shortfall calculations and growth.
+  Completed deliveries accrue elapsed consumption before adding actual cargo.
+  Late deliveries cannot cover prior shortages; surplus is retained without cap.
+  `Buying now` is native advertised availability after subtracting reservations;
+  reservations count as supplies only on completed delivery.
 - Capture buyer and seller at trade start and bind completion to the exact deal,
   following RML_Trade_Wares. Remove the persisted transfer guard before
   accounting to prevent duplicate credit. The former galaxy-scoped completion
   listener missed deliveries and is retained disabled for compatibility, not
   used for accounting.
 - Subtract native reservations from advertised availability and defer offer
-  rewrites during unloading. Pausing new reservations still accrues demand and
+  rewrites during unloading. Pausing new reservations still consumes reserves and
   permits existing deals to finish; the pause setting persists. Reservations and
   account top-ups alone are not evidence of recorded consumption or payment.
 
@@ -82,12 +80,12 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 - One earned upgrade queues a native expansion. Completed-level demands continue
   until the entire target plan is operational; only then change level, localized
-  name, rates and wares, and reset qualification. Target completion is distinct
+  name, rates and wares, and reset growth to zero. Target completion is distinct
   from completed-level module readiness. No downgrades are implemented.
-- Required-module damage pauses demand and resets qualification on the
+- Required-module damage pauses consumption and growth on the
   one-minute controller tick, retaining a pending upgrade. Hub destruction
-  preserves earned level, backlog and delivery totals but discards the upgrade;
-  rebuilding accrues no demand. Builder replacement retries every five minutes
+  preserves earned level, growth and delivery totals, loses reserves and discards
+  the upgrade; rebuilding consumes nothing. Builder replacement retries every five minutes
   when a suitable idle ship exists. Preserve leftover build storage, cargo and
   reservations.
 - Cumulative plans preserve prefix indices/positions and use native
@@ -103,10 +101,9 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   plot acceptance remain runtime gates.
 - Legacy energy-only `Start` state is detected and canceled by the separate
   `Init` namespace before new state is created; a logbook warning blocks the
-  save. Start leveling from a pre-prototype save. Uncounted deliveries/history
-  cannot be recovered from visible offers. Reload of current leveling state
-  refreshes names/diagnostics without resetting history or requeuing
-  construction.
+  save. Start leveling from a pre-prototype save. Existing leveling saves migrate once to empty reserves and zero growth; old
+  deliveries were already consumed. Pending upgrades remain earned. Subsequent
+  reloads preserve balances, growth and native trade/build references.
 
 ### Hub appearance and optional testing UI
 
@@ -136,16 +133,14 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### 2026-09-20 — civilian map status
 
-- The map UI reads existing hub snapshots: demand is current outstanding units
-  including reservations, not advertised offer availability. Fulfillment and
-  reliability are the MD rolling-window scores, not derived from current demand
-  or lifetime delivered totals. A cleared backlog can still have poor scores.
-- The bottom panel shows five unlocked wares per page. Basics use label/value
-  rows; population uses million/billion/trillion units; fulfillment and reliability
-  use native status bars with numeric labels. Empty history displays printable
-  `N/A` with empty bars; partial history is labeled collecting. Figures refresh
-  from a one-real-second cache of the minute/event MD snapshots. This does not
-  turn completed-minute scores into immediate delivery scores.
+- Version-3 snapshots show remaining supply time, reserve bars, buying and
+  incoming units, and one cumulative growth bar. Empty is red, below 15 game
+  minutes is yellow; low supplies still earn growth. Sort by urgency on opening
+  then retain stable ware-ID ordering until selection closes. Five rows per page.
+- Incompatible snapshots are unavailable, never fabricated empty supplies. Invalid
+  current-version snapshots retain copied last-valid rows marked stale. Next-level
+  unlocks come from the saved sector profile. Cache refresh is one real second;
+  MD publishes each game minute and on delivery.
 - Native source exposes `MapMenu.createSelectedShips(frame)` as the selection
   table slot and `refreshMainFrame` as its rebuild request. Preserve one table
   and bottom positioning. Native percentage bars use a one-pixel anchor cell
@@ -182,15 +177,14 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 With **kuertee UI Extensions**, right-click the
 hub and open **Custom Actions → Civilian Economy — Testing**.
 
-- Level/target, service state, qualification history and per-ware demand/cap,
-  availability and reservations are displayed. Hover a ware for fulfillment,
-  payments, supply/service scores, longest shortage and rate. Reopen to refresh
-  the minute/event snapshot.
+- Level/target, operational state and cumulative growth are displayed. Hover a
+  ware for reserves, consumption, target, buying and incoming quantities. Reopen
+  to refresh. Construction replaces growth progress while an expansion is pending.
 - **Force finish current construction** invokes the native workshop shortcut. It
   may bypass materials and time; never use it as evidence of ordinary construction.
-- **Queue next upgrade — testing** bypasses qualification only. It still requires
+- **Queue next upgrade — testing** bypasses the growth requirement only. It still requires
   construction and does not grant goods, satisfaction or payment.
-- **Pause new civilian reservations — testing** keeps accruing demand but offers
+- **Pause new civilian reservations — testing** continues consuming reserves but offers
   no new stock for sale to the hub. Existing reservations finish normally. During
   unloading the offer rewrite waits until the trade finishes; pause is not a trade
   cancellation. Resume using the same menu. The pause setting survives saves.
@@ -307,11 +301,12 @@ implemented by this mod. Runtime effects require separate verification.
   `<population limit="10000000000" step="1000000" max="1000" />`, with a +1,000%
   availability cap; the UI multiplies the factor by 100 for display. The same
   workforce block defines sustain, update cadence and capacity-dependent growth.
-- `race.workforce.resources` maps to `food_<race>` baskets in `baskets.xml`:
-  Argon uses food rations/medical supplies, Paranid soja husk/medical supplies,
-  and Teladi nostrop oil/medical supplies. The Terran DLC supplies `food_terran`.
-  These are native workforce-resource definitions; changing them has race-wide
-  scope rather than per-sector control and needs consumption/sustain testing.
+- Source correction (2026-09-21): do not equate `race.workforce.resources` with
+  `food_<race>` trading baskets. `wares.xml` defines `workunit_busy/idle`
+  production inputs, with DLC methods for Split, Boron and Terran. Boron inputs
+  include water, bofu and medicine; Split includes chelt meat, scruffin fruit and
+  medicine. `GM_LargeSupply` uses the native workforce-resource property directly.
+  CE uses that same property; exact runtime mapping still needs engine verification.
 - `space.economy` and `space.security` have `mapdefaults.xml` defaults and MD
   `set_space_*` / `reset_space_*` actions. Explicit values supersede parent spaces.
   Vanilla uses them in station placement (`finalisestations.xml`), hostile encounter
@@ -458,3 +453,181 @@ uv run --with lupa python tools/test_debug_menu.py
 
 Restart X4 after source updates before testing. These local checks do not emulate
 the game; use the runtime test guide for acceptance.
+
+## 2026-09-21 — local-population-profiles
+
+- Implemented a separate synchronous MD profile resolver with string-ID overrides;
+  see ARCHITECTURE for the adapter contract. Reads live race/ware lookup lists,
+  supports new races and replaced workforce resources, and skips missing cargo.
+- Population race is inferred once from sector ownership, with explicit macro-ID
+  overrides. It is not a measured demographic breakdown and remains stable on conquest.
+- Level 8 imports unique foreign staples; local foods retain level 1 rates. Terran
+  industrial/luxury defaults differ. Water and pharmaceuticals are not exotic food.
+- Source and mocked-action checks cover base/DLC recipe fixtures, conversion wares,
+  migration and unchanged-load history preservation. Native reservation completion,
+  profile discovery and save serialization still require an in-game acceptance pass.
+- MD source checks: `macro.id` is the internal macro identifier (`macro.name` is
+  display text); table size uses `.keys.count`, not `.count`. The test interpreter
+  is permissive here, so property-schema inspection remains necessary.
+## 2026-09-22 — sector-reward-feasibility
+
+READ from extracted vanilla sources; these are integration candidates, not
+implemented or runtime-tested CE rewards:
+
+- `common.xsd:20007` exposes object-scoped `add_player_discount`, including
+  optional ship sales/upgrades; `19571` onward exposes commissions. Amounts
+  represent fractions of ware price variation, not a flat percentage off the
+  current price (`1011`). `md/diplomacy.xml:4367` uses station discounts.
+- `common.xsd:39205` provides race-specific `add_workforce`, capped by habitation
+  capacity; `md/inituniverse.xml:237` uses it. Scripted immigration is a candidate
+  for faster growth; a dynamic station growth multiplier was not established.
+- `md/diplomacy.xml:1943` centralizes `Success_Evaluation`; `2037` assembles
+  success chance and `2038` caps ordinary rolls at 99. The library receives no
+  destination parameter. Station-targeted callers would need to pass target
+  context for a sector bonus; action 7 evaluates success at operation start
+  (`4218`), not completion.
+- `md/terraforming.xml:330` and `1857` onward use `set_skill` on crew templates;
+  training also uses `add_skill`. This supports a custom recruitment/training
+  service, but does not establish a universal sector-local hiring hook covering
+  both station actors and shipyard crew purchases.
+- `common.xsd:38738` defines object-specific trade subscriptions with optional
+  duration; `md/signal_leaks.xml:1886` supplies a vanilla usage precedent.
+- Design consideration: CE qualification includes NPC deliveries. Sector level
+  alone would grant player rewards without proving player contribution. Player
+  eligibility, existing-benefit preservation and reward lifecycle need separate
+  design before implementation.
+
+## Profile reload lookup repair
+
+- Runtime debug.txt confirmed `Failed to set table[].argon` and equivalent ware
+  errors during Reload. MD string table keys require a literal `$` prefix;
+  native factionlogic_staticdefense.xml uses `{'$' + $Ship.idcode}` likewise.
+- Profile dictionaries now consistently prefix ware/race/sector string keys,
+  including configured overrides and deduplication. Stored ID values stay plain.
+  The old test interpreter stripped `$` inside quoted strings and permitted
+  invalid profile writes; both behaviors are corrected and regression-tested.
+- Empty saved definitions can be rebuilt on load while retaining backlog and
+  lifetime counters. Already-cleared qualification history cannot be restored;
+  rebuilding changed definitions starts a fresh window. Unchanged valid profiles
+  retain their existing history.
+
+## Resilient profile and details refresh
+
+- Profile builds must not clear saved definitions in place. Candidate definitions,
+  race and rates now complete and validate before commit; failed refreshes retain
+  last-valid economics. Level application consumes saved definitions rather than
+  repeating native profile discovery.
+- Active membership is separate from rate, so zero-population demand still has
+  display identity. Metadata migration does not reset qualification. Retired
+  records retain trade guards, offers and counters but are excluded from details.
+- Snapshot fields 13/14/15 add version 2, profile error and stale status while
+  preserving the existing 12-field contract. A missing/incomplete row set is not
+  interpreted as an empty civilian economy. Preserve last-valid rows and expose
+  the failure until recovery; do not mask failures as fresh data.
+- Failure-injection tests cover missing lookups, invalid keys with continued
+  execution, incomplete candidate/rate stages, duplicate/invalid rates, isolated
+  delivery scopes, unchanged reloads, migration and intentional empty profiles.
+  Native in-game validation remains required; mocks do not emulate all MD errors.
+
+## 2026-09-22 - reserve model supersedes rolling qualification
+
+- Earlier dated history/fulfillment notes describe the replaced implementation.
+  Current behavior is defined in the sections above and root ARCHITECTURE.
+- Saved `$ReserveVersion=1`, `$GrowthSeconds`, `$Last` and per-ware `$Reserve`
+  replace minute buckets. Migration does not remove native trades, accounts,
+  pending builds or captured listener references. Library/cue namespaces stay stable.
+- Full surplus is retained, targets round upward, whole-unit shortfalls round
+  downward before subtracting reservations. A positive tiny rate can buy one unit.
+- Native Helper `statusbar:createDescriptor` evaluates current/start/max functions
+  but reads `valueColor.glow` directly. Pass static colors and rebuild on warning
+  changes; preserve order across those rebuilds. This prevents a Lua runtime error.
+- Automated action and Lua tests cover exact exhaustion, cumulative pauses,
+  non-retroactive deliveries, migration, surplus, pending transitions, profiles,
+  stale recovery and ordering. Native disposable-save acceptance is still needed.
+
+- Reserve rollout local validation: `just check` passed 67 MD action tests and
+  all Lua integration tests; `just schema` passed full MD and merged AI checks
+  with no introduced errors. No native gameplay pass was performed for this
+  reserve version. Full X4 restart is required before disposable-save testing.
+
+## 2026-09-22 - two-pane-civilian-panel
+
+- READ: native MapMenu cargo rows use `cellBGColor=rowgroup_background_default`
+  and an adjacent status-bar anchor behind a transparent icon/text cell
+  (`reference/ui/addons/ego_detailmonitor/menu_map.lua`, around 20262).
+- Applied that pattern to the civilian ware pane; level and population live in
+  the left pane, alongside cumulative growth. Growth time overlays its bar.
+- Dark local green/amber/red bar fills avoid bright backgrounds under white
+  labels. Helper documents Lua color alpha as 0-100 (RGB remains 0-255).
+- Lua checks cover both panes, reserve/progress bars, cargo background properties,
+  stable ordering, pagination, warnings, missing data and narrow-window geometry.
+  Actual in-game spacing still requires visual confirmation.
+
+
+## 2026-09-22 - compact-supply-pane
+
+- READ: vanilla cargo uses statusbar start=current stock, current=future stock,
+  and posChangeColor for incoming quantities; CE now follows this for reserves.
+  Incoming still contributes neither consumption time nor growth until delivered.
+- Background colspan from ware column through Buying now fills visible column
+  gutters while preserving native cell geometry. No global border size changes.
+- Explicit icon widths are necessary for left-aligned labels over full-width bars;
+  the prior growth text used an implicit icon size and appeared shifted left.
+- Buying now delegates localized grouping/shorthand to native ConvertIntegerString
+  with the same parameters as cargo. Lua tests mock the formatter; actual native
+  threshold/localization behavior is delegated to the engine, not reimplemented.
+- Checked compact panes, stock/incoming bar segments, pagination and stale/error
+  recovery with just check and just lua. In-game visual confirmation is pending.
+
+## 2026-09-22 - combined-ware-supply-row
+
+- Combined the name and remaining-time fields under one heading and one shared
+  blue-stock/green-incoming bar. Separate internal text cells reserve room for
+  each label; explicit widths avoid overlapping the right-aligned time.
+- Shortened Running low to Low and Buying now to Buying in the English catalog
+  (the repository's only translation file). Other ware statuses stay unchanged.
+- The economy, thresholds and snapshot contract are unchanged. Lua checks cover
+  combined bar width, live labels, reservation segments and pagination; actual
+  in-game appearance remains a visual acceptance check.
+
+## 2026-09-22 - ware-row-baseline
+
+- User screenshot showed Water's name/time below its status and buying quantity.
+  The row also contains wrapped left-pane unlock text. Mixed icon-label and text
+  cells appear to align differently when that shared row grows taller.
+- Ware name/time now use ordinary text cells like status/buying; the reserve bar
+  remains in its preceding anchor. This removes mixed label widget alignment.
+  Native visual confirmation is still required; Lua mocks do not reproduce
+  engine vertical placement in a tall row.
+- Ware statuses are now Needed, Low, Supplied, Full and Paused.
+
+
+## 2026-09-22 - independent-pane-heights
+
+- User screenshot confirmed that aligning text widgets alone did not solve shared
+  row height: wrapped left unlocks still stretched an Energy Cells row.
+- Replaced shared table rows with independent title/left/right tables under one
+  frame border. Native MapMenu uses multiple tables under a shared border (e.g.
+  orderHeaderTable / orderHeaderTableRight around lines 10489-10492).
+- Lua layout checks simulate additional left-pane height and verify unchanged
+  right-table height. This is a structural test, not an in-game visual check.
+- Lua-only change: /reload suffices for this layout update. Old localized labels
+  such as Needed now still require the previously requested full game restart.
+
+
+## 2026-09-22 - positional-viewcreated-contract
+
+- READ: reference MapMenu.viewCreated around line 7028 binds player/search/sidebar/
+  rightbar/selectedShips/topLevel/map by positional arguments (one extra right-info
+  table when searching). createSelectedShips is followed by the map render target.
+- READ: widget_fullscreen.lua:7640-7641 looks up the supplied render-target ID and
+  multiplies GetRelativeMousePosition's return without guarding nil coordinates.
+- Runtime debug.txt after the three-table change repeatedly reports invalid
+  GetRelativeMousePosition parameters and nil posX at 7641. Added tables shift the
+  native bindings, explaining why there was no direct CE exception in the log.
+- Removed the three-table integration in favor of the user's fallback: one table,
+  summary above wares. Previous notes claiming independent tables were ready based
+  on mock row heights were incomplete; the tests missed the native ID contract.
+- Regression checks now require exactly one table from the selection hook. A UI
+  /reload is needed after this Lua repair; restart if the damaged UI cannot reload.
+  Actual in-game recovery remains to be confirmed.

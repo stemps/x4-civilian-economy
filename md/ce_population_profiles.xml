@@ -1,0 +1,143 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<mdscript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="CE_PopulationProfiles" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Included synchronously in the caller's namespace; no startup-order dependency. -->
+    <library name="Configure">
+      <actions>
+        <!-- Patch this library for conversion-specific policy. IDs are strings:
+             unavailable wares are skipped without evaluating missing ware lookups.
+             String table keys use a $ prefix (e.g. $terran).
+             RaceDemands replaces the common industrial/luxury list for that race.
+             Staples/Medicines override native workforce baskets, including empty lists.
+             SectorRaces maps sector macro names to race IDs. -->
+        <set_value name="$ProfileStaples" exact="table[]"/>
+        <set_value name="$ProfileMedicines" exact="table[]"/>
+        <set_value name="$ProfileSectorRaces" exact="table[]"/>
+        <set_value name="$ProfileRaceDemands" exact="table[]"/>
+        <set_value name="$ProfileCommon" exact="[['water',1,2000.0f],['energycells',2,10000.0f],['refinedmetals',4,300.0f],['siliconwafers',4,200.0f],['microchips',5,100.0f],['scanningarrays',6,40.0f],['advancedcomposites',6,200.0f],['advancedelectronics',7,40.0f],['spacefuel',9,100.0f],['spaceweed',9,100.0f],['majadust',9,100.0f]]"/>
+        <set_value name="$ProfileRaceDemands.{'$terran'}" exact="[['water',1,2000.0f],['energycells',2,10000.0f],['metallicmicrolattice',4,300.0f],['siliconcarbide',5,200.0f],['computronicsubstrate',7,40.0f],['stimulants',9,100.0f]]"/>
+      </actions>
+    </library>
+    <library name="Build">
+      <actions>
+        <set_value name="$CandidateComplete" exact="false"/>
+        <set_value name="$CandidateValid" exact="true"/>
+        <set_value name="$CandidateRace" exact="@$R.$ProfileRace"/>
+        <set_value name="$CandidateDefinitions" exact="[]"/>
+        <set_value name="$CandidateRequested" exact="0"/>
+        <set_value name="$CandidateStage" exact="'discovery'"/>
+        <include_actions ref="md.CE_PopulationProfiles.Configure"/>
+        <do_if value="typeof lookup.ware.list == datatype.list and typeof lookup.race.list == datatype.list and typeof $ProfileCommon == datatype.list and typeof $ProfileStaples == datatype.table and typeof $ProfileMedicines == datatype.table and typeof $ProfileRaceDemands == datatype.table and typeof $ProfileSectorRaces == datatype.table">
+          <set_value name="$ProfileWares" exact="table[]"/>
+          <do_for_each name="$ProfileWare" in="lookup.ware.list">
+            <do_if value="$ProfileWare.iscargo and $ProfileWare.waretransport == waretransport.container">
+              <set_value name="$ProfileWares.{'$' + $ProfileWare.id}" exact="$ProfileWare"/>
+              <do_if value="not @$ProfileWares.{'$' + $ProfileWare.id}?">
+                <set_value name="$CandidateValid" exact="false"/>
+              </do_if>
+            </do_if>
+          </do_for_each>
+          <set_value name="$ProfileFoods" exact="table[]"/>
+          <set_value name="$ProfileMeds" exact="table[]"/>
+          <do_for_each name="$ProfileRace" in="lookup.race.list">
+            <set_value name="$ProfileFoods.{'$' + $ProfileRace.id}" exact="[]"/>
+            <do_if value="not @$ProfileFoods.{'$' + $ProfileRace.id}?">
+              <set_value name="$CandidateValid" exact="false"/>
+            </do_if>
+            <set_value name="$ProfileMeds.{'$' + $ProfileRace.id}" exact="[]"/>
+            <do_if value="not @$ProfileMeds.{'$' + $ProfileRace.id}?">
+              <set_value name="$CandidateValid" exact="false"/>
+            </do_if>
+            <do_for_each name="$ProfileWare" in="$ProfileRace.workforce.resources.list">
+              <do_if value="$ProfileWare.group.id == 'pharmaceutical'">
+                <append_to_list name="$ProfileMeds.{'$' + $ProfileRace.id}" exact="$ProfileWare.id"/>
+              </do_if>
+              <do_else>
+                <append_to_list name="$ProfileFoods.{'$' + $ProfileRace.id}" exact="$ProfileWare.id"/>
+              </do_else>
+            </do_for_each>
+            <do_if value="$ProfileStaples.{'$' + $ProfileRace.id}?">
+              <set_value name="$ProfileFoods.{'$' + $ProfileRace.id}" exact="$ProfileStaples.{'$' + $ProfileRace.id}"/>
+              <do_if value="not @$ProfileFoods.{'$' + $ProfileRace.id}?">
+                <set_value name="$CandidateValid" exact="false"/>
+              </do_if>
+            </do_if>
+            <do_if value="$ProfileMedicines.{'$' + $ProfileRace.id}?">
+              <set_value name="$ProfileMeds.{'$' + $ProfileRace.id}" exact="$ProfileMedicines.{'$' + $ProfileRace.id}"/>
+              <do_if value="not @$ProfileMeds.{'$' + $ProfileRace.id}?">
+                <set_value name="$CandidateValid" exact="false"/>
+              </do_if>
+            </do_if>
+          </do_for_each>
+          <!-- Capture once: conquest does not instantly change civilian culture. -->
+          <do_if value="$CandidateRace == null">
+            <set_value name="$CandidateRace" exact="''"/>
+            <do_if value="@$Sector.owner.primaryrace">
+              <set_value name="$CandidateRace" exact="$Sector.owner.primaryrace.id"/>
+            </do_if>
+          </do_if>
+          <do_if value="@$Sector.macro and $ProfileSectorRaces.{'$' + $Sector.macro.id}?">
+            <set_value name="$CandidateRace" exact="$ProfileSectorRaces.{'$' + $Sector.macro.id}"/>
+          </do_if>
+          <set_value name="$CandidateDefinitions" exact="[]"/>
+          <set_value name="$ProfileSeen" exact="table[]"/>
+          <!-- Local foods precede shared and imported wares, preventing duplicates. -->
+          <do_if value="$ProfileFoods.{'$' + $CandidateRace}?">
+            <do_for_each name="$ProfileID" in="$ProfileFoods.{'$' + $CandidateRace}">
+              <set_value name="$ProfileDefinition" exact="[$ProfileID,1,2000.0f]"/>
+              <include_actions ref="md.CE_PopulationProfiles.Add"/>
+            </do_for_each>
+            <do_for_each name="$ProfileID" in="$ProfileMeds.{'$' + $CandidateRace}">
+              <set_value name="$ProfileDefinition" exact="[$ProfileID,3,500.0f]"/>
+              <include_actions ref="md.CE_PopulationProfiles.Add"/>
+            </do_for_each>
+          </do_if>
+          <do_if value="$ProfileRaceDemands.{'$' + $CandidateRace}?">
+            <set_value name="$ProfileCommon" exact="$ProfileRaceDemands.{'$' + $CandidateRace}"/>
+          </do_if>
+          <do_for_each name="$ProfileDefinition" in="$ProfileCommon">
+            <include_actions ref="md.CE_PopulationProfiles.Add"/>
+          </do_for_each>
+          <do_for_each name="$ProfileRace" in="lookup.race.list">
+            <do_if value="$ProfileRace.id != $CandidateRace">
+              <do_for_each name="$ProfileID" in="$ProfileFoods.{'$' + $ProfileRace.id}">
+                <!-- Water is local sustain, never an exotic cuisine. -->
+                <do_if value="$ProfileWares.{'$' + $ProfileID}? and $ProfileWares.{'$' + $ProfileID}.group.id != 'water'">
+                  <set_value name="$ProfileDefinition" exact="[$ProfileID,8,500.0f]"/>
+                  <include_actions ref="md.CE_PopulationProfiles.Add"/>
+                </do_if>
+              </do_for_each>
+            </do_if>
+          </do_for_each>
+          <set_value name="$CandidateVersion" exact="1"/>
+          <do_if value="lookup.ware.list.count == 0 or lookup.race.list.count == 0">
+            <set_value name="$CandidateValid" exact="false"/>
+          </do_if>
+          <do_if value="$CandidateDefinitions.count == 0 and $CandidateRequested gt 0">
+            <set_value name="$CandidateValid" exact="false"/>
+          </do_if>
+          <set_value name="$CandidateStage" exact="'definitions'"/>
+          <set_value name="$CandidateComplete" exact="true"/>
+        </do_if>
+      </actions>
+    </library>
+    <library name="Add">
+      <actions>
+        <do_if value="typeof $ProfileDefinition == datatype.list and $ProfileDefinition.count == 3 and (typeof $ProfileDefinition.{1}).isstring and (typeof $ProfileDefinition.{2}).isnumeric and (typeof $ProfileDefinition.{3}).isnumeric">
+          <set_value name="$CandidateRequested" operation="add"/>
+          <do_if value="$ProfileDefinition.count != 3 or $ProfileDefinition.{2} lt 1 or $ProfileDefinition.{2} gt 10 or $ProfileDefinition.{2} != ($ProfileDefinition.{2})i or not ($ProfileDefinition.{3} gt 0 and $ProfileDefinition.{3} le 1000000000000.0f)">
+            <set_value name="$CandidateValid" exact="false"/>
+          </do_if>
+          <set_value name="$ProfileAddID" exact="$ProfileDefinition.{1}"/>
+          <do_if value="$ProfileWares.{'$' + $ProfileAddID}? and not $ProfileSeen.{'$' + $ProfileAddID}? and $ProfileDefinition.{2} ge 1 and $ProfileDefinition.{2} le 10 and $ProfileDefinition.{3} gt 0">
+            <append_to_list name="$CandidateDefinitions" exact="[$ProfileWares.{'$' + $ProfileAddID},$ProfileDefinition.{2},$ProfileDefinition.{3}]"/>
+            <set_value name="$ProfileSeen.{'$' + $ProfileAddID}" exact="true"/>
+          </do_if>
+        </do_if>
+        <do_else>
+          <set_value name="$CandidateValid" exact="false"/>
+        </do_else>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

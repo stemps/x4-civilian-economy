@@ -5,6 +5,7 @@ ffi.cdef[[ uint64_t GetPickedMapComponent(uint64_t holomapid); ]]
 local C = ffi.C
 local registered = false
 local page, selected, signature = 1, nil, nil
+local order = {}
 local tooltipMap
 local function clearTooltip()
     if tooltipMap then SetMouseOverOverride(tooltipMap, nil); tooltipMap = nil end
@@ -23,106 +24,130 @@ local function title(s)
 end
 local function draw(menu, frame, s)
     local key = tostring(s.id)
-    if selected ~= key then page = 1 end
+    if selected ~= key then page, order = 1, M.order(s) else
+        local retained, seen = {}, {}
+        for _,id in ipairs(order) do if M.find(s,id) then retained[#retained+1]=id;seen[id]=true end end
+        for _,id in ipairs(M.order(s)) do if not seen[id] then retained[#retained+1]=id end end
+        order=retained
+    end
     selected, signature = key, M.signature(s)
     local pages = math.max(1, math.ceil(#s.wares / 5))
     page = math.min(page, pages)
     local data = menu.selectedShipsTableData
-    local width = math.min(Helper.scaleX(840), Helper.viewWidth - 2 *
+    local width = math.min(Helper.scaleX(1100), Helper.viewWidth - 2 *
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
     local border = frame:addFrameBorder('selectedships', {offset=Helper.standardContainerOffset})
-    local t = frame:addTable(6, {tabOrder=21, width=width, x=(Helper.viewWidth-width)/2,
-        y=0, scaling=false, reserveScrollBar=false, skipTabChange=true,
-        backgroundID='solid', backgroundColor=Color['frame_background_semitransparent'],
-        backgroundPadding=Helper.standardContainerOffset, frameborder=border.id})
-    -- One-pixel anchor columns let native status bars sit behind the text cells,
-    -- matching vanilla createSelectedShips' storage bars without text glyph art.
-    t:setColWidth(1, width * 0.26)
-    t:setColWidth(2, width * 0.30)
-    t:setColWidth(3, 1)
-    t:setColWidth(4, width * 0.21)
-    t:setColWidth(5, 1)
-    t:setDefaultBackgroundColSpan(1, 6)
-    t:setDefaultCellProperties('text', {fontsize=data.fontsize, minRowHeight=data.textHeight})
-    t:setDefaultComplexCellProperties('button', 'text', {fontsize=data.fontsize})
-    t:setDefaultComplexCellProperties('icon', 'text', {fontsize=data.fontsize})
+    local t=frame:addTable(5,{tabOrder=21,width=width,x=(Helper.viewWidth-width)/2,y=0,
+        scaling=false,reserveScrollBar=false,skipTabChange=true,
+        backgroundID='solid',backgroundColor=Color['frame_background_semitransparent'],
+        backgroundPadding=Helper.standardContainerOffset,frameborder=border.id})
+    -- MapMenu.viewCreated binds positional widget IDs: this hook MUST add one table.
+    t:setColWidth(1,1)
+    t:setColWidth(2,width*0.44)
+    t:setColWidth(3,width*0.18)
+    t:setColWidth(4,width*0.17)
+    t:setDefaultCellProperties('text',{fontsize=data.fontsize,minRowHeight=data.textHeight})
+    t:setDefaultComplexCellProperties('button','text',{fontsize=data.fontsize})
+    t:setDefaultComplexCellProperties('icon','text',{fontsize=data.fontsize})
     local function current() return M.get(s.id) end
-    local function row() return t:addRow(nil, {fixed=true, borderBelow=false}) end
-    local function full(value, properties) row()[1]:setColSpan(6):createText(value, properties or {}) end
-    full(title(s), {font=Helper.headerRow1Font, halign='center', mouseOverText=title(s), wordwrap=true})
-    local basic = row()
-    basic[1]:createText(M.text(77))
-    basic[2]:createText(function()
-        local now = current()
-        return now and now.level and string.format('%.0f', now.level) or M.text(69)
-    end, {halign='right'})
-    basic[3]:setColSpan(2):createText(M.text(76))
-    basic[5]:setColSpan(2):createText(function()
-        local now = current(); return M.population(now and now.population)
-    end, {halign='right'})
-    local state = row()
-    state[1]:createText(M.text(78))
-    state[2]:setColSpan(3):createText(function() return M.state(current()) end)
-    state[5]:setColSpan(2):createText(function()
-        local now = current(); return now and now.pausedOffers and M.text(70) or ''
-    end, {halign='right', wordwrap=true})
-    local history = row()
-    history[1]:createText(M.text(60))
-    history[2]:setColSpan(3):createText(function() return M.history(current()) end)
-    history[5]:setColSpan(2):createText(function() return M.historyState(current()) end,
-        {halign='right', wordwrap=true})
-    local headings = row()
-    headings[1]:createText(M.text(50), {mouseOverText=M.text(54)})
-    headings[2]:createText(M.text(51), {halign='right', mouseOverText=M.text(61)})
-    headings[3]:setColSpan(2):createText(M.text(52), {halign='center', mouseOverText=M.text(62)})
-    headings[5]:setColSpan(2):createText(M.text(53), {halign='center', mouseOverText=M.text(63)})
-    for index = (page - 1) * 5 + 1, math.min(page * 5, #s.wares) do
-        local wareIndex = index
-        local r = row()
-        local function ware()
-            local now = current(); return now, now and now.wares[wareIndex]
+    local rows={}
+    local function tableRow(index)
+        while #rows<index do rows[#rows+1]=t:addRow(nil,{fixed=true,borderBelow=false}) end
+        return rows[index]
+    end
+    local function row(index)
+        local result=tableRow(index+5)
+        result[1]:setBackgroundColSpan(5)
+        return result
+    end
+    local function left(index,value)
+        tableRow(index+1)[1]:setColSpan(5):createText(value,{wordwrap=true})
+    end
+    local green = {r=18,g=85,b=43,a=100,glow=0}
+    local blue = {r=12,g=85,b=140,a=100,glow=0}
+    local background = Color['rowgroup_background_default']
+    tableRow(1)[1]:setColSpan(5):createText(title(s), {font=Helper.headerRow1Font,
+        halign='center', mouseOverText=title(s), wordwrap=true})
+    left(1,function()
+        local now=current();return M.text(116)..' '..M.population(now and now.population)
+    end)
+    local progress=tableRow(3)
+    progress[2]:setColSpan(4)
+    local function percent()
+        local now=current()
+        return now and now.available and now.level<10 and math.min(100,100*now.growth/now.required) or 0
+    end
+    local function growthHint()
+        local now=current()
+        return M.progress(now)..'\n'..M.state(now)..'\n'..M.action(now)
+    end
+    progress[1]:createStatusBar({current=percent,start=percent,max=100,
+        valueColor=green,markerColor=Color['statusbar_marker_hidden'],
+        width=progress[2]:getWidth(),height=data.textHeight,x=1+Helper.borderSize,scaling=false})
+    progress[2]:createIcon('solid',{color=Color['icon_transparent'],height=data.textHeight,
+        width=progress[2]:getWidth(),mouseOverText=growthHint,cellBGColor=background}):setText(function()
+            return M.levelLabel(current())
+        end,{halign='left',color=Color['text_normal']})
+    left(3,function() return M.nextLevel(current()) end)
+    -- Failures and explicit test overrides must remain visible, not only in a tooltip.
+    if s.stale or s.profileError or s.pausedOffers or not s.available then
+        left(4,function()
+            local now=current()
+            return (not now or not now.available or now.stale or now.profileError) and M.state(now)
+                or (now.pausedOffers and M.text(70) or '')
+        end)
+    end
+    local headings=row(1)
+    headings[1]:setColSpan(3):createText(M.text(50), {cellBGColor=Color['row_title_background']})
+    for _,entry in ipairs({{4,78},{5,91}}) do
+        headings[entry[1]]:createText(M.text(entry[2]), {wordwrap=true,
+            cellBGColor=Color['row_title_background'],halign=entry[1]>=5 and 'right' or 'left'})
+    end
+    for index=(page-1)*5+1,math.min(page*5,#order) do
+        local wareKey=order[index]
+        local r=row(index-(page-1)*5+1)
+        local function ware() return M.find(current(),wareKey) end
+        local function hint() local w=ware();return w and M.wareHint(current(),w) or M.text(68) end
+        local w=ware()
+        -- A single visual ware column: name left, remaining time right, stock behind both.
+        r[1].properties.cellBGColor=background
+        -- All ware labels share the same baseline within this independent table.
+        r[2]:createText(function()
+            local now=ware();return now and now.name or M.text(69)
+        end,{halign='left',mouseOverText=hint,color=Color['text_normal']})
+        local function fill() local now=ware();return now and now.capacity>0 and math.min(100,now.reserve/now.capacity*100) or 0 end
+        local function futureFill()
+            local now=ware();return now and now.capacity>0 and math.min(100,(now.reserve+now.incoming)/now.capacity*100) or 0
         end
-        local function hint(field)
-            return function()
-                local now, w = ware(); return w and M.wareHint(now, w, field) or M.text(68)
-            end
-        end
-        for col = 1, 2 do
-            local column = col
+        r[1]:createStatusBar({current=futureFill,start=fill,max=100,valueColor=blue,posChangeColor=green,
+            markerColor=Color['statusbar_marker_hidden'],width=r[2]:getWidth()+Helper.borderSize+r[3]:getWidth(),height=data.textHeight,
+            x=1+Helper.borderSize,scaling=false,cellBGColor=background})
+        r[3]:createText(function()
+            local now=ware();return now and M.remaining(now) or M.text(69)
+        end,{halign='right',mouseOverText=hint,color=Color['text_normal']})
+        for col=4,5 do
+            local column=col
             r[col]:createText(function()
-                local now = current()
-                local w = now and now.wares[wareIndex]
-                return w and M.columns(now, w)[column] or M.text(69)
-            end, {halign=column == 1 and 'left' or 'right', mouseOverText=hint(column == 1 and 'ware' or 'demand')})
-        end
-        for i, field in ipairs({'fulfillment', 'reliability'}) do
-            local metric = field
-            local anchor, col = i * 2 + 1, i * 2 + 2
-            local function score()
-                local now, w = ware(); return M.score(now, w, metric)
-            end
-            local function fill() return math.min(100, math.max(0, score() or 0)) end
-            r[anchor]:createStatusBar({current=fill, start=fill, max=100,
-                valueColor=Color['statusbar_value_default'], markerColor=Color['statusbar_marker_hidden'],
-                width=r[col]:getWidth(), height=data.textHeight, x=1 + Helper.borderSize, scaling=false})
-            r[col]:createIcon('solid', {color=Color['icon_transparent'], height=data.textHeight,
-                mouseOverText=hint(metric)}):setText(function()
-                    local now = current()
-                    return now and M.percent(score(), now) or M.text(69)
-                end, {halign='right'})
+                local now=ware();return now and M.columns(current(),now)[column-1] or M.text(69)
+            end,{halign=col>4 and 'right' or 'left',mouseOverText=hint,wordwrap=col==4,
+                cellBGColor=background,color=col==4 and w and w.rate>0 and
+                    (w.reserve==0 and Color['text_negative'] or w.remaining<900 and Color['text_warning']) or Color['text_normal']})
         end
     end
-    if #s.wares == 0 then full(s.available and M.text(71) or M.text(68)) end
+    if #s.wares == 0 then
+        row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),{wordwrap=true,cellBGColor=background})
+    end
     if pages > 1 then
-        local r = row()
-        r[1]:createButton({active=page > 1, height=data.textHeight}):setText(M.text(66))
-        r[1].handlers.onClick = function() page=math.max(1, page-1); menu.refreshMainFrame=true end
-        r[2]:setColSpan(3):createText(M.text(72, page, pages), {halign='center'})
-        r[5]:setColSpan(2):createButton({active=page < pages, height=data.textHeight}):setText(M.text(67))
-        r[5].handlers.onClick = function() page=math.min(pages, page+1); menu.refreshMainFrame=true end
+        local r = row(7)
+        r[1]:setColSpan(2):createButton({active=page > 1,height=data.textHeight}):setText(M.text(66))
+        r[1].handlers.onClick = function() page=math.max(1,page-1);menu.refreshMainFrame=true end
+        r[3]:setColSpan(2):createText(M.text(72,page,pages),{halign='center'})
+        r[5]:createButton({active=page < pages,height=data.textHeight}):setText(M.text(67))
+        r[5].handlers.onClick = function() page=math.min(pages,page+1);menu.refreshMainFrame=true end
     end
-    t.properties.y = Helper.viewHeight - t:getFullHeight() - Helper.borderSize
-        - menu.borderOffset - Helper.standardContainerOffset
+    t.properties.y=Helper.viewHeight-t:getFullHeight()-Helper.borderSize
+        -menu.borderOffset-Helper.standardContainerOffset
+
 end
 local function register()
     if registered then return true end

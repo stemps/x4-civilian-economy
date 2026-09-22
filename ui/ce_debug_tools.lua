@@ -28,7 +28,7 @@ local function isHub(id)
 end
 local function statusFor(id)
     for _, s in ipairs(read('$ce_hub_statuses') or {}) do
-        if type(s) == 'table' and s[1] and ConvertStringTo64Bit(tostring(s[1])) == id then return s end
+        if CEHubStatus.validSnapshot(s) and s[1] and ConvertStringTo64Bit(tostring(s[1])) == id then return s end
     end
 end
 local function canFinish(id)
@@ -49,17 +49,21 @@ local function buildActions()
     end
     local s = statusFor(id)
     if s then
+        if yes(s[15]) then row(text(88)) end
+        if yes(s[14]) then row(text(89)) end
         row(text(32, tonumber(s[2]) or 1, tonumber(s[3]) or 0))
         row(text(yes(s[4]) and 34 or 35))
-        row(text(33, tonumber(s[5]) or 0, tonumber(s[6]) or 0))
+        if tonumber(s[3]) > 0 then row(text(99, s[3]), text(105))
+        elseif tonumber(s[2]) == 10 then row(text(100))
+        else row(text(113, s[5]/60, s[6]/60)) end
         if tonumber(s[11]) then row(text(44), text(45, tonumber(s[11]))) end
         if not yes(s[8]) then row(text(36), text(43)) end
         if yes(s[10]) then row(text(37)) end
         for _, w in ipairs(type(s[9]) == 'table' and s[9] or {}) do
-            row(tostring(w[1]),
-                text(38, tostring(w[1]), tonumber(w[2]) or 0, tonumber(w[3]) or 0, tonumber(w[4]) or 0, tonumber(w[5]) or 0) .. '\n' ..
-                text(39, tonumber(w[6]) or 0, tonumber(w[7]) or 0, tonumber(w[8]) or 0, tonumber(w[9]) or 0, tonumber(w[10]) or 0, tonumber(w[11]) or 0))
+            row(tostring(w[1]),text(111,tostring(w[1]),string.format('%.1f',w[2]),string.format('%.1f',w[9]),string.format('%.0f',w[3]),w[4],w[5]))
         end
+    else
+        row(text(68))
     end
     local function action(label, allowed, run)
         local used = false

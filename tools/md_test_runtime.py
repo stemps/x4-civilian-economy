@@ -12,7 +12,23 @@ class Missing:
     def __getitem__(self, key): return self
 NIL = Missing()
 
+class DataType(str):
+    @property
+    def isnumeric(self): return self in ('integer','float')
+    @property
+    def isstring(self): return self == 'string'
+
+def datatype_of(value):
+    if isinstance(value,List):return DataType('list')
+    if isinstance(value,Table):return DataType('table')
+    if type(value) is int:return DataType('integer')
+    if type(value) is float:return DataType('float')
+    if type(value) is str:return DataType('string')
+    return DataType('other')
+
 class Table(dict):
+    # Fixture attribute writes must affect the same table seen by MD paths.
+    def __setattr__(self, key, value): self[key] = value
     @property
     def keys(self): return List(list(self))
     def __getattr__(self, key):
@@ -52,11 +68,18 @@ def split(s):
 class Runner:
     def __init__(self):
         self.tree=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_ownerless_hub.xml'))
+        self.profiles=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_population_profiles.xml'))
+        self.reserves=E.parse(str(Path(__file__).resolve().parents[1]/'md/ce_reserves.xml'))
         self.env={'player':Table(age=0), 'null':NIL, 'true':True, 'false':False}
+        self.env['datatype']=Table(list=DataType('list'),table=DataType('table'))
         self.stubs={}
         self.native={}
+        self.continue_on_invalid_key=False
+        self.engine_errors=[]
     def path(self,s):
-        s=s.replace('$','').replace('@','')
+        # Variable sigils are syntax; sigils inside string keys are data.
+        s=''.join(part if i % 2 else part.replace('$','').replace('@','')
+                  for i,part in enumerate(re.split(r"('(?:[^'\\]|\\.)*')",s)))
         while '.{' in s: s=re.sub(r'\.\{([^{}]+)\}',r'[\1]',s)
         return s
     def expr(self,s):
@@ -69,6 +92,7 @@ class Runner:
             cond,rest=s[3:].split(' then ',1); a,b=rest.split(' else ',1)
             return self.expr(a if self.expr(cond) else b)
         s=self.path(s)
+        s=re.sub(r'typeof (\w+(?:\.[\w]+|\[[^\]]+\])*)',r'datatype_of(\1)',s)
         s=re.sub(r'(\w+(?:\.[\w]+|\[[^\]]+\])*)\?',r'defined(\1)',s)
         s=re.sub(r'\(([^()]*)\)i',r'int(\1)',s)
         s=re.sub(r'(\d+(?:\.\d+)?)f\b',r'\1',s)
@@ -77,12 +101,17 @@ class Runner:
         for md,py in [(' ge ',' >= '),(' le ',' <= '),(' gt ',' > '),(' lt ',' < ')]: s=s.replace(md,py)
         while re.search(r'\[([^\[\]]+)\]\.(min|max)',s):
             s=re.sub(r'\[([^\[\]]+)\]\.(min|max)',r'\2(\1)',s)
-        return wrap(eval(s, {'__builtins__':{},'min':min,'max':max,'int':int,'defined':lambda x:x is not NIL},self.env))
+        return wrap(eval(s, {'__builtins__':{},'min':min,'max':max,'int':int,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
     def set(self,path,v,remove=False):
         path=self.path(path)
         # Last field/index is the target; everything before it is an expression.
         if path.endswith(']'):
             base,key=path.rsplit('[',1); obj=self.expr(base); key=self.expr(key[:-1])
+            if base.startswith('Profile') and type(key) is str and not key.startswith('$'):
+                if self.continue_on_invalid_key:
+                    self.engine_errors.append('invalid string key: '+key)
+                    return
+                raise ValueError('MD string table keys require a $ prefix: '+key)
         elif '.' in path:
             base,key=path.rsplit('.',1); obj=self.expr(base)
         else: obj=self.env; key=path
@@ -90,7 +119,8 @@ class Runner:
         else: obj[key]=wrap(v)
     def library(self,name):
         if name in self.stubs: return self.stubs[name]()
-        nodes=self.tree.xpath('//library[@name=$n]/actions',n=name)
+        tree = self.reserves if name.startswith('md.CE_Reserves.') else self.profiles if name.startswith('md.CE_PopulationProfiles.') else self.tree
+        nodes=tree.xpath('//library[@name=$n]/actions',n=name.rsplit('.',1)[-1])
         if not nodes: raise ValueError(name)
         self.actions(nodes[0])
     def actions(self,nodes):

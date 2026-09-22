@@ -6,15 +6,15 @@ from lupa.luajit21 import LuaRuntime
 ROOT = Path(__file__).resolve().parents[1]
 lua = LuaRuntime()
 lua.globals().translations = lua.table_from({
-    int(e.get('id')): ''.join(e.itertext()).replace(r'\n', '\n')
+    int(e.get('id')): ''.join(e.itertext()).replace(r'\n', '\n').replace(r'\(', '(').replace(r'\)', ')')
     for e in E.parse(ROOT / 't/0001-l044.xml').iter('t')
 })
 setup = r'''
 now, reads, known, valid, legacy = 0, 0, true, true, false
 hubs = {42, 43}
 function snapshot(id, count)
-    local s = {id, 1, 0, true, 60, 120, false, true, {}, false, 8524100000}
-    for i=1,count do s[9][i] = {'Ware '..i, 500.5, 4000, 300, 200, 1000, 13000, 95, 99, 2, 2000} end
+    local s = {id, 1, 0, true, 3600, 7200, false, true, {}, false, 8524100000, nil, 3, false, false, {'Energy Cells'}}
+    for i=1,count do s[9][i] = {'Ware '..i, 500.5, 4000, 300, 200, 1000, 13000, 900.9+i, 2000, 'ware'..i} end
     return s
 end
 status, second = snapshot(42, 14), snapshot(43, 2)
@@ -27,6 +27,12 @@ local C = {
  GetPickedMapComponent=function(id) assert(id==9);return picked end,
 }
 package.loaded.ffi={C=C,cdef=function() end}
+ConvertIntegerString=function(n,sep,precision,compact)
+ assert(sep and precision==2 and compact)
+ if n>=1000000 then return string.format('%.2f M',n/1000000) end
+ if n>=10000 then return string.format('%.2f k',n/1000) end
+ local result=tostring(math.floor(n));return result:reverse():gsub('(%d%d%d)','%1,'):reverse():gsub('^,','')
+end
 ConvertStringTo64Bit=tonumber
 ConvertStringToLuaID=tonumber
 GetNPCBlackboard=function(id,key)
@@ -46,7 +52,7 @@ DebugError=function() end
 callbacks={}
 RegisterEvent=function(event,fn) callbacks[event]=fn end
 Register_OnLoad_Init=function(fn) loadCallback=fn end
-Color={frame_background_semitransparent={},statusbar_value_default={},statusbar_marker_hidden={},icon_transparent={}}
+Color={text_normal={},rowgroup_background_default={},row_title_background={},row_background={},text_negative={},text_warning={},text_positive={},frame_background_semitransparent={},statusbar_value_default={},statusbar_marker_hidden={},icon_transparent={}}
 nativeDraws, nativeUpdates, nativeCleanups = 0, 0, 0
 menu={selectedcomponents={['42']=true}, selectedShipsTableData={fontsize=12,textHeight=20},
  infoTableOffsetX=10,infoTableWidth=250,borderOffset=2,map=7,holomap=9,
@@ -68,19 +74,20 @@ function newFrame()
   local t={properties=p,rows={},columns=cols,widths={}}
   self.tables[#self.tables+1]=t
   function t:setColWidth(col,w) assert(col<=cols and w>0);self.widths[col]=w end
-  function t:setDefaultBackgroundColSpan(a,b) assert(a==1 and b==cols) end
+  function t:setDefaultBackgroundColSpan(a,b) assert(a==1 and b==5) end
   function t:setDefaultCellProperties() end
   function t:setDefaultComplexCellProperties() end
-  function t:getFullHeight() return #self.rows*20 end
+  function t:getFullHeight() return #self.rows*20 + (self.columns==2 and (leftExtraHeight or 0) or 0) end
   function t:addRow(data,props)
    assert(data==nil); local r={}
    for i=1,cols do
-    local cell={handlers={}}
+    local cell={handlers={},properties={}}
     function cell:setColSpan(n) assert(i+n-1<=cols);return self end
-    function cell:createText(text,p) self.text=text;self.properties=p;return self end
+    function cell:setBackgroundColSpan(n) assert(i+n-1<=cols);return self end
+    function cell:createText(text,p) self.text=text;self.properties=p;self.kind="text";return self end
     function cell:createButton(p) self.properties=p;return self end
     function cell:createIcon(icon,p) assert(icon=='solid');self.properties=p;self.kind='icon';return self end
-    function cell:createStatusBar(p) self.properties=p;self.kind='bar';return self end
+    function cell:createStatusBar(p) assert(type(p.valueColor)=='table');self.properties=p;self.kind='bar';return self end
     function cell:getWidth()
      if t.widths[i] then return t.widths[i] end
      local used=2*(cols-1);for _,w in pairs(t.widths) do used=used+w end
@@ -96,7 +103,12 @@ function newFrame()
  return f
 end
 function draw()
- local f=newFrame();menu.createSelectedShips(f);assert(#f.tables==1);return f.tables[1]
+ local f=newFrame();menu.createSelectedShips(f)
+ assert(#f.tables==1, 'MapMenu.viewCreated requires exactly one selected table')
+ -- Native callback positions: inserting tables here shifts the render-target ID.
+ local function bind(...) local player,search,sidebar,rightbar,selected,top,map=...;return map end
+ assert(bind(1,2,3,4,f.tables[1],6,7)==7)
+ return f.tables[1]
 end
 function value(cell) return type(cell.text)=='function' and cell.text() or cell.text end
 '''
@@ -117,69 +129,62 @@ now=1;M.get(42);assert(reads==before+3)
 known=false;assert(not M.get(42));known=true
 valid=false;assert(not M.get(42));valid=true
 legacy=true;now=2;assert(not M.get(42));legacy=false;now=3
-assert(M.population(8524100096)=='8.52 billion')
-assert(M.population(1234567)=='1.23 million')
-assert(M.population(1200000000000)=='1.20 trillion')
-assert(M.population(999)=='999' and M.population(0)=='0' and M.population(nil)=='N/A')
-local t=draw();assert(t.columns==6 and t.properties.tabOrder==21 and #t.rows==11)
-assert(t.properties.y==1080-220-2-2-4)
-assert(value(t.rows[2][2])=='1' and value(t.rows[2][5])=='8.52 billion')
-assert(value(t.rows[6][1])=='Ware 1' and value(t.rows[10][1])=='Ware 5')
-assert(value(t.rows[6][2])=='500.5 / 4000.0')
-assert(value(t.rows[6][4])=='95.0%' and value(t.rows[6][6])=='99.0%')
-assert(t.rows[6][3].kind=='bar' and t.rows[6][3].properties.current()==95)
-assert(t.rows[6][5].properties.current()==99 and t.rows[6][5].properties.max==100)
-assert(t.rows[6][3].properties.width==t.rows[6][4]:getWidth())
-assert(value(t.rows[4][5])=='Collecting history')
-assert(not t.rows[11][1].properties.active and t.rows[11][5].properties.active)
-local hint=t.rows[6][1].properties.mouseOverText()
-assert(hint:find('Consumption:',1,true) and not hint:find('Reliability',1,true))
-assert(t.rows[6][4].properties.mouseOverText():find('90%',1,true))
-assert(t.rows[6][6].properties.mouseOverText():find('15 minutes',1,true))
--- All rendered CE strings use printable ASCII, without pipe separators.
-for _,r in ipairs(t.rows) do
- for _,cell in ipairs(r) do
-  local v=value(cell)
-  if v then assert(not v:find('[^ -~]') and not v:find('|',1,true),v) end
-  local h=cell.properties and cell.properties.mouseOverText
-  h=type(h)=='function' and h() or h
-  if h then assert(#h<200 and not h:find('|',1,true),h) end
- end
+local t=draw();assert(t.columns==5 and t.properties.tabOrder==21 and #t.rows==12)
+assert(t.properties.y==1080-240-2-2-4)
+assert(value(t.rows[2][1])=='Population 8.52 billion')
+assert(value(t.rows[3][2])=='Level 1 (growing)' and t.rows[3][1].properties.current()==50)
+assert(t.rows[3][2].properties.width==t.rows[3][2]:getWidth())
+assert(value(t.rows[7][2])=='Ware 1' and value(t.rows[11][2])=='Ware 5')
+assert(value(t.rows[7][3])=='16m' and value(t.rows[7][4])=='Supplied')
+assert(value(t.rows[7][5])=='300')
+for _,col in ipairs({2,3,4,5}) do assert(t.rows[7][col].kind=='text') end
+assert(value(t.rows[6][5])=='Buying')
+assert(t.rows[7][1].properties.width==t.rows[7][2]:getWidth()+Helper.borderSize+t.rows[7][3]:getWidth())
+assert(t.rows[7][1].properties.start()==500.5/4000*100 and t.rows[7][1].properties.current()==700.5/4000*100)
+assert(t.rows[7][1].properties.valueColor.b==140 and t.rows[7][1].properties.valueColor.glow==0)
+assert(t.rows[7][1].properties.posChangeColor.g==85)
+for _,col in ipairs({1,4,5}) do
+ assert(t.rows[7][col].properties.cellBGColor==Color.rowgroup_background_default)
+ assert(t.rows[6][col].properties.cellBGColor==Color.row_title_background)
 end
--- Bar and number update together, without deriving history from the cleared backlog.
-status[9][1][2]=0;status[9][1][8]=66.7;status[9][1][9]=25
-now=4;menu.refreshMainFrame=nil;menu.onUpdate()
-assert(not menu.refreshMainFrame)
-assert(value(t.rows[6][2])=='0.0 / 4000.0' and value(t.rows[6][4])=='66.7%')
-assert(value(t.rows[6][6])=='25.0%' and t.rows[6][5].properties.current()==25)
-status[5]=0;now=5;assert(value(t.rows[6][4])=='N/A' and t.rows[6][3].properties.current()==0)
-status[5]=120;status[9][1][8]=0;now=6
-assert(value(t.rows[6][4])=='0.0%' and value(t.rows[4][5])=='Full window')
+assert(value(t.rows[4][1]):find('Energy Cells',1,true))
+assert(not t.rows[12][1].properties.active and t.rows[12][5].properties.active)
+assert(t.rows[7][2].properties.mouseOverText():find('Incoming: 200',1,true))
+status[9][5][2]=0;status[9][5][8]=0;now=4
+menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
+t=draw();assert(value(t.rows[7][2])=='Ware 1' and value(t.rows[11][2])=='Ware 5')
+assert(value(t.rows[11][3])=='Empty' and value(t.rows[11][4])=='Needed')
+assert(t.rows[11][4].properties.color==Color.text_negative)
+assert(value(t.rows[3][2])=='Level 1 (stagnating)')
+assert(t.rows[3][2].properties.mouseOverText():find('Ware 5 needed',1,true))
+status[9][1][8]=899;now=5;t=draw()
+assert(value(t.rows[7][4])=='Low' and t.rows[7][4].properties.color==Color.text_warning)
+status[9][1][8]=900;now=6;t=draw();assert(value(t.rows[7][4])=='Supplied')
+status[9][1][2]=9000;status[9][1][8]=16200;now=7
+assert(value(t.rows[7][3])=='4h 30m' and t.rows[7][1].properties.current()==100)
 assert(menu.onUpdate()==73 and override=='Level: 1\nPopulation served: 8.52 billion')
 picked=77;menu.onUpdate();assert(override==nil)
 override='native hover';menu.onUpdate();assert(override=='native hover')
 picked=42;menu.onUpdate();mouse=false;menu.onUpdate();assert(override==nil);mouse=true
 picked=43;menu.onUpdate();assert(override=='Level: 1\nPopulation served: 8.52 billion');picked=42
-t.rows[11][5].handlers.onClick();assert(menu.refreshMainFrame)
-t=draw();assert(value(t.rows[6][1])=='Ware 6')
-t.rows[11][5].handlers.onClick();t=draw();assert(value(t.rows[6][1])=='Ware 11')
-assert(#t.rows==10 and not t.rows[10][5].properties.active)
-t.rows[10][1].handlers.onClick();t=draw();assert(value(t.rows[6][1])=='Ware 6')
-menu.selectedcomponents={['43']=true};t=draw();assert(value(t.rows[6][1])=='Ware 1')
-menu.selectedcomponents={['42']=true};t=draw();assert(value(t.rows[6][1])=='Ware 1')
-status[9][15]={'New ware',0,1,0,0,0,0,90,90,0,1};now=7
+t.rows[12][5].handlers.onClick();t=draw();assert(value(t.rows[7][2])=='Ware 6')
+t.rows[12][5].handlers.onClick();t=draw();assert(value(t.rows[7][2])=='Ware 11')
+assert(not t.rows[12][5].properties.active)
+t.rows[12][1].handlers.onClick();t=draw();assert(value(t.rows[7][2])=='Ware 6')
+menu.selectedcomponents={['43']=true};t=draw();assert(value(t.rows[7][2])=='Ware 1')
+menu.selectedcomponents={['42']=true};t=draw();assert(value(t.rows[7][2])=='Ware 5')
+status[9][15]={'New ware',0,1,1,0,0,0,0,1,'newware'};now=8
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
 menu.selectedcomponents={['42']=true,['43']=true};assert(draw().columns==1)
 menu.selectedcomponents={['77']=true};assert(draw().columns==1)
 menu.selectedcomponents={};assert(draw().columns==1)
 menu.selectedcomponents={['42']=true}
-status[4]=false;status[5]=0;now=8;t=draw()
-assert(value(t.rows[3][2])=='Consumption paused')
-statuses={second};now=9;menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
-t=draw();assert(value(t.rows[3][2])==translations[68] and #t.rows==6)
-assert(override=='Level: N/A\nPopulation served: N/A')
-statuses={status,second};now=10;menu.onUpdate();t=draw()
-status[5]=120;status[9][1][8]=nil;now=11;assert(value(t.rows[6][4])=='N/A')
+status[4]=false;now=9;t=draw();assert(value(t.rows[3][2])=='Level 1 (stagnating)')
+statuses={second};now=10;menu.onUpdate();t=draw();assert(value(t.rows[3][2])==translations[68])
+statuses={status,second};now=11;menu.onUpdate();t=draw()
+status[9][1][8]=nil;now=12;assert(M.get(42).stale and #M.get(42).wares==15)
+assert(M.state(M.get(42))==M.text(88))
+status[9][1][8]=900;now=13
 menu.mode='diplomaticactionparam_object';menu.onUpdate()
 assert(override=='native tooltip' and draw().columns==1)
 menu.mode=nil;changeMode=true;menu.onUpdate();assert(override=='native tooltip');menu.mode=nil
@@ -192,22 +197,31 @@ menu.onUpdate();assert(override)
 assert(menu.cleanup()==74 and nativeCleanups==1 and override==nil)
 before=reads;draw();assert(reads==before+3)
 Helper.viewWidth=1280;t=draw();assert(t.properties.width==752 and t.properties.x==264)
-status[4]=0;status[7]=1;now=12
-assert(value(t.rows[3][2])=='Consumption paused' and value(t.rows[3][5])=='New offers paused')
+for _,w in pairs(t.widths) do assert(w>0) end
+assert(t.rows[7][5]:getWidth()>40)
+status[4]=0;status[7]=1;now=14
+assert(value(t.rows[3][2])=='Level 1 (stagnating)' and M.get(42).pausedOffers)
 for reason,label in pairs({constructing='constructing',damaged_modules='damaged modules',
  no_population='no population',owner_changed='ownership changed',hub_unavailable='hub unavailable',
  modules_unavailable='modules unavailable'}) do
- status[12]=reason;now=now+1
- assert(value(t.rows[3][2])=='Paused: '..label)
+ status[12]=reason;now=now+1;assert(t.rows[3][2].properties.mouseOverText():find('Paused: '..label,1,true))
 end
-status[12]='future_reason';now=now+1;assert(value(t.rows[3][2])=='Consumption paused')
-status[12]='constructing';status[4]=true;now=now+1
-assert(value(t.rows[3][2])=='Consumption active')
+status[4]=true;status[14]=true;now=now+1;assert(M.state(M.get(42))==M.text(89))
+status[14]=false;status[15]=true;now=now+1;assert(M.state(M.get(42))==M.text(88))
+status[15]=false;status[13]=2;now=now+1;assert(not M.get(42).available)
+status[13]=3;status[3]=2;now=now+1;t=draw()
+assert(value(t.rows[3][2])=='Level 1 (expanding)')
+assert(t.rows[3][2].properties.mouseOverText():find(M.text(105),1,true))
+status[3]=0;status[2]=10;now=now+1;t=draw();assert(value(t.rows[3][2])=='Level 10 (maximum)')
+status[9][1][4]=1485;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='1,485')
+status[9][1][4]=57000;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='57.00 k')
+status[9][1][4]=1500000;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='1.50 M')
+status[9]={};now=now+1;t=draw();assert(value(t.rows[7][1])==M.text(71))
 ''')
 # Verify the deferred-load path independently of the already-registered menu.
 deferred = LuaRuntime()
 deferred.globals().translations = deferred.table_from({
-    int(e.get('id')): ''.join(e.itertext()).replace(r'\n', '\n')
+    int(e.get('id')): ''.join(e.itertext()).replace(r'\n', '\n').replace(r'\(', '(').replace(r'\)', ')')
     for e in E.parse(ROOT / 't/0001-l044.xml').iter('t')
 })
 deferred.execute(setup)
@@ -218,6 +232,6 @@ deferred.execute('''
 assert(loadCallback);loadCallback();menu=savedMenu
 callbacks.CEPopulationRequest();local wrapper=menu.onUpdate
 loadCallback();callbacks.CEPopulationRequest();assert(menu.onUpdate==wrapper)
-assert(draw().columns==6)
+assert(draw().columns==5)
 ''')
-print('Map status: metrics, identity, cache, pagination, refresh, percentage bars and native fallbacks passed')
+print('Map status: metrics, identity, cache, pagination, refresh, reserve/growth bars and native fallbacks passed')
