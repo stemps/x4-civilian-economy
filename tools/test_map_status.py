@@ -216,6 +216,38 @@ status[9][1][4]=1485;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]
 status[9][1][4]=57000;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='57.00 k')
 status[9][1][4]=1500000;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='1.50 M')
 status[9]={};now=now+1;t=draw();assert(value(t.rows[7][1])==M.text(71))
+-- State codes drive labels, sort groups, colors and rebuilds independently of text.
+local wareCases = {
+ {0,0,0,'paused',57,'text_normal'},
+ {1,0,0,'needed',94,'text_negative'},
+ {1,1,899,'low',95,'text_warning'},
+ {1,1,900,'supplied',96,'text_normal'},
+ {1,10,36000,'full',97,'text_normal'},
+}
+for _,case in ipairs(wareCases) do
+ local w={rate=case[1],reserve=case[2],remaining=case[3],capacity=10,key='test',name='Test'}
+ assert(M.wareCode(w)==case[4] and M.wareState(w)==M.text(case[5]))
+ assert(M.wareColor(w)==case[6])
+end
+local sample={id=42,available=true,level=1,target=0,active=true,growth=1,required=7200,
+ plotReady=true,wares={{rate=1,reserve=0,remaining=0,capacity=10,key='test',name='Test'}}}
+local neededSignature=M.signature(sample)
+local oldNeeded,oldLow=translations[94],translations[95]
+translations[94],translations[95]='same text','same text'
+assert(M.signature(sample)==neededSignature)
+sample.wares[1].reserve=1;sample.wares[1].remaining=899
+assert(M.signature(sample)~=neededSignature)
+translations[94],translations[95]=oldNeeded,oldLow
+assert(M.classify(sample).growing and M.state(sample)==M.text(104))
+sample.stale=true;sample.profileError=true;sample.target=2
+assert(M.state(sample)==M.text(88) and M.progress(sample)==M.text(105))
+assert(M.levelLabel(sample)==M.text(121,1,M.text(119)))
+sample.stale=false;assert(M.state(sample)==M.text(89))
+sample.profileError=false;sample.target=0;sample.growth=sample.required
+sample.wares[1].reserve=0
+assert(M.state(sample)==M.text(101)) -- ready takes precedence over shortage
+sample.plotReady=false;assert(M.state(sample)==M.text(102))
+sample.level=10;assert(M.state(sample)==M.text(100) and M.action(sample)==M.text(114))
 ''')
 # Verify the deferred-load path independently of the already-registered menu.
 deferred = LuaRuntime()

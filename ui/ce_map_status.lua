@@ -22,7 +22,9 @@ end
 local function title(s)
     return GetComponentData(s.id, 'name') or M.text(1)
 end
-local function draw(menu, frame, s)
+local PAGE_SIZE = 5
+
+local function updateSelection(s)
     local key = tostring(s.id)
     if selected ~= key then page, order = 1, M.order(s) else
         local retained, seen = {}, {}
@@ -31,8 +33,12 @@ local function draw(menu, frame, s)
         order=retained
     end
     selected, signature = key, M.signature(s)
-    local pages = math.max(1, math.ceil(#s.wares / 5))
+    local pages = math.max(1, math.ceil(#s.wares / PAGE_SIZE))
     page = math.min(page, pages)
+    return pages
+end
+
+local function createPanel(menu, frame, s)
     local data = menu.selectedShipsTableData
     local width = math.min(Helper.scaleX(1100), Helper.viewWidth - 2 *
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
@@ -60,15 +66,22 @@ local function draw(menu, frame, s)
         result[1]:setBackgroundColSpan(5)
         return result
     end
-    local function left(index,value)
+    local function summaryLine(index,value)
         tableRow(index+1)[1]:setColSpan(5):createText(value,{wordwrap=true})
     end
     local green = {r=18,g=85,b=43,a=100,glow=0}
     local blue = {r=12,g=85,b=140,a=100,glow=0}
     local background = Color['rowgroup_background_default']
+    return {table=t, data=data, current=current, tableRow=tableRow, row=row, summaryLine=summaryLine,
+        green=green, blue=blue, background=background}
+end
+
+local function drawSummary(panel, s)
+    local tableRow, summaryLine, current = panel.tableRow, panel.summaryLine, panel.current
+    local data, green, background = panel.data, panel.green, panel.background
     tableRow(1)[1]:setColSpan(5):createText(title(s), {font=Helper.headerRow1Font,
         halign='center', mouseOverText=title(s), wordwrap=true})
-    left(1,function()
+    summaryLine(1,function()
         local now=current();return M.text(116)..' '..M.population(now and now.population)
     end)
     local progress=tableRow(3)
@@ -88,55 +101,61 @@ local function draw(menu, frame, s)
         width=progress[2]:getWidth(),mouseOverText=growthHint,cellBGColor=background}):setText(function()
             return M.levelLabel(current())
         end,{halign='left',color=Color['text_normal']})
-    left(3,function() return M.nextLevel(current()) end)
+    summaryLine(3,function() return M.nextLevel(current()) end)
     -- Failures and explicit test overrides must remain visible, not only in a tooltip.
     if s.stale or s.profileError or s.pausedOffers or not s.available then
-        left(4,function()
+        summaryLine(4,function()
             local now=current()
             return (not now or not now.available or now.stale or now.profileError) and M.state(now)
                 or (now.pausedOffers and M.text(70) or '')
         end)
     end
+end
+
+local function drawWareHeadings(panel)
+    local row = panel.row
     local headings=row(1)
     headings[1]:setColSpan(3):createText(M.text(50), {cellBGColor=Color['row_title_background']})
     for _,entry in ipairs({{4,78},{5,91}}) do
         headings[entry[1]]:createText(M.text(entry[2]), {wordwrap=true,
             cellBGColor=Color['row_title_background'],halign=entry[1]>=5 and 'right' or 'left'})
     end
-    for index=(page-1)*5+1,math.min(page*5,#order) do
-        local wareKey=order[index]
-        local r=row(index-(page-1)*5+1)
-        local function ware() return M.find(current(),wareKey) end
-        local function hint() local w=ware();return w and M.wareHint(current(),w) or M.text(68) end
-        local w=ware()
-        -- A single visual ware column: name left, remaining time right, stock behind both.
-        r[1].properties.cellBGColor=background
-        -- All ware labels share the same baseline within this independent table.
-        r[2]:createText(function()
-            local now=ware();return now and now.name or M.text(69)
-        end,{halign='left',mouseOverText=hint,color=Color['text_normal']})
-        local function fill() local now=ware();return now and now.capacity>0 and math.min(100,now.reserve/now.capacity*100) or 0 end
-        local function futureFill()
-            local now=ware();return now and now.capacity>0 and math.min(100,(now.reserve+now.incoming)/now.capacity*100) or 0
-        end
-        r[1]:createStatusBar({current=futureFill,start=fill,max=100,valueColor=blue,posChangeColor=green,
-            markerColor=Color['statusbar_marker_hidden'],width=r[2]:getWidth()+Helper.borderSize+r[3]:getWidth(),height=data.textHeight,
-            x=1+Helper.borderSize,scaling=false,cellBGColor=background})
-        r[3]:createText(function()
-            local now=ware();return now and M.remaining(now) or M.text(69)
-        end,{halign='right',mouseOverText=hint,color=Color['text_normal']})
-        for col=4,5 do
-            local column=col
-            r[col]:createText(function()
-                local now=ware();return now and M.columns(current(),now)[column-1] or M.text(69)
-            end,{halign=col>4 and 'right' or 'left',mouseOverText=hint,wordwrap=col==4,
-                cellBGColor=background,color=col==4 and w and w.rate>0 and
-                    (w.reserve==0 and Color['text_negative'] or w.remaining<900 and Color['text_warning']) or Color['text_normal']})
-        end
+end
+
+local function drawWareRow(panel, wareKey, index)
+    local row, current, data = panel.row, panel.current, panel.data
+    local blue, green, background = panel.blue, panel.green, panel.background
+    local r=row(index)
+    local function ware() return M.find(current(),wareKey) end
+    local function hint() local w=ware();return w and M.wareHint(current(),w) or M.text(68) end
+    local w=ware()
+    -- A single visual ware column: name left, remaining time right, stock behind both.
+    r[1].properties.cellBGColor=background
+    -- All ware labels share the same baseline within the selection table.
+    r[2]:createText(function()
+        local now=ware();return now and now.name or M.text(69)
+    end,{halign='left',mouseOverText=hint,color=Color['text_normal']})
+    local function fill() local now=ware();return now and now.capacity>0 and math.min(100,now.reserve/now.capacity*100) or 0 end
+    local function futureFill()
+        local now=ware();return now and now.capacity>0 and math.min(100,(now.reserve+now.incoming)/now.capacity*100) or 0
     end
-    if #s.wares == 0 then
-        row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),{wordwrap=true,cellBGColor=background})
+    r[1]:createStatusBar({current=futureFill,start=fill,max=100,valueColor=blue,posChangeColor=green,
+        markerColor=Color['statusbar_marker_hidden'],width=r[2]:getWidth()+Helper.borderSize+r[3]:getWidth(),height=data.textHeight,
+        x=1+Helper.borderSize,scaling=false,cellBGColor=background})
+    r[3]:createText(function()
+        local now=ware();return now and M.remaining(now) or M.text(69)
+    end,{halign='right',mouseOverText=hint,color=Color['text_normal']})
+    for col=4,5 do
+        local column=col
+        r[col]:createText(function()
+            local now=ware();return now and M.columns(current(),now)[column-1] or M.text(69)
+        end,{halign=col>4 and 'right' or 'left',mouseOverText=hint,wordwrap=col==4,
+            cellBGColor=background,color=Color[col==4 and M.wareColor(w) or 'text_normal']})
     end
+end
+
+local function drawPagination(panel, menu, pages)
+    local row, data = panel.row, panel.data
     if pages > 1 then
         local r = row(7)
         r[1]:setColSpan(2):createButton({active=page > 1,height=data.textHeight}):setText(M.text(66))
@@ -145,9 +164,24 @@ local function draw(menu, frame, s)
         r[5]:createButton({active=page < pages,height=data.textHeight}):setText(M.text(67))
         r[5].handlers.onClick = function() page=math.min(pages,page+1);menu.refreshMainFrame=true end
     end
-    t.properties.y=Helper.viewHeight-t:getFullHeight()-Helper.borderSize
-        -menu.borderOffset-Helper.standardContainerOffset
+end
 
+local function draw(menu, frame, s)
+    local pages = updateSelection(s)
+    local panel = createPanel(menu, frame, s)
+    drawSummary(panel, s)
+    drawWareHeadings(panel)
+    local first = (page - 1) * PAGE_SIZE + 1
+    for index=first, math.min(page * PAGE_SIZE, #order) do
+        drawWareRow(panel, order[index], index - first + 2)
+    end
+    if #s.wares == 0 then
+        panel.row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),
+            {wordwrap=true,cellBGColor=panel.background})
+    end
+    drawPagination(panel, menu, pages)
+    panel.table.properties.y=Helper.viewHeight-panel.table:getFullHeight()-Helper.borderSize
+        -menu.borderOffset-Helper.standardContainerOffset
 end
 local function register()
     if registered then return true end

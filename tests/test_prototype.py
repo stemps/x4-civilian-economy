@@ -55,6 +55,34 @@ class ControllerTests(unittest.TestCase):
         deal['exists']=False;self.run.library('UpdateOffers')
         self.assertEqual(len(calls),1);self.assertNotIn(deal,self.r.Transfers)
 
+    def test_unloading_index_keeps_all_live_deals_and_is_rebuilt_per_hub(self):
+        self.r.update(Hub=Table(exists=True,iswreck=False),PauseOffers=False)
+        self.w.update(Price=1300,Offer=Table(exists=True,amount=0,offeramount=0))
+        other=copy.deepcopy(self.w)
+        self.r.Wares[Ware('water')]=other
+        first,second,expired=(Component(exists=True),Component(exists=True),Component(exists=False))
+        self.r.Transfers.update({first:Ware('food'),second:Ware('food'),expired:Ware('water')})
+        calls=[]
+        self.run.native['update_trade']=lambda n:calls.append(self.run.expr(n.get('trade')))
+        self.run.library('UpdateOffers')
+        self.assertEqual(len(calls),1);self.assertIs(calls[0],other.Offer)
+        self.assertNotIn(expired,self.r.Transfers)
+        first.exists=False;calls.clear();self.run.library('UpdateOffers')
+        self.assertEqual(len(calls),1);self.assertIs(calls[0],other.Offer)
+        self.assertIn(second,self.r.Transfers)
+        second.exists=False;calls.clear();self.run.library('UpdateOffers')
+        self.assertEqual(len(calls),2)
+        self.assertTrue(any(offer is self.w.Offer for offer in calls))
+        self.assertEqual(len(self.r.Transfers),0)
+        # Reusing the caller namespace for another hub must not retain exclusions.
+        second.exists=True;self.r.Transfers[second]=Ware('food')
+        self.run.library('UpdateOffers')
+        next_ware=copy.deepcopy(self.w)
+        self.run.env['R']=Table(Hub=self.r.Hub,Operational=True,PauseOffers=False,
+                               Transfers=Table(),Wares=Table({Ware('food'):next_ware}))
+        calls.clear();self.run.library('UpdateOffers')
+        self.assertEqual(len(calls),1);self.assertIs(calls[0],next_ware.Offer)
+
 class ContentTests(unittest.TestCase):
     def test_apply_level_rates_prices_and_existing_backlog(self):
         run=Runner();definitions(run)

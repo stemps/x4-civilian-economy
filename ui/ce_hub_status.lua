@@ -131,11 +131,24 @@ function M.time(seconds, roundUp)
     local minutes = roundUp and math.ceil(seconds / 60) or math.floor(seconds / 60)
     return minutes >= 60 and M.text(93, math.floor(minutes/60), minutes%60) or M.text(92, minutes)
 end
+local wareStates = {
+    paused = {label=57, rank=3, color='text_normal'},
+    needed = {label=94, rank=0, color='text_negative'},
+    low = {label=95, rank=1, color='text_warning'},
+    supplied = {label=96, rank=2, color='text_normal'},
+    full = {label=97, rank=2, color='text_normal'},
+}
+function M.wareCode(w)
+    if not w or w.rate == 0 then return 'paused' end
+    if w.reserve == 0 then return 'needed' end
+    if w.remaining < 900 then return 'low' end
+    return w.reserve >= w.capacity and 'full' or 'supplied'
+end
+function M.wareColor(w)
+    return wareStates[M.wareCode(w)].color
+end
 function M.wareState(w)
-    if not w or w.rate == 0 then return M.text(57) end
-    if w.reserve == 0 then return M.text(94) end
-    if w.remaining < 900 then return M.text(95) end
-    return M.text(w.reserve >= w.capacity and 97 or 96)
+    return M.text(wareStates[M.wareCode(w)].label)
 end
 function M.remaining(w)
     if w.rate == 0 then return M.text(69) end
@@ -149,8 +162,7 @@ function M.order(s)
     local rows = {}
     for _,w in ipairs(s.wares) do rows[#rows+1]=w end
     local function rank(w)
-        if w.rate == 0 then return 3 end
-        return w.reserve == 0 and 0 or w.remaining < 900 and 1 or 2
+        return wareStates[M.wareCode(w)].rank
     end
     table.sort(rows,function(a,b)
         if rank(a) ~= rank(b) then return rank(a)<rank(b) end
@@ -165,8 +177,24 @@ function M.find(s,key)
 end
 function M.missing(s)
     local names={}
-    for _,w in ipairs(s.wares) do if w.rate>0 and w.reserve==0 then names[#names+1]=w.name end end
+    for _,w in ipairs(s.wares) do if M.wareCode(w)=='needed' then names[#names+1]=w.name end end
     return names
+end
+-- Shared facts, independent of localization. Each view retains its own message priority.
+function M.classify(s)
+    local facts = {available=not not (s and s.available), missing={}, required=false}
+    if not facts.available then return facts end
+    facts.pending, facts.maximum = s.target > 0, s.level == 10
+    facts.ready = s.growth >= s.required
+    facts.warning = s.stale and 'stale' or s.profileError and 'profile_error' or nil
+    for _, w in ipairs(s.wares) do
+        local code = M.wareCode(w)
+        if code ~= 'paused' then facts.required = true end
+        if code == 'needed' then facts.missing[#facts.missing+1] = w.name end
+    end
+    facts.growing = s.active and not s.stale and not facts.ready
+        and #facts.missing == 0 and facts.required
+    return facts
 end
 function M.population(value)
     if not value then return M.text(69) end
@@ -176,16 +204,15 @@ function M.population(value)
     return string.format('%.0f', value)
 end
 function M.state(s)
-    if not s or not s.available then return M.text(68) end
-    if s.stale then return M.text(88) end
-    if s.profileError then return M.text(89) end
+    local facts = M.classify(s)
+    if not facts.available then return M.text(68) end
+    if facts.warning then return M.text(facts.warning == 'stale' and 88 or 89) end
     if s.active then
-        if s.target and s.target>0 then return M.text(99,s.target) end
-        if s.level==10 then return M.text(100) end
-        if s.growth>=s.required then return M.text(s.plotReady and 101 or 102) end
-        local missing=M.missing(s)
-        if #missing>0 then return M.text(103,table.concat(missing,', ')) end
-        for _,w in ipairs(s.wares) do if w.rate>0 then return M.text(104) end end
+        if facts.pending then return M.text(99,s.target) end
+        if facts.maximum then return M.text(100) end
+        if facts.ready then return M.text(s.plotReady and 101 or 102) end
+        if #facts.missing>0 then return M.text(103,table.concat(facts.missing,', ')) end
+        if facts.required then return M.text(104) end
         return M.text(71)
     end
     local reasons = {constructing=82, damaged_modules=83, no_population=84,
@@ -197,28 +224,28 @@ function M.tooltip(s)
     return M.text(77) .. ': ' .. level .. '\n' .. M.text(76) .. ': ' .. M.population(s.population)
 end
 function M.progress(s)
-    if not s or not s.available then return M.text(68) end
-    if s.target>0 then return M.text(105) end
-    if s.level==10 then return M.text(100) end
+    local facts = M.classify(s)
+    if not facts.available then return M.text(68) end
+    if facts.pending then return M.text(105) end
+    if facts.maximum then return M.text(100) end
     return M.text(106,s.level+1,M.time(s.growth),M.time(s.required))
 end
 function M.action(s)
-    if not s or not s.available then return M.text(68) end
-    if s.target>0 then return M.text(105) end
+    local facts = M.classify(s)
+    if not facts.available then return M.text(68) end
+    if facts.pending then return M.text(105) end
     if not s.active then return M.state(s) end
-    if s.level==10 then return M.text(114) end
-    local missing=M.missing(s)
-    if #missing>0 then return M.text(107,table.concat(missing,', ')) end
+    if facts.maximum then return M.text(114) end
+    if #facts.missing>0 then return M.text(107,table.concat(facts.missing,', ')) end
     return M.text(108)
 end
 function M.levelLabel(s)
-    if not s or not s.available then return M.text(68) end
+    local facts = M.classify(s)
+    if not facts.available then return M.text(68) end
     local state=118
-    if s.level==10 then state=120
-    elseif s.target>0 then state=119
-    elseif s.active and not s.stale and s.growth<s.required and #M.missing(s)==0 then
-        for _,w in ipairs(s.wares) do if w.rate>0 then state=117;break end end
-    end
+    if facts.maximum then state=120
+    elseif facts.pending then state=119
+    elseif facts.growing then state=117 end
     return M.text(121,s.level,M.text(state))
 end
 function M.nextLevel(s)
@@ -231,6 +258,6 @@ end
 function M.signature(s)
     if not s then return '' end
     local parts = {tostring(s.id), s.available and 'ready' or 'missing', tostring(s.level), tostring(s.target), tostring(s.stale), tostring(s.profileError), tostring(s.pausedOffers)}
-    for _, w in ipairs(s.wares) do parts[#parts + 1] = w.key .. ':' .. M.wareState(w) end
+    for _, w in ipairs(s.wares) do parts[#parts + 1] = w.key .. ':' .. M.wareCode(w) end
     return table.concat(parts, '\n')
 end

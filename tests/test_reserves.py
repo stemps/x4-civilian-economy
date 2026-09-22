@@ -43,6 +43,20 @@ class ReserveTests(unittest.TestCase):
         self.assertAlmostEqual(self.r.GrowthSeconds,180.25)
         self.assertAlmostEqual(self.food.Demand,6899.75)
 
+    def test_update_hub_syncs_before_funding_on_both_readiness_paths(self):
+        for operational in (False,True):
+            for ready in (False,True):
+                with self.subTest(operational=operational,ready=ready):
+                    self.r.update(Operational=operational,InitializedHub=self.r.Hub,Qualified=False)
+                    self.food.update(Reserve=100,Cap=-1,Demand=-1)
+                    self.run.stubs['md.CE_Construction.Readiness']=lambda:self.run.env.update(Ready=ready,TargetReady=False)
+                    self.run.stubs['EnsureManager']=lambda:None
+                    self.run.stubs['EvaluateQualification']=lambda:None
+                    observed=[]
+                    self.run.stubs['FundAccounts']=lambda:observed.append((self.food.Cap,self.food.Demand))
+                    self.run.library('UpdateHub')
+                    self.assertEqual(observed,[(7200,7100)])
+
     def test_shortage_pauses_and_replenishment_resumes_without_reset(self):
         self.food['Reserve']=100;self.water['Reserve']=10
         self.advance(30);self.assertEqual(self.r.GrowthSeconds,20)

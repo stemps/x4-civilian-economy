@@ -34,20 +34,20 @@
       <actions>
         <include_actions ref="md.CE_Reserves.SyncAll"/>
         <set_value name="$Hub" exact="$R.$Hub"/>
+        <!-- Rebuilt for this call only; retain the native deal identities in Transfers. -->
+        <set_value name="$UnloadingWares" exact="table[]"/>
         <do_for_each name="$Deal" in="$R.$Transfers.keys.list" reverse="true">
           <do_if value="not $Deal.exists">
             <remove_value name="$R.$Transfers.{$Deal}"/>
           </do_if>
+          <do_else>
+            <set_value name="$UnloadingWare" exact="$R.$Transfers.{$Deal}"/>
+            <set_value name="$UnloadingWares.{$UnloadingWare}" exact="true"/>
+          </do_else>
         </do_for_each>
         <do_for_each name="$Ware" in="$R.$Wares.keys.list">
           <set_value name="$W" exact="$R.$Wares.{$Ware}"/>
-          <set_value name="$Unloading" exact="false"/>
-          <do_for_each name="$Deal" in="$R.$Transfers.keys.list">
-            <do_if value="$R.$Transfers.{$Deal} == $Ware">
-              <set_value name="$Unloading" exact="true"/>
-            </do_if>
-          </do_for_each>
-          <do_if value="not $Unloading and $Hub.exists and not $Hub.iswreck">
+          <do_if value="not $UnloadingWares.{$Ware}? and $Hub.exists and not $Hub.iswreck">
             <!-- Retired wares keep their last price and accounting record. -->
             <do_if value="$W.$Rate gt 0">
               <include_actions ref="md.CE_OwnerlessHub.UpdateWarePrice"/>

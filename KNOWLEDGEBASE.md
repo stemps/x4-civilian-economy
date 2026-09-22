@@ -728,3 +728,25 @@ implemented or runtime-tested CE rewards:
   Canonical source comparison preserved the full persistent Init cue tree and
   all seven extracted trade/diagnostics action bodies (qualified refs normalized).
   No native in-game acceptance test was performed.
+
+## 2026-09-22 - UI state and offer-loop simplification
+
+- IMPLEMENTED: wareCode supplies stable nonlocalized states for labels, sorting,
+  colors and rebuild signatures. classify supplies shared hub facts; the existing
+  per-view message priorities are preserved. Neither helper changes MD economics.
+- The map renderer now has separate selection, geometry, summary, ware-row and
+  pagination helpers. All helpers populate the same single native table; deferred
+  callbacks still resolve current snapshots by hub/ware identity.
+- UpdateOffers prunes expired deals and builds a temporary ware-keyed unloading
+  set once per call. Multiple deals for one ware remain guarded; no saved hub
+  fields or incremental transfer cache were added.
+- READ: ForgetHub immediately delegated to AccrueAll after its redundant SyncAll.
+  UpdateHub readiness does not read reserve-derived values, and both branches
+  synchronize via accrual/rebasing before funding. Removed only those two
+  controller calls; public calculation/offer/diagnostic boundaries remain.
+- MEASURED: all five UI formatters matched the pre-refactor source for 2,691
+  synthetic input combinations, including missing snapshots, warnings, progression
+  and ware states. This is mocked Lua evidence, not native rendering acceptance.
+- Full restart is required for the MD changes. No save migration, balance changes
+  or new translation keys were introduced. In-game acceptance remains outstanding.
+- VALIDATED: just schema passed 95 action tests, all seven runtime MD schemas, reference/merged-data checks and the merged build-storage AI schema. just lua passed all three suites; git diff --check was clean. No native gameplay test was performed.

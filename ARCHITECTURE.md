@@ -196,6 +196,13 @@ resorting. Status-bar colors cannot be function-valued in native Helper; set
 colors on rebuild and update numeric fill/text with function-valued properties.
 The shared adapter loads before the testing and map consumers.
 
+`wareCode` classifies validated ware rows by policy (paused, needed, low,
+supplied, full); a shared descriptor maps the code to text, sort rank and color.
+Rebuild signatures use these codes rather than translated labels. `classify`
+provides shared hub facts for state, progress, action and level-label formatting.
+Each formatter preserves its existing message precedence; these facts do not
+decide economic state or authorize commands.
+
 Population, debug-menu and map integration have mocked Lua tests under `tools/`,
 run by `just lua`. Native rendering and UI Extensions interaction still require
 in-game acceptance.
@@ -255,11 +262,20 @@ reload; wall-clock offline time never enters calculations.
 
 `CE_Reserves.SyncWare` is the sole target/shortfall calculator. Prepared rate rows
 contain `[ware, rate, price]`; commit rebases and synchronizes after applying them.
-The existing synchronization boundaries remain in place.
+Accrual/rebasing, profile/rate application, offers and diagnostics keep their
+synchronization boundaries. `ForgetHub` delegates its initial synchronization to
+`AccrueAll` directly; `UpdateHub` first checks module readiness (no reserve reads),
+then synchronizes via accrual or rebasing on both branches before funding. These
+two controller-level duplicate calls are omitted; delivery-before-credit ordering
+and old-rate accrual before population changes are unchanged.
 For each active positive-rate ware, target = ceil(2 * hourly rate). `$Cap` remains
 an internal target alias and `$Demand=max(0,target-reserve)` a derived shortfall.
 Offers use floor(shortfall) minus native reservations, retaining unloading guards.
 Diagnostics report actual native availability/reservations during deferred writes.
+Each `UpdateOffers` call prunes expired transfers and builds a temporary ware-keyed
+`UnloadingWares` set in the same pass. Offer updates use that set for their unloading
+guard; multiple live deals for one ware remain guarded until all finish. The set
+is rebuilt per call and is not part of a saved hub record or an incremental cache.
 Reservations do not supply civilians. Delivery callbacks accrue elapsed consumption
 before adding actually transferred units; surplus is never discarded.
 
@@ -288,6 +304,11 @@ rows above the ware heading. Ware rows cannot inherit the summary's wrapped heig
 The three visual ware columns still use a bar anchor plus name/time text cells.
 Do not add tables here without updating and testing the native callback contract.
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
+
+The map renderer separates selection/order retention, panel geometry and row access,
+summary widgets, ware headings/rows and pagination into local helpers. They all
+populate the single table created by `createPanel`; no helper adds another table.
+Live callback closures still resolve the current snapshot by hub and ware identity.
 
 Reserve bars use native start/current segments: delivered stock is blue and
 reserved incoming stock is green, clamped to the target. Remaining time excludes

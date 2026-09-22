@@ -195,7 +195,7 @@
         <set_value name="$R.$LayoutPending" exact="false"/>
         <set_value name="$R.$CompletedSequence" exact="null"/>
         <set_value name="$R.$TargetSequence" exact="null"/>
-        <include_actions ref="md.CE_Reserves.SyncAll"/>
+        <!-- AccrueAll synchronizes before consuming the old reserves. -->
         <include_actions ref="AccrueAll"/>
         <set_value name="$R.$Hub" exact="null"/>
         <set_value name="$Hub" exact="null"/>
@@ -246,7 +246,8 @@
     </library>
     <library name="UpdateHub">
       <actions>
-        <include_actions ref="md.CE_Reserves.SyncAll"/>
+        <!-- Readiness does not read reserves; both branches sync via accrual/rebasing
+             before funding or other consumers read targets and shortfalls. -->
         <set_value name="$Hub" exact="$R.$Hub"/>
         <include_actions ref="md.CE_Construction.Readiness"/>
         <do_if value="$Ready">
