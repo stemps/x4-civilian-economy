@@ -114,15 +114,6 @@ class RefreshSafetyTests(unittest.TestCase):
         self.run.library('PublishDiagnostics')
         self.assertFalse(self.r.Snapshot[15])
 
-    def test_metadata_migration_does_not_reset_history(self):
-        old_history=self.r.Wares['water'].Reserve
-        self.r.pop('DisplayOrder')
-        for w in self.r.Wares.values():w.pop('Active')
-        self.run.library('PublishDiagnostics')
-        self.assertEqual(self.r.GrowthSeconds,1080)
-        self.assertEqual(self.r.Wares['water'].Reserve,old_history)
-        self.assertEqual([row[1] for row in self.r.Snapshot[9]],['foodrations','water'])
-
     def test_intentionally_empty_profile_is_valid_but_failed_first_profile_is_not(self):
         self.initial_attempt()
         self.run.env['lookup'].race.list=List([Table(id='argon',workforce=Table(resources=List()))])

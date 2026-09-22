@@ -7,7 +7,7 @@ lua=LuaRuntime()
 strings={int(e.get('id')):''.join(e.itertext()) for e in E.parse(str(root/'t/0001-l044.xml')).iter('t')}
 lua.globals().translations=lua.table_from(strings)
 lua.execute('''
-marked, valid, legacy, progress, waiting = true, true, false, 0, false
+marked, valid, progress, waiting = true, true, 0, false
 calls, closes = 0, 0
 entries, commands = {}, {}
 status = {42, 1, 0, true, 60, 120, false, true,
@@ -29,7 +29,6 @@ Helper={getMenu=function() return menu end}
 GetNPCBlackboard=function(id,key)
  assert(id==1)
  if key=="$ce_hubs" then return marked and {42, 43} or {} end
- if key=="$ce_legacy_blocked" then return legacy end
  if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 21600, false, true, {}, false, nil, nil, 3}} end
  error(key)
 end
@@ -58,8 +57,7 @@ marked=false;assert(menu.prepareActions()==false)
 marked=true;nativeMenuResult=true;assert(menu.prepareActions()==true)
 marked=false;open();assert(#entries==0)
 marked=true;valid=false;open();assert(#entries==0)
-valid=true;legacy=true;open();assert(#entries==0)
-legacy=false;open();assert(#entries==7)
+valid=true;open();assert(#entries==7)
 assert(entries[4].text == "Food Rations")
 assert(entries[4].mouseOverText:find("Consumption:",1,true))
 assert(entries[4].mouseOverText:find("500.5",1,true))

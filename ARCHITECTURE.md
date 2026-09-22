@@ -5,7 +5,7 @@
 | Module | Responsibility and lifetime |
 | --- | --- |
 | `md/ce_ownerless_hub.xml` | Persistent sector registry, native construction, ten-level construction lifecycle and captured native delivery listeners. |
-| `md/ce_reserves.xml` | Synchronous reserve migration, consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
+| `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
 | `md/ce_construction.xml` | Racial component selection, asynchronous native layout generation, validation, queue recovery and module readiness. |
 | `ui/ce_population.lua` | Native accessible-population reader; no economic state. |
@@ -34,7 +34,9 @@ Each hub's instantiated delivery watcher has its own namespace and captured
 record reference, preventing later loop iterations from redirecting deliveries.
 Live demand records own `$Active` membership and `$DisplayOrder`. Diagnostics
 read those records through the captured hub context, independently of definitions.
-Destruction affects only the matching record. Schema 4 requires a fresh game; earlier hub saves remain blocked without conversion.
+Destruction affects only the matching record. Install into a save from before the mod
+was installed (or a new game). There is no old-save detection or migration.
+Subsequent saves made with this implementation retain their state normally.
 
 Demand scales by accessible population / 8,524,100,000. Population changes accrue
 at the previous rate before updating rates, retaining reserves and growth. Zero
@@ -96,11 +98,8 @@ For example, an adapter can append:
 Save loads reuse saved definitions. `RefreshProfile` initializes a hub record from
 its sector snapshot only if definitions are absent. `ApplyLevel` changes rates and
 unlocks against that saved basket; population changes scale rates without rebuilding
-preferences. Adapters must be installed before starting a new game. The final
-budget balance likewise applies to newly initialized games only: existing
-schema-4 snapshots retain their saved placeholder quantities. No balance migration
-or schema bump is performed. Resolved/saved definitions retain the original
-three-field shape, and population/level scaling and purchase prices are unchanged.
+preferences. Adapters must be installed before the mod first initializes.
+Resolved/saved definitions use three-field rows; reload does not reprice the basket.
 
 ## Racial construction
 
@@ -222,7 +221,8 @@ an existing basket. `ApplyLevel` uses committed definitions without rediscovery.
 snapshots remain invalid rather than changing preferences later; correct the adapter
 and start a fresh game. Failed rate preparation preserves the last committed state.
 
-`EnsureDisplayMetadata` migrates saved records without resetting progress or rates.
+`CommitRates` creates display order and active membership with each rate commit;
+there is no metadata backfill for older saves.
 `PublishDiagnostics` reads live active records, validates row completeness and
 retains the previous snapshot on failure without relabeling old data as version 3.
 Removed hubs evict cached snapshots. Rendering never creates supplies.
@@ -232,18 +232,17 @@ including X4-style continued execution after invalid profile-key writes. These
 checks and full XML schemas complement, but cannot replace, native save/load and
 concurrent-trade acceptance tests.
 
-## Reserve accounting and migration
+## Reserve accounting
 
-`CE_Reserves` libraries run synchronously in the existing controller/listener
-namespace with explicit `$R`. Saved cue identities remain unchanged. Legacy
-`ResetHistory`, `AccrueAll` and `EvaluateQualification` library entry points are
-thin delegates, not rolling-history implementations.
+`CE_Reserves` libraries run synchronously in the controller/listener namespace
+with explicit `$R`. `ResetHistory`, `AccrueAll` and `EvaluateQualification` delegate
+to reserve rebasing, accrual and qualification respectively.
 
-`ReserveVersion=1` migrates each leveling record once: clear old buckets, initialize
-reserves/growth to zero, set last accrual to simulation age, preserve native offers,
-trade references, accounts, levels, pending builds and lifetime counters. New ware
-records explicitly start empty. Existing reserve saves keep `$Last` across reload;
-wall-clock offline time never enters calculations.
+`ReconcileSector` initializes growth to zero and last accrual to the current
+simulation age when creating each record. `CommitRates` initializes new wares
+with empty reserves. `SyncAll` only refreshes derived targets and shortfalls;
+it never converts or initializes saved data. Normal saves keep `$Last` across
+reload; wall-clock offline time never enters calculations.
 
 For each active positive-rate ware, target = ceil(2 * hourly rate). `$Cap` remains
 an internal target alias and `$Demand=max(0,target-reserve)` a derived shortfall.

@@ -10,7 +10,7 @@ lua.globals().translations = lua.table_from({
     for e in E.parse(ROOT / 't/0001-l044.xml').iter('t')
 })
 setup = r'''
-now, reads, known, valid, legacy = 0, 0, true, true, false
+now, reads, known, valid = 0, 0, true, true
 hubs = {42, 43}
 function snapshot(id, count)
     local s = {id, 1, 0, true, 3600, 7200, false, true, {}, false, 8524100000, nil, 3, false, false, {'Energy Cells'}}
@@ -37,7 +37,6 @@ ConvertStringTo64Bit=tonumber
 ConvertStringToLuaID=tonumber
 GetNPCBlackboard=function(id,key)
  assert(id==1);reads=reads+1
- if key=='$ce_legacy_blocked' then return legacy end
  if key=='$ce_hubs' then return hubs end
  if key=='$ce_hub_statuses' then return statuses end
  error(key)
@@ -125,10 +124,10 @@ local M=CEHubStatus
 local s=M.get('42');assert(s and #s.wares==14 and s.population==8524100000)
 assert(not M.get(77) and not M.get('invalid') and not M.get(0))
 local before=reads;M.get(42);assert(reads==before)
-now=1;M.get(42);assert(reads==before+3)
+now=1;M.get(42);assert(reads==before+2)
 known=false;assert(not M.get(42));known=true
 valid=false;assert(not M.get(42));valid=true
-legacy=true;now=2;assert(not M.get(42));legacy=false;now=3
+now=3
 local t=draw();assert(t.columns==5 and t.properties.tabOrder==21 and #t.rows==12)
 assert(t.properties.y==1080-240-2-2-4)
 assert(value(t.rows[2][1])=='Population 8.52 billion')
@@ -195,7 +194,7 @@ menu.onUpdate();valid=false;menu.onUpdate();assert(draw().columns==1 and overrid
 local wrapper=menu.onUpdate;callbacks.CEPopulationRequest();assert(menu.onUpdate==wrapper)
 menu.onUpdate();assert(override)
 assert(menu.cleanup()==74 and nativeCleanups==1 and override==nil)
-before=reads;draw();assert(reads==before+3)
+before=reads;draw();assert(reads==before+2)
 Helper.viewWidth=1280;t=draw();assert(t.properties.width==752 and t.properties.x==264)
 for _,w in pairs(t.widths) do assert(w>0) end
 assert(t.rows[7][5]:getWidth()>40)

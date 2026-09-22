@@ -20,7 +20,7 @@ local function text(id, ...)
     return string.format(s, ...)
 end
 local function isHub(id)
-    if not id or id == 0 or not C.IsValidComponent(id) or yes(read('$ce_legacy_blocked')) then return false end
+    if not id or id == 0 or not C.IsValidComponent(id) then return false end
     for _, hub in ipairs(read('$ce_hubs') or {}) do
         if ConvertStringTo64Bit(tostring(hub)) == id then return true end
     end

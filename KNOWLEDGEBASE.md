@@ -22,7 +22,7 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   Local staples now resolve from the saved population race and live workforce resources.
 - Registry records are keyed by sector. Each delivery watcher has its own
   namespace and captured record reference. UI/AI membership uses `$ce_hubs`;
-  snapshots are selected by hub ID. The singleton marker is only read for adoption.
+  snapshots are selected by hub ID. No singleton adoption path remains.
 - Delivery watchers do not inherit Init's local `$Definitions`. A bare lookup in
   `PublishDiagnostics` produced an empty ware snapshot after each delivery until
   the minute tick repaired it; debug.txt confirmed the failed lookup. Reference
@@ -54,9 +54,7 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   reservations count as supplies only on completed delivery.
 - Capture buyer and seller at trade start and bind completion to the exact deal,
   following RML_Trade_Wares. Remove the persisted transfer guard before
-  accounting to prevent duplicate credit. The former galaxy-scoped completion
-  listener missed deliveries and is retained disabled for compatibility, not
-  used for accounting.
+  accounting to prevent duplicate credit. Obsolete disabled listeners have been removed.
 - Subtract native reservations from advertised availability and defer offer
   rewrites during unloading. Pausing new reservations still consumes reserves and
   permits existing deals to finish; the pause setting persists. Reservations and
@@ -101,11 +99,10 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   Rejected checks keep the upgrade lock. Reconciliation retries after the
   placeholder becomes a container. Actual collision volumes, pier approaches and
   plot acceptance remain runtime gates.
-- Legacy energy-only `Start` state is detected and canceled by the separate
-  `Init` namespace before new state is created; a logbook warning blocks the
-  save. Start leveling from a pre-prototype save. Existing leveling saves migrate once to empty reserves and zero growth; old
-  deliveries were already consumed. Pending upgrades remain earned. Subsequent
-  reloads preserve balances, growth and native trade/build references.
+- Installation starts from a save predating the mod or a new game. New records
+  initialize reserves and growth directly; no old-save detection or conversion
+  remains. Subsequent saves preserve balances, growth and native trade/build
+  references. See the pre-mod-save baseline entry below.
 
 ### Hub appearance and optional testing UI
 
@@ -684,3 +681,22 @@ implemented or runtime-tested CE rewards:
   rounding, invalid prices, explicit overrides, racial substitutions and saved
   placeholder retention. These are mocked checks, not native-engine acceptance.
 - VALIDATED: `just validate` passed 92 tests and reference checks; `just schema` passed full native schemas and the merged build-storage AI check. In-game acceptance remains outstanding.
+
+## 2026-09-22 — pre-mod-save baseline
+
+- USER DECISION: restart from a save that predates installation of Civilian Economy.
+  Old mod saves are unsupported; do not add migration or backfill paths.
+- READ/IMPLEMENTED: removed reserve conversion/version markers, display metadata
+  backfill, prototype detection/block flags and disabled singleton delivery cues.
+  New sector records initialize growth, accrual time and display order directly;
+  new ware records initialize reserves in CommitRates. SyncAll only derives targets.
+- Normal save loading preserves frozen profiles, reserves and progress, and retains
+  interrupted native layout recovery. UI snapshot version validation is a live
+  interface contract, not save migration, and remains in place.
+- Earlier migration and schema-blocking entries above are superseded by this entry.
+  Full game restart and a pre-mod save are required; UI /reload is insufficient.
+- VALIDATION NOTE: the toolkit reference check also reads historical XML under
+  ignored .validation/. Its before-reserves and before-resilient-controller
+  snapshots reference text 30; unused catalog entries remain to keep those
+  snapshots resolvable. No runtime code references their old-save warnings.
+- VALIDATED: just schema passed 90 action tests, runtime MD schemas, reference checks and the merged build-storage AI schema; just lua passed all three suites. Native in-game acceptance remains untested.

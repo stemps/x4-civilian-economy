@@ -11,7 +11,7 @@ class ProfileTests(unittest.TestCase):
     def setUp(self):
         self.run = Runner()
         definitions(self.run)
-        self.r = Table(Level=1, Target=0, Operational=True, Wares=Table(),
+        self.r = Table(GrowthSeconds=0.0, Last=0.0, Level=1, Target=0, Operational=True, Wares=Table(),
                        Transfers=Table(), Hub=NIL, Factor=1, Population=8524100000,
                        PauseOffers=False, PlotReady=False, TestUpgrade=False)
         self.run.env['R'] = self.r

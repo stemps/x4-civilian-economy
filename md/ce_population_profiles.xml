@@ -108,7 +108,6 @@
               </do_for_each>
             </do_if>
           </do_for_each>
-          <set_value name="$CandidateVersion" exact="1"/>
           <do_if value="lookup.ware.list.count == 0 or lookup.race.list.count == 0">
             <set_value name="$CandidateValid" exact="false"/>
           </do_if>

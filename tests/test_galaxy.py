@@ -116,12 +116,20 @@ class GalaxyTests(unittest.TestCase):
         self.assertEqual(rb.Wares['water'].Reserve,100)
         self.assertEqual(rb.Wares['water'].Delivered,0)
         self.assertFalse(self.run.expr(guard))
-    def test_fresh_construction_does_not_adopt_legacy_singleton(self):
+    def test_first_install_in_existing_universe_initializes_complete_records(self):
+        self.run.env['player']['age']=987654.0
         a,b=self.sector(),self.sector()
-        old=Object(exists=True,iswreck=False,sector=a,owner='ownerless',isclass=Table(container=False),buildstorage=NIL)
-        self.run.env['player'].entity['ce_hub']=old
         ra=self.reconcile(a,8524100000);rb=self.reconcile(b,8524100000)
-        self.assertIsNot(ra.Hub,old);self.assertIsNot(rb.Hub,old)
+        self.assertEqual(len(self.created),2)
+        for record in (ra,rb):
+            self.assertEqual((record.Level,record.Target,record.GrowthSeconds,record.Last),
+                             (1,0,0.0,987654.0))
+            self.assertEqual(list(record.DisplayOrder),['foodrations','water'])
+            self.assertTrue(all(w.Active and w.Reserve == 0 and w.Demand == w.Cap
+                                for w in record.Wares.values()))
+        ra.GrowthSeconds=120;ra.Wares['water'].Reserve=45
+        self.assertIs(self.reconcile(a,8524100000),ra)
+        self.assertEqual((ra.GrowthSeconds,ra.Wares['water'].Reserve),(120,45))
         self.assertEqual(len(self.created),2)
 
     def test_delivery_publishes_wares_without_controller_local_definitions(self):

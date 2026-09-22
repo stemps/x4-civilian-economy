@@ -2,24 +2,8 @@
 <mdscript name="CE_Reserves" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
   <cues>
     <!-- All libraries execute synchronously in the caller's namespace. Requires R. -->
-    <library name="Migrate">
+    <library name="SyncAll">
       <actions>
-        <do_if value="not $R.$ReserveVersion?">
-          <set_value name="$R.$GrowthSeconds" exact="0.0f"/>
-          <set_value name="$R.$Last" exact="player.age / 1s"/>
-          <do_for_each name="$ReserveWare" in="$R.$Wares.keys.list">
-            <set_value name="$R.$Wares.{$ReserveWare}.$Reserve" exact="0.0f"/>
-            <do_if value="$R.$Wares.{$ReserveWare}.$History?"><remove_value name="$R.$Wares.{$ReserveWare}.$History"/></do_if>
-            <do_if value="$R.$Wares.{$ReserveWare}.$Bucket?"><remove_value name="$R.$Wares.{$ReserveWare}.$Bucket"/></do_if>
-            <do_if value="$R.$Wares.{$ReserveWare}.$SupplyScore?"><remove_value name="$R.$Wares.{$ReserveWare}.$SupplyScore"/></do_if>
-            <do_if value="$R.$Wares.{$ReserveWare}.$ServiceScore?"><remove_value name="$R.$Wares.{$ReserveWare}.$ServiceScore"/></do_if>
-            <do_if value="$R.$Wares.{$ReserveWare}.$LongestBad?"><remove_value name="$R.$Wares.{$ReserveWare}.$LongestBad"/></do_if>
-          </do_for_each>
-          <do_if value="$R.$HistoryMinutes?"><remove_value name="$R.$HistoryMinutes"/></do_if>
-          <do_if value="$R.$NextBucket?"><remove_value name="$R.$NextBucket"/></do_if>
-          <set_value name="$R.$ReserveVersion" exact="1"/>
-          <debug_text text="'[CE] Reserve migration: hub=%s level=%s; empty reserves, preserved trades and construction'.[$R.$Hub,$R.$Level]"/>
-        </do_if>
         <do_for_each name="$ReserveWare" in="$R.$Wares.keys.list">
           <set_value name="$ReserveState" exact="$R.$Wares.{$ReserveWare}"/>
           <do_if value="$ReserveState.$Reserve?">
@@ -38,14 +22,14 @@
     </library>
     <library name="Rebase">
       <actions>
-        <include_actions ref="md.CE_Reserves.Migrate"/>
+        <include_actions ref="md.CE_Reserves.SyncAll"/>
         <set_value name="$R.$Last" exact="player.age / 1s"/>
         <set_value name="$R.$Qualified" exact="false"/>
       </actions>
     </library>
     <library name="Accrue">
       <actions>
-        <include_actions ref="md.CE_Reserves.Migrate"/>
+        <include_actions ref="md.CE_Reserves.SyncAll"/>
         <set_value name="$ReserveNow" exact="player.age / 1s"/>
         <set_value name="$ReserveElapsed" exact="[0.0f,$ReserveNow - $R.$Last].max"/>
         <set_value name="$SuppliedSeconds" exact="$ReserveElapsed"/>

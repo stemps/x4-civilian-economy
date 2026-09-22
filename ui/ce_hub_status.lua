@@ -52,7 +52,6 @@ local function refresh()
     expires, hubs, snapshots = now + 1, {}, {}
     local player = ConvertStringToLuaID(tostring(C.GetPlayerID()))
     local function read(key) return GetNPCBlackboard(player, key) end
-    if yes(read('$ce_legacy_blocked')) then return end
     local list, statuses = read('$ce_hubs'), read('$ce_hub_statuses')
     for _, raw in ipairs(type(list) == 'table' and list or {}) do
         local id = M.id(raw)

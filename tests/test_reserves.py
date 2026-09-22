@@ -9,11 +9,11 @@ class ReserveTests(unittest.TestCase):
     def setUp(self):
         self.run=Runner()
         self.r=Table(Level=1,Target=0,Operational=True,Hub=Object(exists=True,iswreck=False),
-                     Wares=Table(),Transfers=Table(),PauseOffers=False)
+                     Wares=Table(),Transfers=Table(),PauseOffers=False,GrowthSeconds=0.0,Last=0.0)
         self.run.env['R']=self.r
         self.food=self.add('food',3600)
         self.water=self.add('water',1800)
-        self.run.library('md.CE_Reserves.Migrate')
+        self.run.library('md.CE_Reserves.SyncAll')
         self.run.stubs.update(UpdateOffers=lambda:None,PublishDiagnostics=lambda:None,PublishAllDiagnostics=lambda:None)
         self.guard=self.run.tree.xpath('//cue[@name="SectorDeliveryFinished"]/conditions/check_value[contains(@value,"$Transfers")]/@value')[0]
 
@@ -73,7 +73,7 @@ class ReserveTests(unittest.TestCase):
 
     def test_rounding_and_reservations_with_tiny_rate(self):
         self.r.Wares=Table();self.food=self.add('food',0.001)
-        self.run.library('md.CE_Reserves.Migrate')
+        self.run.library('md.CE_Reserves.SyncAll')
         self.assertEqual(self.food.Cap,1)
         self.assertEqual(self.food.Demand,1)
         del self.run.stubs['UpdateOffers']
@@ -116,24 +116,6 @@ class ReserveTests(unittest.TestCase):
         self.advance(60);self.assertEqual(self.r.GrowthSeconds,120)
         self.food.Rate=10;self.food.Active=False
         self.advance(60);self.assertEqual(self.r.GrowthSeconds,120)
-
-    def test_migration_once_preserves_native_references_and_pending_upgrade(self):
-        self.r.pop('ReserveVersion');self.r.Level=4;self.r.Target=5
-        self.r.Build=Object(exists=True);build=self.r.Build
-        offer=Object(exists=True);self.food.Offer=offer
-        self.food.History=List([Table(Delivered=999)]);self.food.Bucket=Table()
-        self.food.Delivered=42;self.food.Paid=50400
-        deal=Object(buyer=self.r.Hub,transferredamount=25,unitprice=1200)
-        self.r.Transfers[deal]=Ware('food')
-        self.run.library('md.CE_Reserves.Migrate')
-        self.assertIs(self.r.Build,build);self.assertIs(self.food.Offer,offer)
-        self.assertEqual((self.r.Level,self.r.Target),(4,5))
-        self.assertNotIn('History',self.food);self.assertNotIn('Bucket',self.food)
-        self.assertEqual((self.food.Reserve,self.r.GrowthSeconds),(0,0))
-        self.run.env['event']=Table(param=deal);self.run.library('RecordDelivery')
-        self.run.library('md.CE_Reserves.Migrate')
-        self.assertEqual((self.food.Reserve,self.food.Delivered,self.food.Paid),(25,67,80400))
-        self.assertFalse(self.run.expr(self.guard))
 
     def test_saved_balances_progress_clock_and_unloading_reference(self):
         self.food.Reserve=self.water.Reserve=10000

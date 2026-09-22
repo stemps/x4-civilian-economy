@@ -30,7 +30,7 @@ def definitions(run):
     ]))) for name in ('argon','paranid','teladi')])
     run.env.update(ware=types, lookup=Table(ware=Table(list=List(list(types.values()))),race=Table(list=races)),
                    waretransport=Table(container='container'), Sector=Component(owner=Table(primaryrace=races[1])))
-    run.env.update(SectorProfiles=Table(),RaceProfiles=Table(),Schema=4)
+    run.env.update(SectorProfiles=Table(),RaceProfiles=Table())
     def resolve():
         run.env['Construction']=Table(Valid=True,Dock='dock',Storage='storage',Pier='pier',Connectors=List(['connector']))
     run.stubs['md.CE_Construction.Resolve']=resolve
@@ -43,9 +43,9 @@ def definitions(run):
 
 class ControllerTests(unittest.TestCase):
     def setUp(self):
-        self.run=Runner(); self.r=Table(Level=1,Target=0,Operational=True,Wares=Table(),Transfers=Table(),Hub='hub')
+        self.run=Runner(); self.r=Table(GrowthSeconds=0.0,Last=0.0,Level=1,Target=0,Operational=True,Wares=Table(),Transfers=Table(),Hub='hub')
         self.run.env['R']=self.r
-        self.w=Table(Active=True,Rate=2000.,Cap=4000.,Demand=0.,Delivered=0,Paid=0,Offer=NIL)
+        self.w=Table(Reserve=0.0,Active=True,Rate=2000.,Cap=4000.,Demand=0.,Delivered=0,Paid=0,Offer=NIL)
         self.r.Wares[Ware('food')]=self.w
         self.run.library('ResetHistory')
     def advance(self, seconds):
@@ -94,7 +94,7 @@ class ControllerTests(unittest.TestCase):
 class ContentTests(unittest.TestCase):
     def test_apply_level_rates_prices_and_existing_backlog(self):
         run=Runner();definitions(run)
-        r=Table(Level=1,Wares=Table());run.env['R']=r
+        r=Table(GrowthSeconds=0.0,Last=0.0,Level=1,Wares=Table());run.env['R']=r
         run.library('ApplyLevel')
         self.assertEqual(set(r.Wares),{'foodrations','water'})
         r.Wares['foodrations']['Reserve']=123.5
@@ -154,9 +154,9 @@ class ContentTests(unittest.TestCase):
         t=Runner().tree
         offers=t.xpath('//create_trade_offer');self.assertEqual(len(offers),1)
         self.assertEqual(offers[0].get('virtualmoney'),'false');self.assertEqual(offers[0].get('virtual'),'true')
-        listener=t.xpath('//cue[@name="DeliveryFinished"]/conditions/event_trade_completed')[0]
+        listener=t.xpath('//cue[@name="SectorDeliveryFinished"]/conditions/event_trade_completed')[0]
         self.assertEqual(set(listener.attrib),{'buyer','seller'})
-        self.assertTrue(t.xpath('//cue[@name="Init"]//set_value[@name="$Blocked"]'))
+        self.assertFalse(t.xpath('//cue[@name="Start" or @name="WatchLevelHub"]'))
         self.assertTrue(Runner().construction.xpath('//library[@name="Queue"]//do_if[contains(@value,"builds.queued.count")]'))
         self.assertFalse(t.xpath('//reward_player|//set_faction_relation|//destroy_object|//remove_trade_offer'))
         patch=E.parse(str(ROOT/'aiscripts/build.buildstorage.xml')).find('replace')
@@ -174,7 +174,7 @@ class LifecycleTests(unittest.TestCase):
                        constructionsequence=List([Table(id=str(i)) for i in range(6)]),
                        planmodule=Table({str(i):Table(isoperational=i<4) for i in range(6)}),
                        buildstorage=Table(exists=True,builds=Table(queued=List(),inprogress=List()),buildmodule='module'))
-        self.r=Table(Level=1,Target=2,Build=NIL,Hub=self.hub,InitializedHub=self.hub,Operational=True,
+        self.r=Table(GrowthSeconds=0.0,Last=0.0,Level=1,Target=2,Build=NIL,Hub=self.hub,InitializedHub=self.hub,Operational=True,
                      Wares=Table(),Transfers=Table(),PlotReady=True,PauseOffers=False,TestUpgrade=False,
                      CompletedSequence=List(self.hub.constructionsequence[:4]),TargetSequence=self.hub.constructionsequence)
         self.run.env['R']=self.r;self.run.library('ApplyLevel')

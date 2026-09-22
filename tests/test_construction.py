@@ -169,7 +169,6 @@ class StartupProfileTests(unittest.TestCase):
         r.env['Registry']=Table({sector:record})
         for name in ('Reconcile','RefreshProfile','RenameHub','PublishDiagnostics','PublishAllDiagnostics'):
             r.stubs[name]=lambda:None
-        r.env['md'].CE_OwnerlessHub.WatchLevelHub='legacy-cue'
         cancelled=[]
         r.native['cancel_cue']=lambda n:cancelled.append(r.expr(n.get('cue')))
         r.actions(r.tree.xpath('//cue[@name="Reload"]/actions')[0])
