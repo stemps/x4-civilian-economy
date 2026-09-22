@@ -70,7 +70,8 @@ class ProfileTests(unittest.TestCase):
                 if name in ('split', 'boron', 'terran'):
                     tree = E.parse(str(REF / 'extensions' / ('ego_dlc_' + name) / 'libraries/wares.xml'))
                     for node in tree.xpath('//ware[@id][price]'):
-                        self.ware(node.get('id'), node.get('group', ''), node.get('transport'))
+                        added = self.ware(node.get('id'), node.get('group', ''), node.get('transport'))
+                        added.averageprice = int(node.find('price').get('average')) * 100
                     by_id = {w.id: w for w in self.run.env['lookup'].ware.list}
                     recipe = tree.xpath('//add[@sel=$sel]/production/primary/ware',
                                         sel="/wares/ware[@id='workunit_busy']")
@@ -100,7 +101,7 @@ class ProfileTests(unittest.TestCase):
         self.assertNotIn('medicalsupplies', self.apply(3))
         self.assertNotIn('foodrations', self.apply(7))
         self.assertIn('foodrations', self.apply(8))
-        self.assertEqual(self.r.Wares['algae'].Rate, 2000 * 1.25 ** 7)
+        self.assertEqual(self.r.Wares['algae'].Rate, 9380 * 1.25 ** 7)
 
     def test_foreign_only_at_eight_shared_staples_are_not_duplicated(self):
         food = self.run.env['ware'].foodrations
@@ -109,8 +110,8 @@ class ProfileTests(unittest.TestCase):
         self.race('visitors', [foreign])
         self.assertNotIn('foreignfood', self.apply(7))
         self.assertIn('foreignfood', self.apply(8))
-        self.assertEqual(self.r.Wares['foreignfood'].Rate, 500)
-        self.assertEqual(self.r.Wares['foodrations'].Rate, 2000 * 1.25 ** 7)
+        self.assertEqual(self.r.Wares['foreignfood'].Rate, 4690)
+        self.assertEqual(self.r.Wares['foodrations'].Rate, 7140 * 1.25 ** 7)
 
     def test_race_overrides_replace_empty_lists(self):
         self.ware('rationreplacement', 'customgroup')
@@ -149,7 +150,7 @@ class ProfileTests(unittest.TestCase):
         self.run.env['lookup'].race.list[1].workforce['resources'] = List([replacement])
         self.run.library('RefreshProfile')
         self.assertEqual(self.r.GrowthSeconds,720)
-        self.assertEqual((old.Rate,old.Reserve,old.Delivered,old.Paid),(3125,50,25,1000))
+        self.assertEqual((old.Rate,old.Reserve,old.Delivered,old.Paid),(11156.25,50,25,1000))
         self.assertNotIn('newrations',self.r.Wares)
         self.run.library('ApplyLevel')
         self.assertNotIn('newrations',self.r.Wares)
@@ -197,6 +198,182 @@ class ProfileTests(unittest.TestCase):
         self.r.Wares['water']['Rate'] = 0
         self.run.library('EvaluateQualification')
         self.assertFalse(self.r.Qualified)
+
+
+class BudgetBalanceTests(unittest.TestCase):
+    setUp = ProfileTests.setUp
+    apply = ProfileTests.apply
+    select = ProfileTests.select
+    configure = ProfileTests.configure
+    ware = ProfileTests.ware
+    race = ProfileTests.race
+
+    EXPECTED = {
+        'foodrations': (1, 7140), 'water': (1, 1420), 'energycells': (2, 9380),
+        'medicalsupplies': (3, 2270), 'refinedmetals': (4, 1690),
+        'siliconwafers': (4, 840), 'microchips': (5, 260),
+        'scanningarrays': (6, 240), 'advancedcomposites': (6, 460),
+        'advancedelectronics': (7, 250), 'sojahusk': (8, 2340),
+        'nostropoil': (8, 2210), 'cheltmeat': (8, 1470),
+        'scruffinfruits': (8, 2680), 'bofu': (8, 740), 'terranmre': (8, 1390),
+        'spacefuel': (9, 750), 'spaceweed': (9, 600), 'majadust': (9, 480),
+    }
+
+    def load_prices(self, dlcs=False):
+        paths = [REF / 'libraries/wares.xml']
+        if dlcs:
+            paths += [REF / 'extensions' / ('ego_dlc_' + race) / 'libraries/wares.xml'
+                      for race in ('split', 'boron', 'terran')]
+        by_id = {w.id: w for w in self.run.env['lookup'].ware.list}
+        for path in paths:
+            tree = E.parse(str(path))
+            for node in tree.xpath('//ware[@id][price]'):
+                ident = node.get('id')
+                if ident not in by_id:
+                    by_id[ident] = self.ware(ident, node.get('group', ''), node.get('transport'))
+                ware = by_id[ident]
+                for prop, attr in (('minprice', 'min'), ('maxprice', 'max'), ('averageprice', 'average')):
+                    setattr(ware, prop, int(node.find('price').get(attr)) * 100)
+            if path != paths[0]:
+                recipe = tree.xpath('//add[@sel=$sel]/production/primary/ware',
+                                    sel="/wares/ware[@id='workunit_busy']")
+                self.assertTrue(recipe)
+                self.race(path.parents[1].name.removeprefix('ego_dlc_'),
+                          [by_id[n.get('ware')] for n in recipe])
+
+    def test_argon_prime_quantities_and_all_ten_revenues(self):
+        import math
+        base = [152500, 303185, 487941, 951977, 1406811, 2179753, 2917442,
+                3749112, 4855200, 6069000]
+        full = base[:7] + [3958862, 5117388, 6396735]
+        optional = {'cheltmeat', 'scruffinfruits', 'bofu', 'terranmre'}
+        for dlcs, revenues in ((False, base), (True, full)):
+            with self.subTest(dlcs=dlcs):
+                self.setUp()
+                self.load_prices(dlcs)
+                expected = {k: v for k, v in self.EXPECTED.items() if dlcs or k not in optional}
+                for level in range(1, 11):
+                    active = self.apply(level)
+                    self.assertEqual(active, {k for k, (unlock, _) in expected.items() if unlock <= level})
+                    revenue = 0
+                    for ware, state in self.r.Wares.items():
+                        unlock, quantity = expected[ware]
+                        if unlock <= level:
+                            self.assertAlmostEqual(state.Rate, quantity * 1.25 ** (level - unlock))
+                            self.assertEqual(state.Cap, math.ceil(2 * state.Rate))
+                            revenue += state.Rate * state.Price / 100
+                    self.assertEqual(math.floor(revenue + 0.5), revenues[level - 1])
+                self.assertEqual({str(d[1]): (d[2], d[3]) for d in self.r.Definitions}, expected)
+                self.assertTrue(all(len(d) == 3 for d in self.r.Definitions))
+
+    def build_one(self, row, price):
+        # Isolate default normalization from native local and foreign staples.
+        food = self.ware('customfood')
+        food.averageprice = price
+        self.run.env['lookup'].race.list = List()
+        race = self.race('custom', [])
+        self.select(race)
+        self.configure([f'<set_value name="$ProfileCommon" exact="[{row}]"/>'])
+        self.run.library('md.CE_PopulationProfiles.Build')
+        return self.run.env['CandidateDefinitions']
+
+    def test_round_half_up_minimum_and_invalid_prices(self):
+        for price, expected in ((200000, 80), (200001, 70), (1000000000, 10),
+                                (0, None), (-100, None), (NIL, None)):
+            with self.subTest(price=price):
+                self.setUp()
+                rows = self.build_one("['customfood',1,150000.0f,'budget']", price)
+                self.assertEqual(self.run.env['CandidateValid'], expected is not None)
+                if expected is not None:
+                    self.assertEqual(rows[1][3], expected)
+                else:
+                    self.assertEqual(rows, [])
+
+    def test_explicit_quantity_override_does_not_read_price(self):
+        rows = self.build_one("['customfood',4,123.5f]", NIL)
+        self.assertTrue(self.run.env['CandidateValid'])
+        self.assertEqual(rows[1][1:], [4, 123.5])
+
+    def test_race_quantity_override_and_missing_budget_ware(self):
+        self.run.env['ware'].microchips.averageprice = 0
+        self.configure(["<set_value name=\"$ProfileRaceDemands.{'$argon'}\" exact=\"[['microchips',4,123.5f],['absent',1,75000.0f,'budget']]\"/>"])
+        self.apply(4)
+        self.assertFalse(self.r.ProfileError)
+        self.assertEqual(self.r.Wares['microchips'].Rate, 123.5)
+        self.assertNotIn('energycells', self.r.Wares)
+
+    def test_invalid_budget_cannot_replace_existing_state(self):
+        import copy
+        self.apply(3)
+        self.r['GrowthSeconds'] = 720
+        self.r.Wares['water'].update(Reserve=123, Delivered=55, Paid=600)
+        before = copy.deepcopy(self.r)
+        self.run.env['ware'].foodrations.averageprice = 0
+        self.run.library('md.CE_PopulationProfiles.Build')
+        self.assertFalse(self.run.env['CandidateValid'])
+        self.assertEqual(self.r, before)
+        self.run.library('RefreshProfile')
+        self.assertEqual(self.r, before)
+
+    def test_interrupted_normalization_cannot_publish_budget_as_quantity(self):
+        self.run.stubs['md.CE_PopulationProfiles.NormalizeBudget'] = lambda: None
+        self.run.library('RefreshProfile')
+        self.assertTrue(self.r.ProfileError)
+        self.assertNotIn('Definitions', self.r)
+        self.assertEqual(self.r.Wares, {})
+
+    def test_initial_invalid_price_does_not_publish_partial_profile(self):
+        self.run.env['ware'].water.averageprice = 0
+        self.run.library('RefreshProfile')
+        self.assertTrue(self.r.ProfileError)
+        self.assertNotIn('Definitions', self.r)
+        self.assertEqual(self.r.Wares, {})
+
+    def test_boron_water_and_terran_substitutions(self):
+        for race_id in ('boron', 'terran'):
+            self.setUp()
+            self.load_prices(True)
+            self.select(next(r for r in self.run.env['lookup'].race.list if r.id == race_id))
+            self.apply(10)
+            rows = {str(d[1]): (d[2], d[3]) for d in self.r.Definitions}
+            self.assertEqual(rows['water'], (1, 1420))
+            if race_id == 'boron':
+                self.assertEqual(rows['bofu'], (1, 1490))
+            else:
+                self.assertEqual(rows['terranmre'], (1, 2780))
+                self.assertEqual(rows['metallicmicrolattice'], (4, 5000))
+                self.assertEqual(rows['siliconcarbide'], (5, 180))
+                self.assertEqual(rows['computronicsubstrate'], (7, 30))
+                self.assertEqual(rows['stimulants'], (9, 290))
+                self.assertNotIn('refinedmetals', rows)
+
+    def test_adapter_staples_cannot_import_water_or_medicine(self):
+        self.configure(["<set_value name=\"$ProfileStaples.{'$paranid'}\" exact=\"['water','medicalsupplies','sojahusk']\"/>"])
+        self.apply(8)
+        rows = {str(d[1]): (d[2], d[3]) for d in self.r.Definitions}
+        self.assertEqual(rows['water'], (1, 1420))
+        self.assertEqual(rows['medicalsupplies'], (3, 2270))
+        self.assertEqual(rows['sojahusk'], (8, 2340))
+
+    def test_saved_placeholder_preferences_survive_reload_and_price_change(self):
+        self.apply(3)
+        frozen = self.run.env['SectorProfiles'][self.run.env['Sector']]
+        old = List([List([d[1], d[2], 2000.0 if d[2] == 1 else d[3]]) for d in self.r.Definitions])
+        frozen['Definitions'] = old
+        self.r['Definitions'] = old
+        self.run.library('ApplyLevel')
+        self.r['GrowthSeconds'] = 1234
+        self.r.Wares['foodrations'].update(Reserve=99, Delivered=3, Paid=500)
+        self.run.env['ware'].foodrations.averageprice *= 2
+        self.run.library('RefreshProfile')
+        self.run.library('ApplyLevel')
+        self.assertEqual(self.r.Wares['foodrations'].Rate, 3125)
+        self.assertEqual((self.r.GrowthSeconds, self.r.Wares['foodrations'].Reserve,
+                          self.r.Wares['foodrations'].Delivered, self.r.Wares['foodrations'].Paid),
+                         (1234, 99, 3, 500))
+        del self.r['Definitions']
+        self.run.library('RefreshProfile')
+        self.assertEqual(self.r.Wares['foodrations'].Rate, 3125)
 
 
 if __name__ == '__main__':

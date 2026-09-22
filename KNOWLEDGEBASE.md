@@ -40,7 +40,9 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   progress through `ApplyLevel`.
 - New wares start with empty reserves; existing rates rise 25% only after a completed upgrade. All unlocked
   wares, including intoxicants, count toward qualification; level 10 adds no new
-  ware. These quantities and prices are diagnostic balance, not final tuning.
+  ware. New games use price-normalized category budgets (see the final-demand
+  entry below); existing frozen profiles keep their saved quantities. Hub purchase
+  prices remain `ceil(min + (max - min) / 10)`.
 - Advancement from level L requires L+1 cumulative supplied game hours. All
   active positive-rate wares must have reserve stock; no requirements means no
   growth. Shortages pause progress without resetting it. Consumption drains each
@@ -654,3 +656,31 @@ implemented or runtime-tested CE rewards:
 - Runtime acceptance still required: empty station shell/build storage, native geometry
   for all loaded races, construction with NPC deliveries, save/load during generation
   and builds, and subsequent expansions. Mock tests do not prove engine behavior.
+
+
+## 2026-09-22 - final-demand-budget-balance
+
+- IMPLEMENTED: default demands normalize category budgets using native
+  `ware.averageprice`, converted from money to credits with `/ 1Cr`.
+  Baseline units/hour = `max(10, 10 * floor(budget / price / 10 + 0.5))`.
+  Local food/energy/medicine: 150,000 Cr; water/imported food: 75,000 Cr;
+  industrial goods: 250,000 Cr; luxuries: 100,000 Cr, each per ware per hour
+  at unlock and at 8,524,100,000 accessible population.
+- Three-field adapter rows remain explicit units/hour, even when average price
+  is unavailable. Optional fourth-field `'budget'` rows normalize once before
+  saving ordinary three-field definitions. Native Boron water receives the water
+  budget; imported workforce baskets exclude water and pharmaceuticals.
+- USER DECISION: new games only. Existing frozen race/sector/record definitions
+  retain placeholder rates, construction choices, progress, reserves and trades.
+  No migration or schema bump. Restart plus a newly initialized game is required
+  to see this balance; UI `/reload` cannot apply MD changes.
+- CALCULATED from extracted vanilla base/Split/Boron/Terran prices: Argon Prime
+  steady-state gross revenue is 152,500 Cr/hour at level 1, 6,069,000.24 at level
+  10 without DLC foods, and 6,396,734.62 with all four DLC food wares. These are
+  sales ceilings assuming all demand is supplied by one seller, not net profit;
+  construction and initial two-hour reserve filling are excluded.
+- `BudgetBalanceTests` executes shipped resolver/controller actions against
+  extracted prices and checks 19 unlock quantities, every level's gross revenue,
+  rounding, invalid prices, explicit overrides, racial substitutions and saved
+  placeholder retention. These are mocked checks, not native-engine acceptance.
+- VALIDATED: `just validate` passed 92 tests and reference checks; `just schema` passed full native schemas and the merged build-storage AI check. In-game acceptance remains outstanding.

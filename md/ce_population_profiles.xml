@@ -9,12 +9,15 @@
              String table keys use a $ prefix (e.g. $terran).
              RaceDemands replaces the common industrial/luxury list for that race.
              Staples/Medicines override native workforce baskets, including empty lists.
+             Three-field rows keep explicit units/hour; a fourth 'budget' field
+             opts into average-price normalization of the third field (credits/hour).
+             Resolved and saved definitions always have exactly three fields.
              All preferences are captured once at game initialization. -->
         <set_value name="$ProfileStaples" exact="table[]"/>
         <set_value name="$ProfileMedicines" exact="table[]"/>
         <set_value name="$ProfileRaceDemands" exact="table[]"/>
-        <set_value name="$ProfileCommon" exact="[['water',1,2000.0f],['energycells',2,10000.0f],['refinedmetals',4,300.0f],['siliconwafers',4,200.0f],['microchips',5,100.0f],['scanningarrays',6,40.0f],['advancedcomposites',6,200.0f],['advancedelectronics',7,40.0f],['spacefuel',9,100.0f],['spaceweed',9,100.0f],['majadust',9,100.0f]]"/>
-        <set_value name="$ProfileRaceDemands.{'$terran'}" exact="[['water',1,2000.0f],['energycells',2,10000.0f],['metallicmicrolattice',4,300.0f],['siliconcarbide',5,200.0f],['computronicsubstrate',7,40.0f],['stimulants',9,100.0f]]"/>
+        <set_value name="$ProfileCommon" exact="[['water',1,75000.0f,'budget'],['energycells',2,150000.0f,'budget'],['refinedmetals',4,250000.0f,'budget'],['siliconwafers',4,250000.0f,'budget'],['microchips',5,250000.0f,'budget'],['scanningarrays',6,250000.0f,'budget'],['advancedcomposites',6,250000.0f,'budget'],['advancedelectronics',7,250000.0f,'budget'],['spacefuel',9,100000.0f,'budget'],['spaceweed',9,100000.0f,'budget'],['majadust',9,100000.0f,'budget']]"/>
+        <set_value name="$ProfileRaceDemands.{'$terran'}" exact="[['water',1,75000.0f,'budget'],['energycells',2,150000.0f,'budget'],['metallicmicrolattice',4,250000.0f,'budget'],['siliconcarbide',5,250000.0f,'budget'],['computronicsubstrate',7,250000.0f,'budget'],['stimulants',9,100000.0f,'budget']]"/>
       </actions>
     </library>
     <library name="Build">
@@ -80,11 +83,11 @@
           <!-- Local foods precede shared and imported wares, preventing duplicates. -->
           <do_if value="$ProfileFoods.{'$' + $CandidateRace}?">
             <do_for_each name="$ProfileID" in="$ProfileFoods.{'$' + $CandidateRace}">
-              <set_value name="$ProfileDefinition" exact="[$ProfileID,1,2000.0f]"/>
+              <set_value name="$ProfileDefinition" exact="[$ProfileID,1,150000.0f,'budget']"/>
               <include_actions ref="md.CE_PopulationProfiles.Add"/>
             </do_for_each>
             <do_for_each name="$ProfileID" in="$ProfileMeds.{'$' + $CandidateRace}">
-              <set_value name="$ProfileDefinition" exact="[$ProfileID,3,500.0f]"/>
+              <set_value name="$ProfileDefinition" exact="[$ProfileID,3,150000.0f,'budget']"/>
               <include_actions ref="md.CE_PopulationProfiles.Add"/>
             </do_for_each>
           </do_if>
@@ -97,9 +100,9 @@
           <do_for_each name="$ProfileRace" in="lookup.race.list">
             <do_if value="$ProfileRace.id != $CandidateRace">
               <do_for_each name="$ProfileID" in="$ProfileFoods.{'$' + $ProfileRace.id}">
-                <!-- Water is local sustain, never an exotic cuisine. -->
-                <do_if value="$ProfileWares.{'$' + $ProfileID}? and $ProfileWares.{'$' + $ProfileID}.group.id != 'water'">
-                  <set_value name="$ProfileDefinition" exact="[$ProfileID,8,500.0f]"/>
+                <!-- Water and medicine are sustain, never exotic cuisine. -->
+                <do_if value="$ProfileWares.{'$' + $ProfileID}? and $ProfileWares.{'$' + $ProfileID}.group.id != 'water' and $ProfileWares.{'$' + $ProfileID}.group.id != 'pharmaceutical'">
+                  <set_value name="$ProfileDefinition" exact="[$ProfileID,8,75000.0f,'budget']"/>
                   <include_actions ref="md.CE_PopulationProfiles.Add"/>
                 </do_if>
               </do_for_each>
@@ -117,17 +120,45 @@
         </do_if>
       </actions>
     </library>
+    <library name="NormalizeBudget">
+      <actions>
+        <!-- Called only for an available, unseen ware and a validated budget row.
+             Money is converted explicitly to credits before floating-point division. -->
+        <set_value name="$ProfileAveragePrice" exact="@$ProfileWares.{'$' + $ProfileAddID}.averageprice"/>
+        <do_if value="$ProfileAveragePrice and $ProfileAveragePrice gt 0Cr">
+          <set_value name="$ProfileBudget" exact="$ProfileDefinition.{3}"/>
+          <!-- Native Boron water is encountered before the common water row. -->
+          <do_if value="$ProfileWares.{'$' + $ProfileAddID}.group.id == 'water'">
+            <set_value name="$ProfileBudget" exact="75000.0f"/>
+          </do_if>
+          <set_value name="$ProfileQuantity" exact="$ProfileBudget / ($ProfileAveragePrice / 1Cr) / 10.0f + 0.5f"/>
+          <set_value name="$ProfileQuantity" exact="[10, ($ProfileQuantity)i * 10].max"/>
+          <set_value name="$ProfileDefinition" exact="[$ProfileAddID,$ProfileDefinition.{2},$ProfileQuantity]"/>
+        </do_if>
+        <do_else>
+          <set_value name="$CandidateValid" exact="false"/>
+        </do_else>
+      </actions>
+    </library>
     <library name="Add">
       <actions>
-        <do_if value="typeof $ProfileDefinition == datatype.list and $ProfileDefinition.count == 3 and (typeof $ProfileDefinition.{1}).isstring and (typeof $ProfileDefinition.{2}).isnumeric and (typeof $ProfileDefinition.{3}).isnumeric">
+        <do_if value="typeof $ProfileDefinition == datatype.list and ($ProfileDefinition.count == 3 or $ProfileDefinition.count == 4) and (typeof $ProfileDefinition.{1}).isstring and (typeof $ProfileDefinition.{2}).isnumeric and (typeof $ProfileDefinition.{3}).isnumeric">
           <set_value name="$CandidateRequested" operation="add"/>
-          <do_if value="$ProfileDefinition.count != 3 or $ProfileDefinition.{2} lt 1 or $ProfileDefinition.{2} gt 10 or $ProfileDefinition.{2} != ($ProfileDefinition.{2})i or not ($ProfileDefinition.{3} gt 0 and $ProfileDefinition.{3} le 1000000000000.0f)">
+          <do_if value="$ProfileDefinition.{2} lt 1 or $ProfileDefinition.{2} gt 10 or $ProfileDefinition.{2} != ($ProfileDefinition.{2})i or not ($ProfileDefinition.{3} gt 0 and $ProfileDefinition.{3} le 1000000000000.0f) or ($ProfileDefinition.count == 4 and $ProfileDefinition.{4} != 'budget')">
             <set_value name="$CandidateValid" exact="false"/>
           </do_if>
           <set_value name="$ProfileAddID" exact="$ProfileDefinition.{1}"/>
-          <do_if value="$ProfileWares.{'$' + $ProfileAddID}? and not $ProfileSeen.{'$' + $ProfileAddID}? and $ProfileDefinition.{2} ge 1 and $ProfileDefinition.{2} le 10 and $ProfileDefinition.{3} gt 0">
-            <append_to_list name="$CandidateDefinitions" exact="[$ProfileWares.{'$' + $ProfileAddID},$ProfileDefinition.{2},$ProfileDefinition.{3}]"/>
-            <set_value name="$ProfileSeen.{'$' + $ProfileAddID}" exact="true"/>
+          <do_if value="$CandidateValid and $ProfileWares.{'$' + $ProfileAddID}? and not $ProfileSeen.{'$' + $ProfileAddID}?">
+            <do_if value="$ProfileDefinition.count == 4">
+              <include_actions ref="md.CE_PopulationProfiles.NormalizeBudget"/>
+            </do_if>
+            <do_if value="$CandidateValid and $ProfileDefinition.count == 3 and $ProfileDefinition.{3} gt 0 and $ProfileDefinition.{3} le 1000000000000.0f">
+              <append_to_list name="$CandidateDefinitions" exact="[$ProfileWares.{'$' + $ProfileAddID},$ProfileDefinition.{2},$ProfileDefinition.{3}]"/>
+              <set_value name="$ProfileSeen.{'$' + $ProfileAddID}" exact="true"/>
+            </do_if>
+            <do_else>
+              <set_value name="$CandidateValid" exact="false"/>
+            </do_else>
           </do_if>
         </do_if>
         <do_else>

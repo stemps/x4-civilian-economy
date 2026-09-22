@@ -38,11 +38,11 @@ class GalaxyTests(unittest.TestCase):
         self.reconcile(b,100000000);self.assertEqual(len(self.created),2)
         self.assertIsNot(first.Hub,second.Hub)
         self.assertGreater(first.Wares['foodrations'].Rate,0)
-        self.assertAlmostEqual(first.Wares['foodrations'].Rate,2000*100000000/8524100000)
-        self.assertEqual(second.Wares['foodrations'].Rate,2000)
+        self.assertAlmostEqual(first.Wares['foodrations'].Rate,7140*100000000/8524100000)
+        self.assertEqual(second.Wares['foodrations'].Rate,7140)
     def test_population_scaling_above_workforce_bonus_ceiling(self):
         r=self.reconcile(self.sector(),18000000000)
-        self.assertAlmostEqual(r.Wares['water'].Rate,2000*18000000000/8524100000)
+        self.assertAlmostEqual(r.Wares['water'].Rate,1420*18000000000/8524100000)
         self.assertAlmostEqual(r.Wares['water'].Cap,math.ceil(r.Wares['water'].Rate*2))
         self.assertEqual(r.Wares['water'].Price,1200)
     def test_live_change_does_not_unlock_pending_level_or_erase_backlog(self):
@@ -52,7 +52,7 @@ class GalaxyTests(unittest.TestCase):
         self.assertEqual(r.Level,1);self.assertEqual(r.Target,2)
         self.assertNotIn('energycells',r.Wares)
         self.assertEqual(r.Wares['foodrations'].Reserve,12.75)
-        self.assertEqual(r.Wares['foodrations'].Rate,1000)
+        self.assertEqual(r.Wares['foodrations'].Rate,3570)
     def test_zero_then_repopulation_retains_existing_hub(self):
         s=self.sector();r=self.reconcile(s,100000000);hub=r.Hub
         self.reconcile(s,0);self.assertIs(r.Hub,hub)

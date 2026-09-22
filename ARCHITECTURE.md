@@ -50,8 +50,16 @@ levels 1 and 2. Industrial goods unlock at levels 4–7 and luxuries at level 9;
 Terran profiles use microlattice, silicon carbide, computronic substrate and
 stimulants. Distinct foreign staples unlock at level 8, excluding water and
 medicine. First definition wins: local staples cannot be downgraded or duplicated
-by common/imported demand. Each native staple gets the existing 2,000 units/hour
-baseline; each foreign staple gets 500. Multiple staples are additive requirements.
+by common/imported demand. Default rows carry an optional fourth field, `'budget'`,
+with their third field interpreted as average-market-value credits/hour. `Add`
+validates the row and available ware before `NormalizeBudget` calculates
+`max(10, 10 * floor(budget / average-price-in-credits / 10 + 0.5))`.
+Budgets per ware are 150,000 for local food, energy and medicine; 75,000 for
+water and foreign food; 250,000 for industrial goods; 100,000 for luxuries.
+Native water uses its water budget even when discovered as local sustain.
+Multiple staples remain additive requirements. Unavailable/non-container wares
+are skipped before price lookup; nonpositive/missing prices invalidate the
+candidate. Deduplicated rows never reprice a previously accepted requirement.
 
 `Init.$SectorProfiles` captures every discovered sector before requesting population,
 including sectors below the hub threshold. `Init.$RaceProfiles` caches one immutable
@@ -67,7 +75,9 @@ extension path and append `set_value` actions to library `Configure`:
 - `$ProfileStaples.{'$raceid'}`: replacement list of staple ware-ID strings.
 - `$ProfileMedicines.{'$raceid'}`: replacement list of medicine ware-ID strings.
 - `$ProfileRaceDemands.{'$raceid'}`: replacement list of `[ware-ID, unlock-level,
-  baseline-units/hour]` for common/industrial/luxury demand.
+  baseline-units/hour]` for common/industrial/luxury demand. Three-field rows
+  remain literal quantity overrides and do not read average prices. Optional
+  `[ware-ID, unlock-level, credits/hour, 'budget']` rows opt into normalization.
 - `$ProfileCommon`: default common/industrial/luxury rows for other races.
 
 An absent override inherits the native/default list; an explicit empty list disables
@@ -86,7 +96,11 @@ For example, an adapter can append:
 Save loads reuse saved definitions. `RefreshProfile` initializes a hub record from
 its sector snapshot only if definitions are absent. `ApplyLevel` changes rates and
 unlocks against that saved basket; population changes scale rates without rebuilding
-preferences. Adapters must be installed before starting a new game.
+preferences. Adapters must be installed before starting a new game. The final
+budget balance likewise applies to newly initialized games only: existing
+schema-4 snapshots retain their saved placeholder quantities. No balance migration
+or schema bump is performed. Resolved/saved definitions retain the original
+three-field shape, and population/level scaling and purchase prices are unchanged.
 
 ## Racial construction
 

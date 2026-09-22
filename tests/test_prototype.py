@@ -9,6 +9,7 @@ from generate_plans import plans
 REF=ROOT.parent.parent/'reference'
 
 class Ware(str):
+    averageprice=1600
     minprice=1000
     maxprice=2200
     iscargo=True
@@ -22,6 +23,7 @@ def definitions(run):
     types=Table({w.get('id'):Ware(w.get('id')) for w in E.parse(str(REF/'libraries/wares.xml')).xpath('/wares/ware[price]')})
     for node in E.parse(str(REF/'libraries/wares.xml')).xpath('/wares/ware[price]'):
         types[node.get('id')].group=Table(id=node.get('group',''))
+        types[node.get('id')].averageprice=int(node.find('price').get('average')) * 100
     recipes=E.parse(str(REF/'libraries/wares.xml'))
     races=List([Table(id=name,workforce=Table(resources=List([
         types[n.get('ware')] for n in recipes.xpath('/wares/ware[@id="workunit_busy"]/production[@method=$method]/primary/ware',method='default' if name == 'argon' else name)
