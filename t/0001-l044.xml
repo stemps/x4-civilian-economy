@@ -100,5 +100,7 @@
     <t id="121">Level %d \(%s\)</t>
     <t id="122">Civilian Economy: racial hubs require a new game started with this version installed. Existing hubs were not converted.</t>
     <t id="123">Civilian Economy: construction for population race %s could not be prepared. Check the component definitions and debug log. No replacement components were selected.</t>
+    <t id="124">Advance to level %d</t>
+    <t id="125">Debug shortcut: bypass growth requirements and automatically finish the required construction. Layout generation may take time.</t>
   </page>
 </language>

@@ -26,6 +26,11 @@ def datatype_of(value):
     if type(value) is str:return DataType('string')
     return DataType('other')
 
+class PseudoValue:
+    """Native property path intermediate; cannot be saved as an MD value."""
+    pass
+
+
 class Table(dict):
     # Fixture attribute writes must affect the same table seen by MD paths.
     def __setattr__(self, key, value): self[key] = value
@@ -45,6 +50,8 @@ class Component(Table):
     def __ne__(self,other): return self is not other
 
 class List(list):
+    @property
+    def random(self): return self[1] if self else NIL
     @property
     def list(self): return self
     @property
@@ -92,6 +99,8 @@ class Runner:
         self.reserves = self.scripts['CE_Reserves']
         self.trade = self.scripts['CE_Trade']
         self.env={'player':Table(age=0), 'null':NIL, 'true':True, 'false':False}
+        self.env['md']=Table({name:Table({cue.get('name'):Table() for cue in tree.xpath('//cue')})
+                              for name,tree in self.scripts.items()})
         self.env['datatype']=Table(list=DataType('list'),table=DataType('table'))
         self.stubs={}
         self.native={}
@@ -105,6 +114,8 @@ class Runner:
         return s
     def expr(self,s):
         s=s.strip()
+        if re.search(r'@\$?\w+(?:\.\$?\w+|\.\{[^{}]*\})*\?', s):
+            raise ValueError('MD @ cannot be combined with ?')
         if re.search(r'\.keys$', s):
             raise ValueError('MD table keys require .keys.list to obtain a list')
         if s.startswith('table['):
@@ -115,15 +126,17 @@ class Runner:
         s=self.path(s)
         s=re.sub(r'typeof (\w+(?:\.[\w]+|\[[^\]]+\])*)',r'datatype_of(\1)',s)
         s=re.sub(r'(\w+(?:\.[\w]+|\[[^\]]+\])*)\?',r'defined(\1)',s)
-        s=re.sub(r'\(([^()]*)\)i',r'int(\1)',s)
-        s=re.sub(r'(\d+(?:\.\d+)?)f\b',r'\1',s)
+        s=re.sub(r'\(([^()]*)\)(LF|f|L|i)\b', lambda m: ('float' if m[2] in ('LF','f') else 'int') + '(' + m[1] + ')', s)
+        s=re.sub(r'(\d+(?:\.\d+)?)(?:LF|f|L)\b',r'\1',s)
         for unit,scale in [('min',60),('km',1000),('m',1),('Cr',100),('h',3600),('s',1)]:
             s=re.sub(r'(\d+(?:\.\d+)?)'+unit+r'\b',lambda m:str(float(m[1])*scale),s)
         for md,py in [(' ge ',' >= '),(' le ',' <= '),(' gt ',' > '),(' lt ',' < ')]: s=s.replace(md,py)
         while re.search(r'\[([^\[\]]+)\]\.(min|max)',s):
             s=re.sub(r'\[([^\[\]]+)\]\.(min|max)',r'\2(\1)',s)
-        return wrap(eval(s, {'__builtins__':{},'min':min,'max':max,'int':int,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
+        return wrap(eval(s, {'__builtins__':{},'min':min,'max':max,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
     def set(self,path,v,remove=False):
+        if isinstance(v, PseudoValue):
+            raise ValueError('Native pseudo-values cannot be stored; read a property directly')
         path=self.path(path)
         # Last field/index is the target; everything before it is an expression.
         if path.endswith(']'):
@@ -183,6 +196,7 @@ class Runner:
             elif tag=='append_to_list': self.expr(n.get('name')).append(self.expr(n.get('exact')))
             elif tag=='remove_value': self.set(n.get('name'),None,remove=True)
             elif tag=='clear_table': self.expr(n.get('table')).clear()
-            elif tag=='debug_text': pass
+            elif tag=='debug_text':
+                if tag in self.native: self.native[tag](n)
             elif tag in self.native: self.native[tag](n)
             else: raise NotImplementedError(tag)

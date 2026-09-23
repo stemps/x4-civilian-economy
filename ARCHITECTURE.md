@@ -10,11 +10,13 @@
 | `md/ce_diagnostics.xml` | Validated per-hub snapshots and blackboard publication. |
 | `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
+| `md/ce_placement.xml` | Current-plot-first layout retries, bounded safe enlargement and empty-shell relocation; internal cue state and retry diagnostics. |
 | `md/ce_construction.xml` | Racial component selection, asynchronous native layout generation, validation, queue recovery and module readiness. |
 | `ui/ce_population.lua` | Native accessible-population reader; no economic state. |
-| `ui/ce_debug_tools.lua` | Optional UI Extensions testing menu and scoped ownerless interaction fallback. |
+| `ui/ce_debug_tools.lua` | Optional testing menu, target-level shortcuts, guarded native force-completion and scoped ownerless interaction fallback. |
+| `md/ce_debug_advance.xml` | Validated debug target requests, saved per-hub completion permissions and native-build completion dispatch. |
 | `ui/ce_hub_status.lua` | Read-only cached hub snapshots, metric formatting and explanatory text for the map. |
-| `ui/ce_map_status.lua` | Civilian-only map selection table, five-ware pagination and native reserve/growth bars. |
+| `ui/ce_map_status.lua` | Civilian-only map selection table, height-limited native scrolling and native reserve/growth bars. |
 | `libraries/`, `assets/`, `index/` | Cumulative construction plans and hub definition using vanilla modules/artwork. |
 | `aiscripts/build.buildstorage.xml` | Excludes registered hubs from vanilla builder recruitment; MD assigns their builders. |
 | `t/` | Localized names and diagnostics. |
@@ -59,6 +61,8 @@ by common/imported demand. Default rows carry an optional fourth field, `'budget
 with their third field interpreted as average-market-value credits/hour. `Add`
 validates the row and available ware before `NormalizeBudget` calculates
 `max(10, 10 * floor(budget / average-price-in-credits / 10 + 0.5))`.
+Average money prices are cast to `LF` before dividing by `(1Cr)LF`; division by
+`1Cr` alone does not guarantee a numeric result in the engine.
 Budgets per ware are 150,000 for local food, energy and medicine; 75,000 for
 water and foreign food; 250,000 for industrial goods; 100,000 for luxuries.
 Native water uses its water budget even when discovered as local sustain.
@@ -123,7 +127,35 @@ Each field is optional and replaces that role. Modules must support the required
 class/capacity. Defaults follow loaded module definitions, including conversion
 replacements. No fallback to Argon components is allowed.
 
-A new hub is an empty station shell with build storage and a reserved growth plot.
+A new hub is an empty station shell. Its first layout uses its existing plot;
+build storage is created only after layout acceptance. There is no up-front
+reservation for level ten. `CE_Placement` applies a five-minute cooldown after a
+failed attempt; the next five-minute reconciliation performs the retry (so the
+actual delay can be nearly ten minutes).
+Only a native generation failure permits safe incremental plot enlargement (up to
+2 km per side per attempt, capped at 16 km half-size on each axis). The center is
+preserved and existing larger plots never shrink. Invalid module baskets and build
+task failures retry without enlargement.
+
+If enlargement is unsafe, capped or has no effect, placement can retry up to three
+times using native safe-position warping of the same empty station. Relocation
+requires no native modules, storage, accepted/completed sequence, build task,
+initialization, pending callback or operational state. Established hubs stay put,
+retain their earned level and continue operating while expansion retries. After
+limits are reached, layout attempts continue through reconciliation in the current
+plot; no overlap is forced and no free module is supplied.
+
+The dormant `CE_Placement.State` cue owns a lazily initialized table keyed by hub
+identity (attempts, failures, next allowed time, enlargement flag and placement
+attempt count). This is internal saved cue state; public hub records, adapter
+contracts and snapshot version remain unchanged. Hub loss removes its entry.
+Reload cancellation retains the retry delay and counters. `PlotReady` means the
+current plot is available for a layout attempt or accepted construction, rather
+than a guaranteed level-ten envelope; it does not gate expansion qualification.
+Logs identify the hub, sector ID/name, level/token/attempt, failure reason, next
+retry time, bounds and each plot/placement outcome. Native save/load and relocation
+behavior still require in-game acceptance.
+
 `Generate` has an instantiated namespace holding the record, station, token, level,
 and completed base sequence. `create_construction_sequence` runs asynchronously
 without `immediate`, with a ten-second timeout and `failsafe=false`. Completion
@@ -137,6 +169,16 @@ IDs, including connectors. Expansion retains completed-level demand. On reload a
 unfinished generation watcher is cancelled and its request retried; queued builds
 retain their sequence. A lost build task is requeued from the saved target sequence.
 Hub destruction clears sequences but retains the sector preferences and earned level.
+Native construction-plan entries are property-path intermediates, not values that
+can be stored in MD variables. Validation and readiness read `.macro`, `.id` and
+`.exists` through the sequence, retaining only the resulting native values.
+
+`StartBuild` is shared by accepted layouts and recovered build tasks. It binds the
+hub and sector from the captured record, processes the build, initializes/funds
+build storage, then applies the existing builder policy immediately. An unavailable
+builder is retried by five-minute reconciliation. Failed generation clears pending
+state without queueing a build; identity/token guards discard stale completions.
+Startup diagnostics name the hub and the layout/build/funding/builder stage.
 Invalid components/layouts log a diagnostic and block without substitution.
 The packaged static Argon plans and generator remain reference fixtures; racial
 runtime construction does not select them.
@@ -304,10 +346,21 @@ rows above the ware heading. Ware rows cannot inherit the summary's wrapped heig
 The three visual ware columns still use a bar anchor plus name/time text cells.
 Do not add tables here without updating and testing the native callback contract.
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
+The summary and ware-heading rows (1-6) are fixed; all ware rows scroll.
+`maxVisibleHeight` caps the single table at 40% of the screen height and
+`getVisibleHeight()` determines its bottom-aligned position. Short lists use only
+the height they need. `reserveScrollBar=true` leaves room in the variable-width
+last column. There are no page controls or five-ware limit.
 
-The map renderer separates selection/order retention, panel geometry and row access,
-summary widgets, ware headings/rows and pagination into local helpers. They all
-populate the single table created by `createPanel`; no helper adds another table.
+Before native updates rebuild the frame, CE records `GetTopRow` for the same hub
+and restores it through `setTopRow`, clamped when the basket shrinks. Switching
+hubs, native selection modes or cleanup resets the position. The Lua fixture
+checks header/ware row modes, large and empty lists, viewport bounds at several
+screen heights, scroll restoration and the one-table contract.
+
+The renderer separates selection/order retention, panel geometry and row access,
+summary widgets and ware headings/rows into local helpers. They all populate the
+single table created by `createPanel`; no helper adds another table.
 Live callback closures still resolve the current snapshot by hub and ware identity.
 
 Reserve bars use native start/current segments: delivered stock is blue and
@@ -324,3 +377,22 @@ profile fixture. Test suites do not import helpers from other test suites.
 all fixtures; `X4_REFERENCE` and `X4_TOOLKIT` set defaults for isolated worktrees.
 `tools/md_test_runtime.py` dispatches fully qualified library calls by the shipped
 MD script name. Controller forwarding calls preserve existing test interception.
+
+## Debug advance to a chosen level
+
+The interaction testing section offers levels 2-10; only targets above an active
+hub's current level are enabled, with no pending expansion. Lua rechecks fresh
+state on click. MD resolves a bounded command list, checks native readiness,
+identity, ownerless ownership and absence of a pending plan/task, then queues the
+chosen cumulative target through CE_Construction. Existing base entry IDs and
+normal layout validation/retries remain in effect; Level is never assigned early.
+
+CE_DebugAdvance.State stores requested targets keyed by hub, outside the public
+record/snapshot. StartBuild and minute ticks emit CEAdvanceBuildReady only for an
+explicit debug request with a native task. Lua revalidates identity, snapshot test
+flag and native progress, calls ForceBuildCompletion and requests an UpdateHub.
+Normal readiness then commits the target, demand and name. If generation/completion
+is delayed, the request survives save/load and retries. Requests end when the level
+is reached, ownership changes or the target changes; hub loss removes them. Ordinary
+queue-upgrade actions never acquire automatic-completion permission. The automatic
+callback requires the Lua addon; a missed UI event is retried on a minute tick.

@@ -41,7 +41,7 @@ def definitions(run):
     run.library('md.CE_PopulationProfiles.Build')
     run.env['Definitions']=run.env['CandidateDefinitions']
     run.env.setdefault('R',NIL)
-    run.env['md']=Table(CE_OwnerlessHub=Table(Init=Table()))
+    run.env['md'].CE_OwnerlessHub.Init=Table()
 
 class ProfileFixture:
     def setUp(self):

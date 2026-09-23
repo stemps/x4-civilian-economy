@@ -162,7 +162,7 @@ class LifecycleTests(unittest.TestCase):
         self.run.env['ModuleCounts']=List([4,6,8,11,13,16,19,21,23,27])
         self.run.env['PlanIDs']=List(['p'+str(i) for i in range(1,11)])
         self.run.env['faction']=Table(ownerless='ownerless')
-        self.hub=Table(exists=True,iswreck=False,owner='ownerless',
+        self.hub=Component(exists=True,iswreck=False,owner='ownerless',
                        constructionsequence=List([Table(id=str(i)) for i in range(6)]),
                        planmodule=Table({str(i):Table(isoperational=i<4) for i in range(6)}),
                        buildstorage=Table(exists=True,builds=Table(queued=List(),inprogress=List()),buildmodule='module'))
@@ -273,42 +273,5 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(self.r.Wares['foodrations'].Reserve,0)
         self.assertEqual(self.r.Wares['foodrations'].Delivered,77)
         self.assertFalse(self.r.Operational);self.assertEqual(self.r.GrowthSeconds,987.25)
-
-class GrowthPlotTests(unittest.TestCase):
-    def reserve(self, half, center, safe=True):
-        run=Runner()
-        plot=Table(max=Table(zip('xyz',half)),center=Table(zip('xyz',center)))
-        run.env.update(Hub=Table(buildplot=plot),R=Table(PlotReady=False))
-        calls=[]
-        def check(node):
-            calls.append({side+axis:run.expr(node.get(side+axis)) for side in ('neg','pos') for axis in 'xyz'})
-            run.env['SafePlot']=safe
-        def extend(node):
-            growth={side+axis:run.expr(node.get(side+axis)) for side in ('neg','pos') for axis in 'xyz'}
-            self.assertEqual(growth,calls[-1])
-            for axis in 'xyz':
-                neg,pos=growth['neg'+axis],growth['pos'+axis]
-                plot.max[axis]+=(neg+pos)/2
-                plot.center[axis]+=(pos-neg)/2
-        run.native.update(can_safely_extend_build_plot=check,extend_build_plot=extend)
-        run.library('ReserveGrowthPlot')
-        return run,plot,calls
-    def test_incremental_growth_matches_checked_bounds(self):
-        run,plot,calls=self.reserve((1000,1000,1000),(0,0,0))
-        self.assertEqual(calls[0],dict(negx=5000,posx=5000,negy=3000,posy=3000,negz=15000,posz=15000))
-        self.assertEqual(list(plot.max.values()),[6000,4000,16000])
-        self.assertTrue(run.env['R'].PlotReady)
-        run.library('ReserveGrowthPlot');self.assertEqual(len(calls),1)
-    def test_off_center_existing_plot_is_preserved(self):
-        run,plot,calls=self.reserve((8000,5000,17000),(4000,-2000,2000))
-        self.assertEqual(calls[0],dict(negx=2000,posx=0,negy=0,posy=1000,negz=1000,posz=0))
-        self.assertTrue(run.env['R'].PlotReady)
-    def test_rejected_growth_does_not_resize_or_unlock(self):
-        run,plot,calls=self.reserve((1000,1000,1000),(0,0,0),safe=False)
-        self.assertFalse(run.env['R'].PlotReady)
-        self.assertEqual(list(plot.max.values()),[1000,1000,1000])
-    def test_existing_large_plot_needs_no_further_clearance(self):
-        run,plot,calls=self.reserve((12000,8000,32000),(0,0,0),safe=False)
-        self.assertTrue(run.env['R'].PlotReady);self.assertEqual(calls,[])
 
 if __name__=='__main__':unittest.main()

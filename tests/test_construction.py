@@ -1,5 +1,6 @@
 """Exercise racial selection and asynchronous layout contracts, without emulating X4."""
 from support import Runner, Table, List, NIL, Component, definitions, REF
+from md_test_runtime import PseudoValue
 from lxml import etree as E
 import unittest
 
@@ -7,6 +8,10 @@ import unittest
 def module(kind, size=1):
     return Component(isclass=Table({kind: True}), numdocks=Table(dock_s=size, dock_m=size),
                      cargo=Table(capacity=Table(container=size)), numpierdocks=size)
+
+
+class SequenceEntry(Table, PseudoValue):
+    pass
 
 
 class Sequence(List):
@@ -17,7 +22,7 @@ class Sequence(List):
 
 
 def sequence(macros):
-    return Sequence(Table(id=str(i), macro=m, exists=True) for i, m in enumerate(macros))
+    return Sequence(SequenceEntry(id=str(i), macro=m, exists=True) for i, m in enumerate(macros))
 
 
 class ConstructionTests(unittest.TestCase):
@@ -33,6 +38,7 @@ class ConstructionTests(unittest.TestCase):
                      faction=Table(ownerless='ownerless'),
                      tag=Table({s:s for s in ('dockarea','storage','pier','base','connection','module','dock_s','dock_m')}))
         self.calls = []
+        r.stubs.update(FundAccounts=lambda:None, AssignBuilder=lambda:None)
         def build(node):
             self.calls.append(r.expr(node.get('constructionplan')))
             r.set(node.get('result'), Table(exists=True))

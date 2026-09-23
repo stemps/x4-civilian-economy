@@ -4,7 +4,7 @@ local ffi = require('ffi')
 ffi.cdef[[ uint64_t GetPickedMapComponent(uint64_t holomapid); ]]
 local C = ffi.C
 local registered = false
-local page, selected, signature = 1, nil, nil
+local topRow, selected, signature = 7, nil, nil
 local order = {}
 local tooltipMap
 local function clearTooltip()
@@ -22,20 +22,16 @@ end
 local function title(s)
     return GetComponentData(s.id, 'name') or M.text(1)
 end
-local PAGE_SIZE = 5
 
 local function updateSelection(s)
     local key = tostring(s.id)
-    if selected ~= key then page, order = 1, M.order(s) else
+    if selected ~= key then topRow, order = 7, M.order(s) else
         local retained, seen = {}, {}
         for _,id in ipairs(order) do if M.find(s,id) then retained[#retained+1]=id;seen[id]=true end end
         for _,id in ipairs(M.order(s)) do if not seen[id] then retained[#retained+1]=id end end
         order=retained
     end
     selected, signature = key, M.signature(s)
-    local pages = math.max(1, math.ceil(#s.wares / PAGE_SIZE))
-    page = math.min(page, pages)
-    return pages
 end
 
 local function createPanel(menu, frame, s)
@@ -44,7 +40,7 @@ local function createPanel(menu, frame, s)
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
     local border = frame:addFrameBorder('selectedships', {offset=Helper.standardContainerOffset})
     local t=frame:addTable(5,{tabOrder=21,width=width,x=(Helper.viewWidth-width)/2,y=0,
-        scaling=false,reserveScrollBar=false,skipTabChange=true,
+        scaling=false,reserveScrollBar=true,skipTabChange=true,maxVisibleHeight=Helper.viewHeight*0.4,
         backgroundID='solid',backgroundColor=Color['frame_background_semitransparent'],
         backgroundPadding=Helper.standardContainerOffset,frameborder=border.id})
     -- MapMenu.viewCreated binds positional widget IDs: this hook MUST add one table.
@@ -58,7 +54,9 @@ local function createPanel(menu, frame, s)
     local function current() return M.get(s.id) end
     local rows={}
     local function tableRow(index)
-        while #rows<index do rows[#rows+1]=t:addRow(nil,{fixed=true,borderBelow=false}) end
+        while #rows<index do
+            rows[#rows+1]=t:addRow(nil,{fixed=#rows<6,borderBelow=false})
+        end
         return rows[index]
     end
     local function row(index)
@@ -154,33 +152,20 @@ local function drawWareRow(panel, wareKey, index)
     end
 end
 
-local function drawPagination(panel, menu, pages)
-    local row, data = panel.row, panel.data
-    if pages > 1 then
-        local r = row(7)
-        r[1]:setColSpan(2):createButton({active=page > 1,height=data.textHeight}):setText(M.text(66))
-        r[1].handlers.onClick = function() page=math.max(1,page-1);menu.refreshMainFrame=true end
-        r[3]:setColSpan(2):createText(M.text(72,page,pages),{halign='center'})
-        r[5]:createButton({active=page < pages,height=data.textHeight}):setText(M.text(67))
-        r[5].handlers.onClick = function() page=math.min(pages,page+1);menu.refreshMainFrame=true end
-    end
-end
-
 local function draw(menu, frame, s)
-    local pages = updateSelection(s)
+    updateSelection(s)
     local panel = createPanel(menu, frame, s)
     drawSummary(panel, s)
     drawWareHeadings(panel)
-    local first = (page - 1) * PAGE_SIZE + 1
-    for index=first, math.min(page * PAGE_SIZE, #order) do
-        drawWareRow(panel, order[index], index - first + 2)
+    for index, wareKey in ipairs(order) do
+        drawWareRow(panel, wareKey, index + 1)
     end
     if #s.wares == 0 then
         panel.row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),
             {wordwrap=true,cellBGColor=panel.background})
     end
-    drawPagination(panel, menu, pages)
-    panel.table.properties.y=Helper.viewHeight-panel.table:getFullHeight()-Helper.borderSize
+    panel.table:setTopRow(math.min(topRow, math.max(7, #order+6)))
+    panel.table.properties.y=Helper.viewHeight-panel.table:getVisibleHeight()-Helper.borderSize
         -menu.borderOffset-Helper.standardContainerOffset
 end
 local function register()
@@ -192,12 +177,17 @@ local function register()
     menu.createSelectedShips = function(frame, ...)
         local s = selection(menu)
         if s then return draw(menu, frame, s) end
-        page, selected, signature = 1, nil, nil
+        topRow, selected, signature = 7, nil, nil
         return nativeDraw(frame, ...)
     end
     menu.onUpdate = function(...)
         -- Native update can switch mode and install its own special-mode tooltip.
         clearTooltip()
+        -- Capture the live scroll position before nativeUpdate may rebuild the frame.
+        local before = selection(menu)
+        if before and selected == tostring(before.id) and menu.selectedShipsTable and menu.selectedShipsTable ~= 0 then
+            topRow = GetTopRow(menu.selectedShipsTable)
+        end
         local result = nativeUpdate(...)
         local s = selection(menu)
         if selected and (not s or signature ~= M.signature(s)) then menu.refreshMainFrame = true end
@@ -213,7 +203,7 @@ local function register()
     end
     menu.cleanup = function(...)
         clearTooltip()
-        page, selected, signature = 1, nil, nil
+        topRow, selected, signature = 7, nil, nil
         M.reset()
         return nativeCleanup(...)
     end

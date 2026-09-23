@@ -31,6 +31,7 @@
                 <set_value name="$R.$WatchingHub" exact="$R.$Hub"/>
               </do_if>
               <include_actions ref="UpdateHub"/>
+              <include_actions ref="md.CE_DebugAdvance.Tick"/>
               <include_actions ref="PublishDiagnostics"/>
             </do_for_each>
             <include_actions ref="PublishAllDiagnostics"/>
@@ -81,7 +82,7 @@
               <do_if value="event.param3 == $R.$Hub and $R.$Hub.exists">
                 <do_if value="event.param2 == 'queue_upgrade'">
                   <include_actions ref="UpdateHub"/>
-                  <do_if value="$R.$Operational and $R.$Level lt 10 and $R.$Target == 0 and $R.$PlotReady">
+                  <do_if value="$R.$Operational and $R.$Level lt 10 and $R.$Target == 0">
                     <set_value name="$R.$Target" exact="$R.$Level + 1"/>
                     <set_value name="$R.$TestUpgrade" exact="true"/>
                     <debug_text text="'[CE] TEST: qualification bypass for level %s'.[$R.$Target]"/>
@@ -93,6 +94,10 @@
                   <include_actions ref="UpdateOffers"/>
                   <debug_text text="'[CE] TEST: new reservations paused=%s'.[$R.$PauseOffers]"/>
                 </do_elseif>
+                <do_elseif value="event.param2 == 'advance_complete'">
+                  <include_actions ref="UpdateHub"/>
+                </do_elseif>
+                <do_else><include_actions ref="md.CE_DebugAdvance.Request"/></do_else>
                 <include_actions ref="PublishDiagnostics"/>
               </do_if>
             </do_for_each>
@@ -189,6 +194,8 @@
     </library>
     <library name="ForgetHub">
       <actions>
+        <include_actions ref="md.CE_Placement.Forget"/>
+        <include_actions ref="md.CE_DebugAdvance.Forget"/>
         <do_if value="@$R.$LayoutCue">
           <cancel_cue cue="$R.$LayoutCue"/>
         </do_if>
@@ -277,7 +284,7 @@
           <include_actions ref="EnsureManager"/>
           <include_actions ref="FundAccounts"/>
           <include_actions ref="EvaluateQualification"/>
-          <do_if value="$R.$Qualified and $R.$PlotReady">
+          <do_if value="$R.$Qualified">
             <set_value name="$R.$Target" exact="$R.$Level + 1"/>
             <set_value name="$R.$TestUpgrade" exact="false"/>
             <debug_text text="'[CE] Naturally qualified for level %s'.[$R.$Target]"/>
@@ -297,37 +304,9 @@
         <include_actions ref="UpdateOffers"/>
       </actions>
     </library>
+    <!-- Compatibility entry point; preparation now uses the current plot first. -->
     <library name="ReserveGrowthPlot">
-      <actions>
-        <!-- buildplot.max is the half-size about buildplot.center. The safety
-             action takes incremental growth, not final dimensions. Never shrink. -->
-        <set_value name="$PlotMax" exact="$Hub.buildplot.max"/>
-        <set_value name="$PlotCenter" exact="$Hub.buildplot.center"/>
-        <set_value name="$GrowNegX" exact="[0m,6km + $PlotCenter.x - $PlotMax.x].max"/>
-        <set_value name="$GrowPosX" exact="[0m,6km - $PlotCenter.x - $PlotMax.x].max"/>
-        <set_value name="$GrowNegY" exact="[0m,4km + $PlotCenter.y - $PlotMax.y].max"/>
-        <set_value name="$GrowPosY" exact="[0m,4km - $PlotCenter.y - $PlotMax.y].max"/>
-        <set_value name="$GrowNegZ" exact="[0m,16km + $PlotCenter.z - $PlotMax.z].max"/>
-        <set_value name="$GrowPosZ" exact="[0m,16km - $PlotCenter.z - $PlotMax.z].max"/>
-        <do_if value="$GrowNegX + $GrowPosX + $GrowNegY + $GrowPosY + $GrowNegZ + $GrowPosZ == 0m">
-          <set_value name="$R.$PlotReady" exact="true"/>
-        </do_if>
-        <do_else>
-          <can_safely_extend_build_plot object="$Hub" negx="$GrowNegX" posx="$GrowPosX" negy="$GrowNegY" posy="$GrowPosY" negz="$GrowNegZ" posz="$GrowPosZ" result="$SafePlot"/>
-          <do_if value="$SafePlot">
-            <extend_build_plot object="$Hub" negx="$GrowNegX" posx="$GrowPosX" negy="$GrowNegY" posy="$GrowPosY" negz="$GrowNegZ" posz="$GrowPosZ"/>
-            <set_value name="$PlotMax" exact="$Hub.buildplot.max"/>
-            <set_value name="$PlotCenter" exact="$Hub.buildplot.center"/>
-            <set_value name="$R.$PlotReady" exact="$PlotMax.x - $PlotCenter.x ge 6km and $PlotMax.x + $PlotCenter.x ge 6km and $PlotMax.y - $PlotCenter.y ge 4km and $PlotMax.y + $PlotCenter.y ge 4km and $PlotMax.z - $PlotCenter.z ge 16km and $PlotMax.z + $PlotCenter.z ge 16km"/>
-          </do_if>
-        </do_else>
-        <do_if value="$R.$PlotReady">
-          <debug_text text="'[CE] Growth plot ready: half-size=%s center=%s'.[$PlotMax,$PlotCenter]"/>
-        </do_if>
-        <do_else>
-          <debug_text text="'[CE] BLOCKED growth plot: half-size=%s center=%s additional neg=%s/%s/%s pos=%s/%s/%s'.[$PlotMax,$PlotCenter,$GrowNegX,$GrowNegY,$GrowNegZ,$GrowPosX,$GrowPosY,$GrowPosZ]"/>
-        </do_else>
-      </actions>
+      <actions><include_actions ref="md.CE_Placement.Prepare"/></actions>
     </library>
     <library name="QueueExpansion">
       <actions>
@@ -381,10 +360,10 @@
               <param name="waitduration" value="5min"/>
               <param name="abandonbuildtime" value="1h"/>
             </create_order>
-            <debug_text text="'[CE] Builder assigned=%s gate_distance=%s'.[$Builder, $Nearest]"/>
+            <debug_text text="'[CE] Builder assigned: hub=%s builder=%s gate_distance=%s'.[$Hub,$Builder,$Nearest]"/>
           </do_if>
           <do_else>
-            <debug_text text="'[CE] Waiting for an idle, non-hostile NPC builder; retry in five minutes'"/>
+            <debug_text text="'[CE] Waiting for an idle, non-hostile NPC builder: hub=%s; retry in five minutes'.[$Hub]"/>
           </do_else>
         </do_if>
       </actions>
@@ -420,15 +399,13 @@
               </do_if>
             </do_if>
             <do_else>
+              <set_value name="$ConstructionFailure" exact="'invalid_components'"/>
               <include_actions ref="md.CE_Construction.ReportFailure"/>
             </do_else>
           </do_if>
           <set_value name="$Hub" exact="$R.$Hub"/>
           <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless">
             <add_to_group groupname="$Hubs" object="$Hub"/>
-            <do_if value="not $R.$PlotReady and $Hub.isclass.container">
-              <include_actions ref="ReserveGrowthPlot"/>
-            </do_if>
             <include_actions ref="RenameHub"/>
             <include_actions ref="FundAccounts"/>
             <include_actions ref="QueueExpansion"/>

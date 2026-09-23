@@ -35,7 +35,7 @@
           <do_for_each name="$ProfileWare" in="lookup.ware.list">
             <do_if value="$ProfileWare.iscargo and $ProfileWare.waretransport == waretransport.container">
               <set_value name="$ProfileWares.{'$' + $ProfileWare.id}" exact="$ProfileWare"/>
-              <do_if value="not @$ProfileWares.{'$' + $ProfileWare.id}?">
+              <do_if value="not $ProfileWares.{'$' + $ProfileWare.id}?">
                 <set_value name="$CandidateValid" exact="false"/>
               </do_if>
             </do_if>
@@ -44,11 +44,11 @@
           <set_value name="$ProfileMeds" exact="table[]"/>
           <do_for_each name="$DiscoveredRace" in="lookup.race.list">
             <set_value name="$ProfileFoods.{'$' + $DiscoveredRace.id}" exact="[]"/>
-            <do_if value="not @$ProfileFoods.{'$' + $DiscoveredRace.id}?">
+            <do_if value="not $ProfileFoods.{'$' + $DiscoveredRace.id}?">
               <set_value name="$CandidateValid" exact="false"/>
             </do_if>
             <set_value name="$ProfileMeds.{'$' + $DiscoveredRace.id}" exact="[]"/>
-            <do_if value="not @$ProfileMeds.{'$' + $DiscoveredRace.id}?">
+            <do_if value="not $ProfileMeds.{'$' + $DiscoveredRace.id}?">
               <set_value name="$CandidateValid" exact="false"/>
             </do_if>
             <do_for_each name="$ProfileWare" in="$DiscoveredRace.workforce.resources.list">
@@ -61,13 +61,13 @@
             </do_for_each>
             <do_if value="$ProfileStaples.{'$' + $DiscoveredRace.id}?">
               <set_value name="$ProfileFoods.{'$' + $DiscoveredRace.id}" exact="$ProfileStaples.{'$' + $DiscoveredRace.id}"/>
-              <do_if value="not @$ProfileFoods.{'$' + $DiscoveredRace.id}?">
+              <do_if value="not $ProfileFoods.{'$' + $DiscoveredRace.id}?">
                 <set_value name="$CandidateValid" exact="false"/>
               </do_if>
             </do_if>
             <do_if value="$ProfileMedicines.{'$' + $DiscoveredRace.id}?">
               <set_value name="$ProfileMeds.{'$' + $DiscoveredRace.id}" exact="$ProfileMedicines.{'$' + $DiscoveredRace.id}"/>
-              <do_if value="not @$ProfileMeds.{'$' + $DiscoveredRace.id}?">
+              <do_if value="not $ProfileMeds.{'$' + $DiscoveredRace.id}?">
                 <set_value name="$CandidateValid" exact="false"/>
               </do_if>
             </do_if>
@@ -124,7 +124,7 @@
           <do_if value="$ProfileWares.{'$' + $ProfileAddID}.group.id == 'water'">
             <set_value name="$ProfileBudget" exact="75000.0f"/>
           </do_if>
-          <set_value name="$ProfileQuantity" exact="$ProfileBudget / ($ProfileAveragePrice / 1Cr) / 10.0f + 0.5f"/>
+          <set_value name="$ProfileQuantity" exact="$ProfileBudget / (($ProfileAveragePrice)LF / (1Cr)LF) / 10.0f + 0.5f"/>
           <set_value name="$ProfileQuantity" exact="[10, ($ProfileQuantity)i * 10].max"/>
           <set_value name="$ProfileDefinition" exact="[$ProfileAddID,$ProfileDefinition.{2},$ProfileQuantity]"/>
         </do_if>

@@ -47,6 +47,7 @@ GetComponentData=function(id,key) assert(key=='name');return 'Hub '..id end
 GetRenderTargetMousePosition=function(id) assert(id==7);if mouse then return 10,10 end end
 override, overrideCalls = nil, 0
 SetMouseOverOverride=function(id,text) assert(id==7);override=text;overrideCalls=overrideCalls+1 end
+GetTopRow=function(id) assert(id==21);return liveTopRow or 7 end
 DebugError=function() end
 callbacks={}
 RegisterEvent=function(event,fn) callbacks[event]=fn end
@@ -63,7 +64,7 @@ menu={selectedcomponents={['42']=true}, selectedShipsTableData={fontsize=12,text
   return 73
  end,
  cleanup=function() nativeCleanups=nativeCleanups+1;return 74 end}
-Helper={viewWidth=1920,viewHeight=1080,borderSize=2,standardContainerOffset=4,
+Helper={viewWidth=1920,viewHeight=1080,borderSize=2,standardContainerOffset=4,scrollbarWidth=16,
  headerRow1Font='bold',scaleX=function(x) return x end,
  getMenu=function(name) assert(name=='MapMenu');return menu end}
 function newFrame()
@@ -77,19 +78,21 @@ function newFrame()
   function t:setDefaultCellProperties() end
   function t:setDefaultComplexCellProperties() end
   function t:getFullHeight() return #self.rows*20 + (self.columns==2 and (leftExtraHeight or 0) or 0) end
+  function t:getVisibleHeight() return math.min(self:getFullHeight(),self.properties.maxVisibleHeight or math.huge) end
+  function t:setTopRow(row) self.topRow=row end
   function t:addRow(data,props)
-   assert(data==nil); local r={}
+   assert(data==nil or data==true); local r={rowdata=data,properties=props}
    for i=1,cols do
     local cell={handlers={},properties={}}
     function cell:setColSpan(n) assert(i+n-1<=cols);return self end
     function cell:setBackgroundColSpan(n) assert(i+n-1<=cols);return self end
     function cell:createText(text,p) self.text=text;self.properties=p;self.kind="text";return self end
-    function cell:createButton(p) self.properties=p;return self end
+    function cell:createButton(p) self.properties=p;self.kind="button";return self end
     function cell:createIcon(icon,p) assert(icon=='solid');self.properties=p;self.kind='icon';return self end
     function cell:createStatusBar(p) assert(type(p.valueColor)=='table');self.properties=p;self.kind='bar';return self end
     function cell:getWidth()
      if t.widths[i] then return t.widths[i] end
-     local used=2*(cols-1);for _,w in pairs(t.widths) do used=used+w end
+     local used=2*(cols-1)+(t.properties.reserveScrollBar and Helper.scrollbarWidth or 0);for _,w in pairs(t.widths) do used=used+w end
      return t.properties.width-used
     end
     function cell:setText(text) self.text=text;return self end
@@ -104,6 +107,17 @@ end
 function draw()
  local f=newFrame();menu.createSelectedShips(f)
  assert(#f.tables==1, 'MapMenu.viewCreated requires exactly one selected table')
+ -- Model the native frame validator, including disabled buttons on plain rows.
+ for _,t in ipairs(f.tables) do
+  for rowIndex,r in ipairs(t.rows) do
+   for colIndex=1,t.columns do
+    local cell=r[colIndex]
+    if cell.kind=='button' and cell.properties.active~=false then
+     assert(r.rowdata, 'Button defined in an unselectable row: '..rowIndex..':'..colIndex)
+    end
+   end
+  end
+ end
  -- Native callback positions: inserting tables here shifts the render-target ID.
  local function bind(...) local player,search,sidebar,rightbar,selected,top,map=...;return map end
  assert(bind(1,2,3,4,f.tables[1],6,7)==7)
@@ -128,8 +142,8 @@ now=1;M.get(42);assert(reads==before+2)
 known=false;assert(not M.get(42));known=true
 valid=false;assert(not M.get(42));valid=true
 now=3
-local t=draw();assert(t.columns==5 and t.properties.tabOrder==21 and #t.rows==12)
-assert(t.properties.y==1080-240-2-2-4)
+local t=draw();assert(t.columns==5 and t.properties.tabOrder==21 and #t.rows==20)
+assert(t.properties.y==1080-400-2-2-4)
 assert(value(t.rows[2][1])=='Population 8.52 billion')
 assert(value(t.rows[3][2])=='Level 1 (growing)' and t.rows[3][1].properties.current()==50)
 assert(t.rows[3][2].properties.width==t.rows[3][2]:getWidth())
@@ -147,7 +161,8 @@ for _,col in ipairs({1,4,5}) do
  assert(t.rows[6][col].properties.cellBGColor==Color.row_title_background)
 end
 assert(value(t.rows[4][1]):find('Energy Cells',1,true))
-assert(not t.rows[12][1].properties.active and t.rows[12][5].properties.active)
+assert(t.properties.maxVisibleHeight==432 and t.properties.reserveScrollBar)
+for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
 assert(t.rows[7][2].properties.mouseOverText():find('Incoming: 200',1,true))
 status[9][5][2]=0;status[9][5][8]=0;now=4
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
@@ -166,11 +181,9 @@ picked=77;menu.onUpdate();assert(override==nil)
 override='native hover';menu.onUpdate();assert(override=='native hover')
 picked=42;menu.onUpdate();mouse=false;menu.onUpdate();assert(override==nil);mouse=true
 picked=43;menu.onUpdate();assert(override=='Level: 1\nPopulation served: 8.52 billion');picked=42
-t.rows[12][5].handlers.onClick();t=draw();assert(value(t.rows[7][2])=='Ware 6')
-t.rows[12][5].handlers.onClick();t=draw();assert(value(t.rows[7][2])=='Ware 11')
-assert(not t.rows[12][5].properties.active)
-t.rows[12][1].handlers.onClick();t=draw();assert(value(t.rows[7][2])=='Ware 6')
-menu.selectedcomponents={['43']=true};t=draw();assert(value(t.rows[7][2])=='Ware 1')
+assert(value(t.rows[12][2])=='Ware 6' and value(t.rows[20][2])=='Ware 14')
+menu.selectedShipsTable=21;liveTopRow=10;menu.onUpdate();t=draw();assert(t.topRow==10)
+menu.selectedcomponents={['43']=true};t=draw();assert(value(t.rows[7][2])=='Ware 1' and t.topRow==7)
 menu.selectedcomponents={['42']=true};t=draw();assert(value(t.rows[7][2])=='Ware 5')
 status[9][15]={'New ware',0,1,1,0,0,0,0,1,'newware'};now=8
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
@@ -265,4 +278,25 @@ callbacks.CEPopulationRequest();local wrapper=menu.onUpdate
 loadCallback();callbacks.CEPopulationRequest();assert(menu.onUpdate==wrapper)
 assert(draw().columns==5)
 ''')
-print('Map status: metrics, identity, cache, pagination, refresh, reserve/growth bars and native fallbacks passed')
+# Native scrolling constraints: fixed headers, all wares present, bounded geometry.
+deferred.execute('''
+status[2]=4;status[9]=snapshot(42,40)[9];now=now+1
+for _,height in ipairs({720,1080,1440}) do
+ Helper.viewHeight=height
+ local t=draw()
+ assert(#t.rows==46 and t.properties.maxVisibleHeight==height*0.4)
+ assert(t:getVisibleHeight()==height*0.4)
+ assert(t.properties.y==height-height*0.4-8)
+ for i,r in ipairs(t.rows) do
+  assert(r.properties.fixed==(i<=6))
+  for col=1,5 do assert(r[col].kind~='button') end
+ end
+end
+menu.selectedShipsTable=21;liveTopRow=35;menu.onUpdate()
+local t=draw();assert(t.topRow==35)
+status[9]=snapshot(42,6)[9];now=now+1;t=draw()
+assert(#t.rows==12 and t.topRow==12 and value(t.rows[12][2])=='Ware 6')
+status[9]={};now=now+1;t=draw();assert(#t.rows==7 and t.topRow==7)
+menu.cleanup();t=draw();assert(t.topRow==7)
+''')
+print('Map status: metrics, identity, cache, scrolling, refresh, reserve/growth bars and native fallbacks passed')

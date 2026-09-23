@@ -38,7 +38,8 @@ ConvertStringToLuaID=tonumber
 ConvertStringTo64Bit=tonumber
 ReadText=function(_,id) assert(translations[id]);return translations[id] end
 DebugError=function() end
-RegisterEvent=function() end
+events={}
+RegisterEvent=function(name, fn) events[name]=fn end
 AddUITriggeredEvent=function(screen,command,id)
  assert(screen=="CELevelTesting" and id==42);commands[#commands+1]=command
 end
@@ -59,7 +60,7 @@ marked=false;assert(menu.prepareActions()==false)
 marked=true;nativeMenuResult=true;assert(menu.prepareActions()==true)
 marked=false;open();assert(#entries==0)
 marked=true;valid=false;open();assert(#entries==0)
-valid=true;open();assert(#entries==7)
+valid=true;open();assert(#entries==16)
 assert(entries[4].text == "Food Rations")
 assert(entries[4].mouseOverText:find("Consumption:",1,true))
 assert(entries[4].mouseOverText:find("500.5",1,true))
@@ -84,7 +85,7 @@ status[4]=0;status[7]=0;open();assert(not action(40).active and action(41))
 status[4]=1;status[8]=1;open();assert(action(40).active)
 status[2]=nil;open();assert(not action(40).active)
 status[2]=1
-status[1]=99;open();assert(#entries==4 and not action(40).active and not action(41).active)
+status[1]=99;open();assert(#entries==13 and not action(40).active and not action(41).active)
 menu.componentSlot.component=43;open();assert(action(40).active)
 assert(entries[1].text:find("Level 5",1,true))
 menu.componentSlot.component=77;open();assert(#entries==0)
@@ -113,5 +114,22 @@ local display,fresh=CEHubStatus.get(42),CEHubStatus.getFresh(42)
 assert(display.testUpgrade and fresh.testUpgrade)
 assert(display.wares[1].reserve==fresh.wares[1].reserve)
 assert(display.wares[1].key==fresh.wares[1].key)
+''')
+lua.execute('''
+local function advance(level)
+ for _,e in ipairs(entries) do if e.text==string.format(translations[124],level) then return e end end
+ error('missing advance target')
+end
+status[2]=4;status[3]=0;status[4]=true;status[8]=false;status[10]=false
+open();assert(not advance(4).active and advance(5).active and advance(10).active)
+local a=advance(10);local count=#commands;a.script();a.script()
+assert(#commands==count+1 and commands[#commands]=='advance_level_10')
+open();a=advance(6);status[3]=5;a.script();assert(#commands==count+1)
+local before=calls;events.CEAdvanceBuildReady(nil,42);assert(calls==before)
+status[3]=10;status[10]=true;progress=0;waiting=false
+events.CEAdvanceBuildReady(nil,42);assert(calls==before+1 and commands[#commands]=='advance_complete')
+progress=-1;events.CEAdvanceBuildReady(nil,42);assert(calls==before+1)
+progress=0;valid=false;events.CEAdvanceBuildReady(nil,42);assert(calls==before+1)
+valid=true;status[2]=10;status[3]=0;events.CEAdvanceBuildReady(nil,42);assert(calls==before+1)
 ''')
 print('LuaJIT syntax, localized diagnostics, stale-object guards and testing commands passed')

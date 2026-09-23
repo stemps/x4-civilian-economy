@@ -17,6 +17,10 @@ local function canQueue(id)
     local s = statusFor(id)
     return s and s.active and s.level < 10 and s.target == 0 and s.plotReady
 end
+local function canAdvance(id, level)
+    local s = statusFor(id)
+    return s and s.active and s.target == 0 and level > s.level and level <= 10
+end
 local function buildActions()
     local menu = Helper.getMenu('InteractMenu')
     local raw = menu and menu.componentSlot and menu.componentSlot.component
@@ -44,9 +48,9 @@ local function buildActions()
     else
         row(text(68))
     end
-    local function action(label, allowed, run)
+    local function action(label, allowed, run, hint)
         local used = false
-        menu.insertInteractionContent(section, {text=label, active=not not allowed(), mouseOverText=label == text(11) and text(12) or label, script=function()
+        menu.insertInteractionContent(section, {text=label, active=not not allowed(), mouseOverText=hint or (label == text(11) and text(12) or label), script=function()
             if used or not allowed() then return end
             used = true
             run()
@@ -60,6 +64,12 @@ local function buildActions()
     action(text(40), function() return canQueue(id) end, function()
         AddUITriggeredEvent('CELevelTesting', 'queue_upgrade', ConvertStringToLuaID(tostring(id)))
     end)
+    for level=2,10 do
+        local target = level
+        action(text(124, target), function() return canAdvance(id, target) end, function()
+            AddUITriggeredEvent('CELevelTesting', 'advance_level_' .. target, ConvertStringToLuaID(tostring(id)))
+        end, text(125))
+    end
     action(text(s and s.pausedOffers and 42 or 41), function() return statusFor(id) ~= nil end, function()
         AddUITriggeredEvent('CELevelTesting', 'pause_offers', ConvertStringToLuaID(tostring(id)))
     end)
@@ -95,3 +105,14 @@ end
 if not register() and type(Register_OnLoad_Init) == 'function' then Register_OnLoad_Init(register, 'ce_debug_tools') end
 -- Retry after all addons are loaded, without making population depend on UIX.
 RegisterEvent('CEPopulationRequest', function() if not registered then register() end end)
+
+-- MD emits this only for an explicitly requested debug advance with a native build.
+RegisterEvent('CEAdvanceBuildReady', function(_, raw)
+    local id = M.id(raw)
+    local s = id and statusFor(id)
+    if s and s.testUpgrade and s.target > s.level and canFinish(id) then
+        DebugError('[CE] TEST: automatically completing target level ' .. s.target .. ' on ' .. tostring(id))
+        C.ForceBuildCompletion(id)
+        AddUITriggeredEvent('CELevelTesting', 'advance_complete', ConvertStringToLuaID(tostring(id)))
+    end
+end)

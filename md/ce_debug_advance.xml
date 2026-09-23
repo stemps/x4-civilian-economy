@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_DebugAdvance" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="State" namespace="this"><conditions><event_cue_signalled/></conditions></cue>
+    <library name="Request">
+      <actions>
+        <set_value name="$AdvanceCommands" exact="['advance_level_2','advance_level_3','advance_level_4','advance_level_5','advance_level_6','advance_level_7','advance_level_8','advance_level_9','advance_level_10']"/>
+        <set_value name="$RequestedLevel" exact="$AdvanceCommands.indexof.{event.param2} + 1"/>
+        <set_value name="$Hub" exact="$R.$Hub"/>
+        <include_actions ref="md.CE_Construction.Readiness"/>
+        <do_if value="$Ready and $Hub.owner == faction.ownerless and $RequestedLevel gt $R.$Level and $RequestedLevel le 10 and $R.$Target == 0 and not $R.$Build.exists and not @$R.$LayoutPending and not @$R.$TargetSequence">
+          <do_if value="not md.CE_DebugAdvance.State.$Targets?"><set_value name="md.CE_DebugAdvance.State.$Targets" exact="table[]"/></do_if>
+          <set_value name="md.CE_DebugAdvance.State.$Targets.{$Hub}" exact="$RequestedLevel"/>
+          <set_value name="$R.$Target" exact="$RequestedLevel"/>
+          <set_value name="$R.$TestUpgrade" exact="true"/>
+          <debug_text text="'[CE] TEST advance requested: hub=%s sector=%s from=%s to=%s'.[$Hub,$Hub.sector,$R.$Level,$RequestedLevel]"/>
+          <include_actions ref="md.CE_OwnerlessHub.QueueExpansion"/>
+        </do_if>
+      </actions>
+    </library>
+    <library name="Tick">
+      <actions>
+        <set_value name="$Hub" exact="$R.$Hub"/>
+        <do_if value="$Hub and md.CE_DebugAdvance.State.$Targets? and md.CE_DebugAdvance.State.$Targets.{$Hub}?">
+          <do_if value="not $Hub.exists or $Hub.iswreck or $Hub.owner != faction.ownerless or $R.$Level ge md.CE_DebugAdvance.State.$Targets.{$Hub} or $R.$Target != md.CE_DebugAdvance.State.$Targets.{$Hub} or not $R.$TestUpgrade">
+            <debug_text text="'[CE] TEST advance ended: hub=%s level=%s requested=%s'.[$Hub,$R.$Level,md.CE_DebugAdvance.State.$Targets.{$Hub}]"/>
+            <include_actions ref="md.CE_DebugAdvance.Forget"/>
+          </do_if>
+          <do_elseif value="$R.$Build.exists and not @$R.$LayoutPending and $Hub.buildstorage.exists and $Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count gt 0">
+            <debug_text text="'[CE] TEST advance completing build: hub=%s target=%s'.[$Hub,$R.$Target]"/>
+            <raise_lua_event name="'CEAdvanceBuildReady'" param="$Hub"/>
+          </do_elseif>
+        </do_if>
+      </actions>
+    </library>
+    <library name="Forget">
+      <actions>
+        <do_if value="$R.$Hub and md.CE_DebugAdvance.State.$Targets? and md.CE_DebugAdvance.State.$Targets.{$R.$Hub}?">
+          <remove_value name="md.CE_DebugAdvance.State.$Targets.{$R.$Hub}"/>
+        </do_if>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

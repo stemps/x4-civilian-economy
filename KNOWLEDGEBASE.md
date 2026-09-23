@@ -99,10 +99,7 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   Rejected checks keep the upgrade lock. Reconciliation retries after the
   placeholder becomes a container. Actual collision volumes, pier approaches and
   plot acceptance remain runtime gates.
-- Installation starts from a save predating the mod or a new game. New records
-  initialize reserves and growth directly; no old-save detection or conversion
-  remains. Subsequent saves preserve balances, growth and native trade/build
-  references. See the pre-mod-save baseline entry below.
+
 
 ### Hub appearance and optional testing UI
 
@@ -682,25 +679,6 @@ implemented or runtime-tested CE rewards:
   placeholder retention. These are mocked checks, not native-engine acceptance.
 - VALIDATED: `just validate` passed 92 tests and reference checks; `just schema` passed full native schemas and the merged build-storage AI check. In-game acceptance remains outstanding.
 
-## 2026-09-22 — pre-mod-save baseline
-
-- USER DECISION: restart from a save that predates installation of Civilian Economy.
-  Old mod saves are unsupported; do not add migration or backfill paths.
-- READ/IMPLEMENTED: removed reserve conversion/version markers, display metadata
-  backfill, prototype detection/block flags and disabled singleton delivery cues.
-  New sector records initialize growth, accrual time and display order directly;
-  new ware records initialize reserves in CommitRates. SyncAll only derives targets.
-- Normal save loading preserves frozen profiles, reserves and progress, and retains
-  interrupted native layout recovery. UI snapshot version validation is a live
-  interface contract, not save migration, and remains in place.
-- Earlier migration and schema-blocking entries above are superseded by this entry.
-  Full game restart and a pre-mod save are required; UI /reload is insufficient.
-- VALIDATION NOTE: the toolkit reference check also reads historical XML under
-  ignored .validation/. Its before-reserves and before-resilient-controller
-  snapshots reference text 30; unused catalog entries remain to keep those
-  snapshots resolvable. No runtime code references their old-save warnings.
-- VALIDATED: just schema passed 90 action tests, runtime MD schemas, reference checks and the merged build-storage AI schema; just lua passed all three suites. Native in-game acceptance remains untested.
-
 
 ## 2026-09-22 â€” synchronous-library-refactor
 
@@ -750,3 +728,180 @@ implemented or runtime-tested CE rewards:
 - Full restart is required for the MD changes. No save migration, balance changes
   or new translation keys were introduced. In-game acceptance remains outstanding.
 - VALIDATED: just schema passed 95 action tests, all seven runtime MD schemas, reference/merged-data checks and the merged build-storage AI schema. just lua passed all three suites; git diff --check was clean. No native gameplay test was performed.
+
+## 2026-09-22 - native-hub-startup-contracts
+
+- READ/MEASURED: native scriptproperties.xml marks constructionplanentrydata as
+  pseudo, not an actual datatype. The final load's failed `$Sequence.{$i}`
+  assignments occurred before build queueing. Vanilla finalisestations.xml reads
+  sequence-entry `.macro` directly. CE validation/readiness now retain only native
+  macro/entry-ID values, never the entry intermediate itself.
+- MEASURED: the same final load rejects the five combined `@... ?` profile
+  existence expressions. Existence checks use `?` alone; optional value access
+  remains a separate operation. Earlier loads were excluded from this repair.
+- MEASURED: profile budget arithmetic retained money type after division by 1Cr,
+  warning on the subsequent +0.5f. Explicit LF casts on price and 1Cr precede
+  arithmetic now. This supersedes the earlier implication that `/ 1Cr` alone
+  ensures numeric credits; intended budgets and rounding are unchanged.
+- IMPLEMENTED: accepted layouts and recovered tasks share StartBuild, which binds
+  hub/sector from the captured record, processes construction, funds/manages build
+  storage and immediately invokes existing builder selection. No eligible builder
+  retains the five-minute reconciliation retry. No free initial module is added.
+- TEST CONTRACT: construction-entry fixtures are non-storable pseudo-values and
+  the expression runner rejects `@...?`. A narrow typed-money fixture reproduces
+  the original normalization warning. The startup suite executes real CE libraries
+  around mocked native actions, including out-of-order hub completions, expansion,
+  no-builder retries, failed queue creation and reload recovery.
+- No saved-record migration, snapshot-version change or translation key was added.
+  Native geometry, delivery and builder deployment still require a full restart
+  and a disposable pre-mod save/new game; mock success is not native acceptance.
+- VALIDATED: just schema passed all seven runtime MD schemas, merged data and
+  merged build-storage AI validation; just lua passed all three suites. Final
+  just validate passed 108 action tests and reference checks. Deployed MD hashes
+  match the validated worktree. Native gameplay acceptance remains pending.
+
+## 2026-09-22 - native-startup-acceptance-and-plot-blocks
+
+- MEASURED, last save_017 load after the startup repair: 33 hub sites created;
+  the same 29 hub IDs reached layout acceptance, build start, full requested
+  build-storage funding and builder assignment. No CE runtime errors or repaired
+  profile/money/sequence warnings occurred. One localisation lookup advisory remains.
+- Four other created sites stopped at ReserveGrowthPlot: the native safety check
+  refused enlargement from 5 km half-size to the required 6/4/16 km envelope.
+  They never requested layouts. Six separate invalid-components rejections had
+  hub=null (three unknown races, three Xenon); these are not the four empty sites.
+- Native construction queueing/funding/assignment is now observed, but completed
+  modules, deliveries, expansion and save/load acceptance are still unverified.
+- Current plot-failure messages omit hub/sector identifiers. Consecutive creation
+  messages associate the four failures with sites, but the log does not identify
+  their sectors; the user's Argon Prime observation is not independently mapped.
+
+## 2026-09-22 - current-plot-first-retries
+
+- IMPLEMENTED: a new hub tries native generation in its existing plot, without
+  pre-reserving the static fixture's future-level envelope. Build storage is
+  created after layout validation, then normal construction/funding/builder
+  selection runs. Native construction still supplies all initial modules.
+- Native generation failure permits a checked increment of up to 2 km on each
+  plot face, capped at 16 km half-size per axis. Equal increments preserve center;
+  existing larger plots never shrink. These bounds are tuning choices, not a
+  measured claim that every racial level-ten layout fits.
+- Failed or capped enlargement can reposition only the same completely empty,
+  uninitialized shell, at most three times. A native sequence, accepted/completed
+  plan, storage, build, pending callback or operational hub prevents relocation.
+  Safe-position placement avoids other plots and requests clearance for the plot
+  plus one growth increment. No station destruction or forced overlap is used.
+- LOCAL SOURCE: common.xsd documents incremental extension, safepos.radius as
+  required clearance (not search range), and warp sector-relative placement.
+  Vanilla x4ep1_mentor_subscription.xml warps the HQ; its nearby storage/CV TODO
+  reinforces the stricter CE requirement that relocated shells have no storage.
+  Bounded _scan discovery parsed 550 base+DLC MD/AI XML files, zero unreadable.
+- Internal CE_Placement.State cue data tracks attempts/failures/next eligibility/
+  resize intent/placement count by hub identity. Hub loss removes its entry.
+  Public record fields, profile adapters and snapshot v3 are unchanged; no
+  migration or older-save repair was added.
+- Retry logs include hub ID, sector ID/name, level/token, attempt count, reason,
+  earliest retry time, plot half-size/center, enlargement and placement outcomes.
+  Failed native warp movement is distinguished from an actual coordinate change.
+  Five-minute cooldown is enforced; the next reconciliation can make the actual
+  wait nearly ten minutes. Malformed layouts/build failures do not enlarge plots.
+- MOCKED: current-plot success even with enlargement denied; bounded growth/moves,
+  rejected/no-op native actions, preservation of off-center/oversized plots,
+  established operation and base IDs, duplicate/stale callbacks, retained retry
+  state across reload and a save-state stand-in, per-site cleanup and log fields.
+  Real save/load, native relocation, materials delivery and completed dock/storage/
+  pier remain in-game acceptance gates. Test only the final load of each debug log.
+- Full restart and a disposable new game/pre-mod save are required for acceptance.
+- VALIDATED: just schema passed 118 action tests, eight MD schemas and merged
+  build-storage AI validation; all three just lua suites and git diff --check
+  passed. These checks do not establish native construction acceptance.
+
+## 2026-09-22 - native-current-plot-startup-and-state-cue
+
+- MEASURED: latest save_017 load begins at debug.txt line 2556. Captured through
+  line 3792 / game time 235648.20: the same 33 created hub IDs attempted and
+  accepted layouts, started builds, had balance equal wanted build funding, and
+  received builders. All 33 initial attempts used 5000m half-sizes on each axis.
+  No generation failure, enlargement or relocation retry occurred. This proves
+  the initial layouts fit the original 10x10x10 km plots for this cohort.
+- Argon Prime hub 0x1b4405, sector 0x75b8c, accepted three entries on attempt one;
+  native task 0x8ebc started and builder 0x80d8c was assigned at gate distance 1.
+  There were no completed-level operational messages in this capture. Materials,
+  completed modules, expansion, relocation and save/load remain acceptance gates.
+- Six separate invalid_components diagnostics had hub=null (three unknown race,
+  three Xenon missing pier/connectors). These are not failures of the 33 sites.
+- FOUND/FIXED: the new State cue used check_value=false without checkinterval or
+  onfail. Native parsing rejected it with 'event condition required'; XSD passed
+  it. Replace its condition with event_cue_signalled: dormant event-driven storage,
+  no polling or data reset. Add a CE-wide condition-mode regression that rejects
+  the original cue and checks all shipped cue conditions. Native parse after this
+  correction still needs a full restart; /reload is insufficient.
+- A pre-existing localized-name expression advisory remains in ce_ownerless_hub.
+  Last-load triage and contextual inspection found no further CE runtime errors.
+- VALIDATED: 119 action tests, eight MD schemas, merged build-storage AI schema,
+  all three Lua suites and git diff --check pass after the cue correction.
+
+## 2026-09-22 - map-pagination-selectable-row-crash
+
+- MEASURED: final load begins at debug.txt line 2556. Map failures at game times
+  236758.56, 236764.16, 236770.09 and 236772.27 report row 12, column 5:
+  "Button defined in an unselectable row." Stack enters native createMainFrame
+  through CE's map onUpdate wrapper. Row 12/column 5 is CE's Next page button;
+  this is pagination rendering, not an exception inside the right-click callback.
+- LOCAL SOURCE: native helper.lua addRow documents nil/false as unselectable and
+  true as a selectable row without payload. Its serialized selectable flag is
+  boolean row.rowdata. Vanilla map button rows use addRow(true, ...).
+- FIXED: only the pagination row requests selectable row data. Summary, ware and
+  inserted filler rows remain unselectable; the one-table contract is unchanged.
+  This applies whenever more than five wares need pagination, not only level four.
+- VALIDATED: strict Lua frame mock rejects active buttons in unselectable rows.
+  Mutating the pagination call back to the old form reproduces the exact 12:5
+  error. Tests cover a level-four six-ware basket, partial last page and return
+  to five wares without pagination. All three just lua suites and diff checks
+  pass. Actual native map rendering still needs user verification.
+- Lua-only correction: /reload suffices; no game restart required for this fix.
+
+## 2026-09-23 - bounded-native-ware-scrolling
+
+- User preference replaces map-panel pagination with a scrolling ware list.
+  The panel includes all wares, caps at 40% of Helper.viewHeight and bottom-aligns
+  using getVisibleHeight (not getFullHeight). Rows 1-6 keep summary/headings fixed;
+  ware rows have fixed=false. Exactly one table preserves MapMenu.viewCreated.
+- Native helper.lua documents maxVisibleHeight as enabling the scrollbar and
+  fixed as non-scrolling header rows. getVisibleHeight applies the cap. Native
+  map code uses getVisibleHeight for placement and GetTopRow/setTopRow for state.
+- reserveScrollBar=true reserves width from the flexible fifth column. CE captures
+  the same hub's current top row before nativeUpdate rebuilds, restores/clamps it,
+  and resets on selection change or cleanup. No new translated text is needed;
+  existing unused pagination keys are retained.
+- VALIDATED: all three just lua suites pass. Coverage includes 40 wares at 720,
+  1080 and 1440 screen heights, fixed headers, all rows present without buttons,
+  retained scroll position, shrinking/empty baskets and the one-table invariant.
+  Native mouse-wheel/scrollbar behavior remains an in-game verification step.
+- Lua-only change: /reload suffices.
+
+## 2026-09-23 - debug-advance-to-target-level
+
+- Added localized Advance to level 2-10 debug actions. They bypass growth and
+  automatically finish construction as requested by the user. Requires an active
+  ownerless hub without pending construction; current/lower levels are disabled.
+- MD maps a bounded command list and verifies readiness/identity/task guards.
+  It sets Target (never Level directly), then uses the existing cumulative module
+  requirements and generation pipeline. A direct 1-to-10 request needs the full
+  17-functional-module basket and preserves completed base IDs.
+- Internal CE_DebugAdvance.State targets authorize automatic completion. Existing
+  public saved records and snapshot v3 are unchanged. Native tasks emit a Lua event
+  with a component parameter (explicitly supported by common.xsd raise_lua_event).
+  Lua rechecks fresh state/progress before the existing ForceBuildCompletion API;
+  completion asks MD to refresh readiness. Missed events retry on minute ticks.
+- Invalid, duplicate, lower/out-of-range, busy and wrong-hub commands do not queue
+  extra layouts. Owner changes or hub loss revoke permission. Layout failure/reload
+  retain a pending request; ordinary queue_upgrade never auto-completes.
+- MOCKED: 124 action tests and all three Lua suites pass, including complete
+  1-to-10 orchestration, preserved modules and post-construction level commit.
+  Native automatic completion and its UI/event timing require in-game acceptance.
+- Only the English translation file exists; keys 124-125 were added there. README
+  and docs are unchanged. Full restart required for the new MD script/handlers;
+  /reload alone only exposes the UI and cannot activate the backend.
+- VALIDATED: just schema also passes all nine MD scripts, merged AI validation
+  and content checks; git diff --check passes.
