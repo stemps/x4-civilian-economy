@@ -110,5 +110,13 @@
     <t id="131">%s: civilian hub construction complete. Level %s is now accepting increased quantities of existing goods.</t>
     <t id="132">%s: civilian hub construction complete at level %s. New purchase offers are currently paused.</t>
     <t id="133">Civilian hub upgrade completed</t>
+    <t id="134">Civilian debug hub creation failed: select a valid sector.</t>
+    <t id="135">Civilian debug hub creation cancelled: this sector already has a hub.</t>
+    <t id="136">Civilian debug hub creation failed: neither the sector profile nor the Argon fallback has valid demand and construction components.</t>
+    <t id="137">Civilian debug hub creation could not create a station. The fixed population is saved; normal reconciliation will retry. Check the debug log.</t>
+    <t id="138">Create civilian hub \(5B\)</t>
+    <t id="139">Create an ownerless civilian hub with a fixed population of 5 billion. Automatically finish its initial construction after a valid layout is ready. Use an Argon profile if this sector has no valid civilian profile. Placement may take time.</t>
+    <t id="140">Fixed debug population: 5B</t>
+    <t id="141">Debug profile: Argon fallback</t>
   </page>
 </language>

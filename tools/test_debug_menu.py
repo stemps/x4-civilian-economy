@@ -8,6 +8,7 @@ strings={int(e.get('id')):''.join(e.itertext()) for e in E.parse(str(root/'t/000
 lua.globals().translations=lua.table_from(strings)
 lua.execute('''
 marked, valid, progress, waiting = true, true, 0, false
+occupied, owner = {}, 'ownerless'
 calls, closes = 0, 0
 entries, commands = {}, {}
 status = {42, 1, 0, true, 60, 120, false, true,
@@ -16,6 +17,7 @@ local C = {
  GetPlayerID=function() return 1 end,
  IsValidComponent=function() return valid end,
  IsObjectKnown=function() return true end,
+ IsComponentClass=function(id, class) return id==80 and class=='sector' end,
  GetCurrentBuildProgress=function() return progress end,
  IsBuildWaitingForSecondaryComponentResources=function() return waiting end,
  ForceBuildCompletion=function(id) assert(id==42);calls=calls+1 end,
@@ -30,10 +32,12 @@ Helper={getMenu=function() return menu end}
 GetNPCBlackboard=function(id,key)
  assert(id==1)
  if key=="$ce_hubs" then return marked and {42, 43} or {} end
+ if key=="$ce_hub_sectors" then return occupied end
  if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 21600, false, true, {}, false, nil, nil, 3}} end
  error(key)
 end
 getElapsedTime=function() return 0 end
+GetComponentData=function(id, key) assert(key=='owner');return owner end
 ConvertStringToLuaID=tonumber
 ConvertStringTo64Bit=tonumber
 ReadText=function(_,id) assert(translations[id]);return translations[id] end
@@ -41,7 +45,7 @@ DebugError=function() end
 events={}
 RegisterEvent=function(name, fn) events[name]=fn end
 AddUITriggeredEvent=function(screen,command,id)
- assert(screen=="CELevelTesting" and id==42);commands[#commands+1]=command
+ assert((screen=="CELevelTesting" and id==42) or (screen=="CESectorTesting" and id==80));commands[#commands+1]=command
 end
 function open() entries={};callback() end
 function action(id)
@@ -132,4 +136,30 @@ progress=-1;events.CEAdvanceBuildReady(nil,42);assert(calls==before+1)
 progress=0;valid=false;events.CEAdvanceBuildReady(nil,42);assert(calls==before+1)
 valid=true;status[2]=10;status[3]=0;events.CEAdvanceBuildReady(nil,42);assert(calls==before+1)
 ''')
-print('LuaJIT syntax, localized diagnostics, stale-object guards and testing commands passed')
+lua.execute('''
+-- Sector creation: native sector context, fresh occupancy, and one-shot callback.
+menu.componentSlot.component=80;occupied={};nativeMenuResult=false
+assert(menu.prepareActions()==true and #entries==1)
+local create=action(138);local count=#commands
+create.script();create.script();assert(#commands==count+1 and commands[#commands]=='create_hub_5b')
+open();create=action(138);occupied={80};create.script();assert(#commands==count+1)
+assert(menu.prepareActions()==false and #entries==0)
+occupied={};open();create=action(138);valid=false;create.script();assert(#commands==count+1)
+assert(menu.prepareActions()==false)
+valid=true;occupied=nil;open();assert(#entries==0) -- backend not published yet
+occupied={};menu.componentSlot.component=77;assert(menu.prepareActions()==false)
+-- No initial-completion authorization in older snapshots, stale rows, or other hubs.
+menu.componentSlot.component=42;status[2]=1;status[3]=0;status[10]=false;status[15]=false
+local before=calls;progress=0;waiting=false
+events.CEInitialBuildReady(nil,42);assert(calls==before)
+status[17]=5000000000;status[18]=true;status[19]=true
+open();assert(action(140) and action(141))
+events.CEInitialBuildReady(nil,77);assert(calls==before)
+owner='player';events.CEInitialBuildReady(nil,42);assert(calls==before)
+owner='ownerless';status[15]=true;events.CEInitialBuildReady(nil,42);assert(calls==before)
+status[15]=false;status[3]=2;events.CEInitialBuildReady(nil,42);assert(calls==before)
+status[3]=0;progress=-1;events.CEInitialBuildReady(nil,42);assert(calls==before)
+waiting=true;events.CEInitialBuildReady(nil,42);assert(calls==before+1 and commands[#commands]=='initial_complete')
+status[19]=false;events.CEInitialBuildReady(nil,42);assert(calls==before+1)
+''')
+print('LuaJIT diagnostics, sector creation, stale-object guards and build completion passed')

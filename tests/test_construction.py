@@ -156,6 +156,7 @@ class ConstructionTests(unittest.TestCase):
 class StartupProfileTests(unittest.TestCase):
     def test_all_sectors_are_captured_before_population_response(self):
         r=Runner(); definitions(r)
+        r.env['Registry']=Table()  # Initialized by the controller before Reconcile.
         sectors=List([r.env['Sector'],Component(owner=Table(primaryrace=r.env['lookup'].race.list[2]))])
         r.env['player'].entity=Table()
         r.env['PopulationRequest']=NIL

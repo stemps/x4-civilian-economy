@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_DebugCreate" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Libraries run in the controller/captured construction namespace. -->
+    <library name="Request">
+      <actions>
+        <set_value name="$Sector" exact="event.param3"/>
+        <set_value name="$R" exact="null"/>
+        <set_value name="$DebugFailure" exact="134"/>
+        <do_if value="$Sector.exists and $Sector.isclass.sector">
+          <set_value name="$R" exact="@$Registry.{$Sector}"/>
+          <do_if value="$R and $R.$Hub.exists and not $R.$Hub.iswreck">
+            <set_value name="$DebugFailure" exact="135"/>
+          </do_if>
+          <do_else>
+            <include_actions ref="md.CE_OwnerlessHub.CaptureSectorProfile"/>
+            <set_value name="$DebugProfile" exact="if $R and $R.$DebugProfile? then $R.$DebugProfile else $SectorProfiles.{$Sector}"/>
+            <set_value name="$DebugFallback" exact="if $R then @$R.$DebugFallback else false"/>
+            <do_if value="not $DebugProfile.$Valid or not $DebugProfile.$Construction.$Valid">
+              <set_value name="$ProfileRace" exact="null"/>
+              <do_for_each name="$DebugRace" in="lookup.race.list">
+                <do_if value="$DebugRace.id == 'argon'"><set_value name="$ProfileRace" exact="$DebugRace"/></do_if>
+              </do_for_each>
+              <include_actions ref="md.CE_PopulationProfiles.Build"/>
+              <include_actions ref="md.CE_Construction.Resolve"/>
+              <set_value name="$DebugProfile" exact="table[$Race='argon',$Definitions=$CandidateDefinitions,$Valid=$ProfileRace and $CandidateComplete and $CandidateValid,$Construction=$Construction]"/>
+              <set_value name="$DebugFallback" exact="true"/>
+            </do_if>
+            <set_value name="$DebugFailure" exact="136"/>
+            <do_if value="$DebugProfile.$Valid and $DebugProfile.$Construction.$Valid">
+              <set_value name="$Population" exact="5000000000.0f"/>
+              <include_actions ref="md.CE_OwnerlessHub.EnsureRecord"/>
+              <do_if value="$R.$Hub != null"><include_actions ref="md.CE_OwnerlessHub.ForgetHub"/></do_if>
+              <set_value name="$R.$PopulationOverride" exact="$Population"/>
+              <set_value name="$R.$DebugProfile" exact="$DebugProfile"/>
+              <set_value name="$R.$DebugFallback" exact="$DebugFallback"/>
+              <!-- Failed-profile records may have old definitions but no buildable hub. -->
+              <set_value name="$R.$Definitions" exact="$DebugProfile.$Definitions"/>
+              <set_value name="$R.$ProfileRace" exact="$DebugProfile.$Race"/>
+              <set_value name="$R.$Construction" exact="$DebugProfile.$Construction"/>
+              <set_value name="$R.$ProfileError" exact="false"/>
+              <include_actions ref="md.CE_OwnerlessHub.UpdatePopulation"/>
+              <include_actions ref="md.CE_OwnerlessHub.ApplyLevel"/>
+              <debug_text text="'[CE] TEST create accepted: sector=%s race=%s fallback=%s population=%s'.[$Sector,$R.$ProfileRace,$DebugFallback,$Population]"/>
+              <include_actions ref="md.CE_OwnerlessHub.ReconcileSector"/>
+              <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck">
+                <set_value name="$R.$DebugInitialHub" exact="$R.$Hub"/>
+                <set_value name="$DebugFailure" exact="0"/>
+                <debug_text text="'[CE] TEST hub created: sector=%s hub=%s level=%s'.[$Sector,$R.$Hub,$R.$Level]"/>
+                <include_actions ref="md.CE_DebugCreate.Tick"/>
+              </do_if>
+              <do_else><set_value name="$DebugFailure" exact="137"/></do_else>
+              <include_actions ref="md.CE_OwnerlessHub.PublishDiagnostics"/>
+            </do_if>
+          </do_else>
+        </do_if>
+        <do_if value="$DebugFailure gt 0">
+          <debug_text text="'[CE] TEST create rejected: sector=%s hub=%s reason=%s'.[$Sector,@$R.$Hub,$DebugFailure]"/>
+          <write_to_logbook category="general" title="{974201,1}" text="{974201,$DebugFailure}"/>
+        </do_if>
+        <include_actions ref="md.CE_OwnerlessHub.PublishAllDiagnostics"/>
+      </actions>
+    </library>
+    <library name="Tick">
+      <actions>
+        <do_if value="@$R.$DebugInitialHub">
+          <set_value name="$Hub" exact="$R.$Hub"/>
+          <do_if value="$R.$DebugInitialHub != $Hub or not $Hub.exists or $Hub.iswreck or $Hub.owner != faction.ownerless or @$R.$CompletedSequence or $R.$Target != 0">
+            <debug_text text="'[CE] TEST initial completion ended: sector=%s hub=%s'.[$Sector,$R.$DebugInitialHub]"/>
+            <include_actions ref="md.CE_DebugCreate.Forget"/>
+          </do_if>
+          <do_elseif value="$R.$Build.exists and not @$R.$LayoutPending and $Hub.buildstorage.exists and $Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count gt 0">
+            <!-- Publish permission before Lua handles the completion event. -->
+            <include_actions ref="md.CE_OwnerlessHub.PublishDiagnostics"/>
+            <!-- Construction callbacks have their own namespace, not Init's. -->
+            <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+            <include_actions ref="md.CE_OwnerlessHub.PublishAllDiagnostics"/>
+            <raise_lua_event name="'CEInitialBuildReady'" param="$Hub"/>
+          </do_elseif>
+        </do_if>
+      </actions>
+    </library>
+    <library name="Forget">
+      <actions><set_value name="$R.$DebugInitialHub" exact="null"/></actions>
+    </library>
+    <library name="ReconcileOverrides">
+      <actions>
+        <!-- Native population reads can fail; overrides need no native response. -->
+        <do_for_each name="$Sector" in="$Registry.keys.list">
+          <do_if value="$Sector.exists and @$Registry.{$Sector}.$PopulationOverride">
+            <set_value name="$Population" exact="$Registry.{$Sector}.$PopulationOverride"/>
+            <include_actions ref="md.CE_OwnerlessHub.ReconcileSector"/>
+          </do_if>
+        </do_for_each>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

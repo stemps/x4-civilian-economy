@@ -10,7 +10,7 @@
           <set_value name="$CandidateComplete" exact="false"/>
           <set_value name="$CandidateStage" exact="'start'"/>
           <include_actions ref="md.CE_OwnerlessHub.CaptureSectorProfile"/>
-          <set_value name="$FrozenProfile" exact="$SectorProfiles.{$Sector}"/>
+          <set_value name="$FrozenProfile" exact="if $R.$DebugProfile? then $R.$DebugProfile else $SectorProfiles.{$Sector}"/>
           <set_value name="$CandidateRace" exact="$FrozenProfile.$Race"/>
           <set_value name="$CandidateDefinitions" exact="$FrozenProfile.$Definitions"/>
           <set_value name="$CandidateComplete" exact="true"/>

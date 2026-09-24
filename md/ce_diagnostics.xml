@@ -56,7 +56,7 @@
               </do_if>
             </do_for_each>
           </do_if>
-          <set_value name="$R.$Snapshot" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$GrowthSeconds,($R.$Level + 1) * 3600.0f,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade,@$R.$Population,@$R.$PauseReason,3,@$R.$ProfileError,false,$Unlocks]"/>
+          <set_value name="$R.$Snapshot" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$GrowthSeconds,($R.$Level + 1) * 3600.0f,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade,@$R.$Population,@$R.$PauseReason,3,@$R.$ProfileError,false,$Unlocks,@$R.$PopulationOverride,@$R.$DebugFallback,@$R.$DebugInitialHub != null and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and $R.$DebugInitialHub == $R.$Hub and not @$R.$CompletedSequence and $R.$Target == 0]"/>
           <do_if value="@$R.$SnapshotError">
             <debug_text text="'[CE] Details recovered: %s'.[$R.$Hub]"/>
           </do_if>
@@ -68,7 +68,7 @@
           </do_if>
           <set_value name="$R.$SnapshotError" exact="true"/>
           <do_if value="$R.$Snapshot?">
-            <set_value name="$R.$Snapshot" exact="[$R.$Snapshot.{1},$R.$Snapshot.{2},$R.$Snapshot.{3},$R.$Snapshot.{4},$R.$Snapshot.{5},$R.$Snapshot.{6},$R.$Snapshot.{7},$R.$Snapshot.{8},$R.$Snapshot.{9},$R.$Snapshot.{10},@$R.$Snapshot.{11},@$R.$Snapshot.{12},@$R.$Snapshot.{13},@$R.$ProfileError,true,@$R.$Snapshot.{16}]"/>
+            <set_value name="$R.$Snapshot" exact="[$R.$Snapshot.{1},$R.$Snapshot.{2},$R.$Snapshot.{3},$R.$Snapshot.{4},$R.$Snapshot.{5},$R.$Snapshot.{6},$R.$Snapshot.{7},$R.$Snapshot.{8},$R.$Snapshot.{9},$R.$Snapshot.{10},@$R.$Snapshot.{11},@$R.$Snapshot.{12},@$R.$Snapshot.{13},@$R.$ProfileError,true,@$R.$Snapshot.{16},@$R.$PopulationOverride,@$R.$DebugFallback,false]"/>
           </do_if>
         </do_else>
       </actions>
@@ -76,17 +76,20 @@
     <library name="PublishAllDiagnostics">
       <actions>
         <set_value name="$HubList" exact="[]"/>
+        <set_value name="$HubSectors" exact="[]"/>
         <set_value name="$Snapshots" exact="[]"/>
         <do_for_each name="$RegisteredSector" in="$Registry.keys.list">
           <set_value name="$Registered" exact="$Registry.{$RegisteredSector}"/>
           <do_if value="$Registered.$Hub.exists and not $Registered.$Hub.iswreck">
             <append_to_list name="$HubList" exact="$Registered.$Hub"/>
+            <append_to_list name="$HubSectors" exact="$RegisteredSector"/>
             <do_if value="$Registered.$Snapshot?">
               <append_to_list name="$Snapshots" exact="$Registered.$Snapshot"/>
             </do_if>
           </do_if>
         </do_for_each>
         <set_value name="player.entity.$ce_hubs" exact="$HubList"/>
+        <set_value name="player.entity.$ce_hub_sectors" exact="$HubSectors"/>
         <set_value name="player.entity.$ce_hub_statuses" exact="$Snapshots"/>
       </actions>
     </library>

@@ -32,6 +32,7 @@
               </do_if>
               <include_actions ref="UpdateHub"/>
               <include_actions ref="md.CE_DebugAdvance.Tick"/>
+              <include_actions ref="md.CE_DebugCreate.Tick"/>
               <include_actions ref="PublishDiagnostics"/>
             </do_for_each>
             <include_actions ref="PublishAllDiagnostics"/>
@@ -72,6 +73,10 @@
             <include_actions ref="PublishAllDiagnostics"/>
           </actions>
         </cue>
+        <cue name="SectorTestingCommand" instantiate="true">
+          <conditions><event_ui_triggered screen="'CESectorTesting'" control="'create_hub_5b'"/></conditions>
+          <actions><include_actions ref="md.CE_DebugCreate.Request"/></actions>
+        </cue>
         <cue name="TestingCommand" instantiate="true">
           <conditions>
             <event_ui_triggered screen="'CELevelTesting'"/>
@@ -94,8 +99,9 @@
                   <include_actions ref="UpdateOffers"/>
                   <debug_text text="'[CE] TEST: new reservations paused=%s'.[$R.$PauseOffers]"/>
                 </do_elseif>
-                <do_elseif value="event.param2 == 'advance_complete'">
+                <do_elseif value="event.param2 == 'advance_complete' or event.param2 == 'initial_complete'">
                   <include_actions ref="UpdateHub"/>
+                  <include_actions ref="md.CE_DebugCreate.Tick"/>
                 </do_elseif>
                 <do_else><include_actions ref="md.CE_DebugAdvance.Request"/></do_else>
                 <include_actions ref="PublishDiagnostics"/>
@@ -183,6 +189,7 @@
     <library name="Reconcile">
       <actions>
         <set_value name="$NextReconcile" exact="player.age + 5min"/>
+        <include_actions ref="md.CE_DebugCreate.ReconcileOverrides"/>
         <find_sector name="$PopulationSectors" space="player.galaxy" multiple="true"/>
         <do_for_each name="$Sector" in="$PopulationSectors">
           <include_actions ref="CaptureSectorProfile"/>
@@ -196,6 +203,7 @@
       <actions>
         <include_actions ref="md.CE_Placement.Forget"/>
         <include_actions ref="md.CE_DebugAdvance.Forget"/>
+        <include_actions ref="md.CE_DebugCreate.Forget"/>
         <do_if value="@$R.$LayoutCue">
           <cancel_cue cue="$R.$LayoutCue"/>
         </do_if>
@@ -378,15 +386,21 @@
     <library name="EnsureManager">
       <actions><include_actions ref="md.CE_Trade.EnsureManager"/></actions>
     </library>
+    <library name="EnsureRecord">
+      <actions>
+        <do_if value="not $Registry.{$Sector}?">
+          <set_value name="$Registry.{$Sector}" exact="table[$Hub=null,$Level=1,$Target=0,$Build=null,$Operational=false,$Wares=table[],$Transfers=table[],$Generation=0,$GrowthSeconds=0.0f,$Last=player.age / 1s,$DisplayOrder=[],$PauseOffers=false,$TestUpgrade=false,$PlotReady=false,$InitializedHub=null,$Population=$Population,$Factor=$Population / 8524100000.0f]"/>
+          <set_value name="$R" exact="$Registry.{$Sector}"/>
+        </do_if>
+        <set_value name="$R" exact="$Registry.{$Sector}"/>
+      </actions>
+    </library>
     <library name="ReconcileSector">
       <actions>
+        <do_if value="@$Registry.{$Sector}.$PopulationOverride"><set_value name="$Population" exact="$Registry.{$Sector}.$PopulationOverride"/></do_if>
         <include_actions ref="CaptureSectorProfile"/>
         <do_if value="$Sector and ($Population ge 100000000 or $Registry.{$Sector}?)">
-          <do_if value="not $Registry.{$Sector}?">
-            <set_value name="$Registry.{$Sector}" exact="table[$Hub=null,$Level=1,$Target=0,$Build=null,$Operational=false,$Wares=table[],$Transfers=table[],$Generation=0,$GrowthSeconds=0.0f,$Last=player.age / 1s,$DisplayOrder=[],$PauseOffers=false,$TestUpgrade=false,$PlotReady=false,$InitializedHub=null,$Population=$Population,$Factor=$Population / 8524100000.0f]"/>
-            <set_value name="$R" exact="$Registry.{$Sector}"/>
-          </do_if>
-          <set_value name="$R" exact="$Registry.{$Sector}"/>
+          <include_actions ref="EnsureRecord"/>
           <include_actions ref="UpdatePopulation"/>
           <include_actions ref="RefreshProfile"/>
           <do_if value="(not $R.$Hub.exists or $R.$Hub.iswreck) and $Population ge 100000000">
@@ -427,6 +441,7 @@
     </library>
     <library name="UpdatePopulation">
       <actions>
+        <do_if value="@$R.$PopulationOverride"><set_value name="$Population" exact="$R.$PopulationOverride"/></do_if>
         <do_if value="not $R.$Population? or $R.$Population != $Population">
           <include_actions ref="AccrueAll"/>
           <set_value name="$R.$Population" exact="$Population"/>

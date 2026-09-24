@@ -218,6 +218,7 @@
           <debug_text text="'[CE] Build funding checked: hub=%s balance=%s wanted=%s'.[$Hub,$Hub.buildstorage.money,$Hub.buildstorage.wantedmoney]"/>
           <include_actions ref="md.CE_OwnerlessHub.AssignBuilder"/>
           <include_actions ref="md.CE_DebugAdvance.Tick"/>
+          <include_actions ref="md.CE_DebugCreate.Tick"/>
         </do_if>
         <do_else>
           <set_value name="$ConstructionFailure" exact="'build_task_creation_failed'"/>

@@ -1,6 +1,7 @@
 -- Optional testing UI. MD owns all economic and construction state.
 local ffi = require('ffi')
 ffi.cdef[[
+    bool IsComponentClass(uint64_t componentid, const char* classname);
     void ForceBuildCompletion(uint64_t containerid);
     float GetCurrentBuildProgress(uint64_t containerid);
     bool IsBuildWaitingForSecondaryComponentResources(uint64_t containerid);
@@ -10,6 +11,9 @@ local section = 'actions_ce_debug'
 local registered = false
 local M = CEHubStatus
 local text, isHub, statusFor = M.text, M.isHub, M.getFresh
+local function canCreate(id)
+    return id and C.IsValidComponent(id) and C.IsComponentClass(id, 'sector') and M.canCreateInSector(id)
+end
 local function canFinish(id)
     return isHub(id) and (C.GetCurrentBuildProgress(id) >= 0 or C.IsBuildWaitingForSecondaryComponentResources(id))
 end
@@ -26,6 +30,16 @@ local function buildActions()
     local raw = menu and menu.componentSlot and menu.componentSlot.component
     if not raw then return end
     local id = M.id(raw)
+    if canCreate(id) then
+        local used = false
+        menu.insertInteractionContent(section, {text=text(138), active=true, mouseOverText=text(139), script=function()
+            if used or not canCreate(id) then return end
+            used = true
+            AddUITriggeredEvent('CESectorTesting', 'create_hub_5b', ConvertStringToLuaID(tostring(id)))
+            menu.onCloseElement('close')
+        end})
+        return
+    end
     if not isHub(id) then return end
     local function row(label, hint)
         menu.insertInteractionContent(section, {text=label, active=false, mouseOverText=hint or (label .. '\n' .. text(16))})
@@ -40,6 +54,8 @@ local function buildActions()
         elseif s.level == 10 then row(text(100))
         else row(text(113, s.growth/60, s.required/60)) end
         if s.population then row(text(44), text(45, s.population)) end
+        if s.populationOverride then row(text(140)) end
+        if s.debugFallback then row(text(141)) end
         if not s.plotReady then row(text(36), text(43)) end
         if s.testUpgrade then row(text(37)) end
         for _, w in ipairs(s.wares) do
@@ -83,7 +99,7 @@ local function register()
     menu.registerCallback('prepareSections_on_end', buildActions, 'civilian_economy')
     -- Native preparation returns false when a construction placeholder has no
     -- native actions, even though our custom section has already been prepared.
-    -- Keep that section accessible for the exact registered hub only.
+    -- Keep only prepared hub or eligible sector debug actions accessible.
     if type(menu.prepareActions) == 'function' then
         local prepare = menu.prepareActions
         menu.prepareActions = function(...)
@@ -91,8 +107,8 @@ local function register()
             if result then return result end
             local raw = menu.componentSlot and menu.componentSlot.component
             local entries = menu.actions and menu.actions[section]
-            if raw and isHub(M.id(raw)) and type(entries) == 'table' and #entries > 0 then
-                DebugError('[CE] Hub has no native menu actions; displaying civilian testing section')
+            if raw and (isHub(M.id(raw)) or canCreate(M.id(raw))) and type(entries) == 'table' and #entries > 0 then
+                DebugError('[CE] Displaying prepared civilian testing section')
                 return true
             end
             return result
@@ -114,5 +130,17 @@ RegisterEvent('CEAdvanceBuildReady', function(_, raw)
         DebugError('[CE] TEST: automatically completing target level ' .. s.target .. ' on ' .. tostring(id))
         C.ForceBuildCompletion(id)
         AddUITriggeredEvent('CELevelTesting', 'advance_complete', ConvertStringToLuaID(tostring(id)))
+    end
+end)
+
+-- Initial creation is authorized separately from growth/upgrade shortcuts.
+RegisterEvent('CEInitialBuildReady', function(_, raw)
+    local id = M.id(raw)
+    local s = id and statusFor(id)
+    if s and s.debugInitial and not s.stale and s.target == 0
+        and GetComponentData(id, 'owner') == 'ownerless' and canFinish(id) then
+        DebugError('[CE] TEST: automatically completing initial build on ' .. tostring(id))
+        C.ForceBuildCompletion(id)
+        AddUITriggeredEvent('CELevelTesting', 'initial_complete', ConvertStringToLuaID(tostring(id)))
     end
 end)

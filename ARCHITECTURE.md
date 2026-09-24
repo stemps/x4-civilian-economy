@@ -16,6 +16,7 @@
 | `ui/ce_population.lua` | Native accessible-population reader; no economic state. |
 | `ui/ce_debug_tools.lua` | Optional testing menu, target-level shortcuts, guarded native force-completion and scoped ownerless interaction fallback. |
 | `md/ce_debug_advance.xml` | Validated debug target requests, saved per-hub completion permissions and native-build completion dispatch. |
+| `md/ce_debug_create.xml` | Sector-targeted debug creation, fixed population/profile selection, and identity-scoped initial-build completion permission. |
 | `ui/ce_hub_status.lua` | Read-only cached hub snapshots, metric formatting and explanatory text for the map. |
 | `ui/ce_map_status.lua` | Civilian-only map selection table, height-limited native scrolling and native reserve/growth bars. |
 | `libraries/`, `assets/`, `index/` | Cumulative construction plans and hub definition using vanilla modules/artwork. |
@@ -32,7 +33,8 @@ Five-minute reconciliation requests population through blackboard arrays and
 Lua events. Request tokens reject duplicate/stale replies; failed reads preserve
 existing state. Minute ticks process each registry entry.
 
-Creating or replacing a hub requires at least 100,000,000 accessible population.
+Creating or replacing a hub requires at least 100,000,000 effective population
+(native accessible population, or the explicit fixed debug override described below).
 Existing hubs below this threshold are retained, with demand still proportional
 to their actual population.
 
@@ -88,8 +90,9 @@ including sectors below the hub threshold. `Init.$RaceProfiles` caches one immut
 demand/component snapshot per race. The sector owner's primary race is a population
 proxy, not a measurement of ethnicity. Conquest, reload, replacement and later
 eligibility reuse that snapshot. Newly introduced sectors capture on first discovery.
-Unknown owners cannot construct a hub without valid components. No sector overrides
-or migration of earlier construction schemas are supported.
+Unknown owners cannot construct a normal hub without valid components. Debug
+creation can save a separate Argon fallback on its record; it does not rewrite the
+sector snapshot. Migration of earlier construction schemas is not supported.
 
 Conversion adapters patch `md/ce_population_profiles.xml` through the usual nested
 extension path and append `set_value` actions to library `Configure`:
@@ -239,6 +242,9 @@ Header positions: 1 hub, 2 completed level, 3 pending target, 4 operational,
 5 growth seconds, 6 required seconds, 7 paused offers, 8 plot ready, 9 ware rows,
 10 testing bypass, 11 population, 12 pause reason, 13 schema version (3),
 14 profile-refresh error, 15 stale, 16 next-level localized unlock names.
+Optional trailing positions: 17 fixed debug population, 18 Argon fallback flag,
+19 initial-build completion permission. Old version-3 snapshots omit these fields.
+Stale snapshots always disable initial-build completion permission.
 Ware rows: 1 name, 2 reserves, 3 replenishment target, 4 native advertised buying,
 5 native reservations, 6 lifetime deliveries, 7 lifetime payment credits,
 8 remaining simulation seconds, 9 hourly rate, 10 stable ware ID.
@@ -409,3 +415,37 @@ is delayed, the request survives save/load and retries. Requests end when the le
 is reached, ownership changes or the target changes; hub loss removes them. Ordinary
 queue-upgrade actions never acquire automatic-completion permission. The automatic
 callback requires the Lua addon; a missed UI event is retried on a minute tick.
+
+
+## Fixed-population debug creation
+
+The optional sector interaction action sends `CESectorTesting / create_hub_5b`
+with the sector identity. MD validates the sector and rejects any live registered
+hub, including construction sites and captured hubs. `$ce_hub_sectors` publishes
+occupied sectors separately from hub snapshots; Lua rechecks it at activation.
+The native no-actions fallback is limited to prepared hub/eligible-sector entries.
+
+`CE_DebugCreate.Request` validates the frozen sector profile, or resolves an Argon
+fallback through the existing profile/component builders. It saves the selected
+profile on the record without modifying shared sector/race caches. A failed
+fallback leaves existing records unchanged. `EnsureRecord` is shared with normal
+reconciliation. Fresh records start at level 1; retained records keep earned level
+and growth. A station-creation failure retains the override for normal retries,
+but grants no completion permission until a hub actually exists.
+
+`PopulationOverride` is 5000000000.0f. It takes precedence before reconciliation
+eligibility and population updates. Reconcile also processes overridden records
+without waiting for the native population bridge. Native population data remains
+unchanged. `DebugProfile` and `DebugFallback` survive loss/replacement; ordinary
+records have no override and retain the 100M creation threshold.
+
+`DebugInitialHub` is a saved, exact object identity. The accepted construction
+callback and minute ticks publish a fresh snapshot before `CEInitialBuildReady`.
+The callback explicitly reads the controller registry across the namespace boundary.
+Lua checks current membership, snapshot permission, ownerless ownership and native
+build readiness, then invokes ForceBuildCompletion and sends `initial_complete`.
+MD still waits for native module readiness before declaring operation. Completion,
+hub loss, identity mismatch or ownership change revokes permission. Automatic
+replacements and subsequent upgrades do not inherit it; layout failures/save loads
+retain permission for the same requested hub. No force-completion state is shared
+with debug target-level advancement.

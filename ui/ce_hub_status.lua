@@ -58,6 +58,12 @@ local function membership(list)
     return result
 end
 -- Testing commands must recheck live membership; do not consult the display cache.
+function M.canCreateInSector(raw)
+    local id = M.id(raw)
+    if not id or not C.IsValidComponent(id) then return false end
+    local occupied = read('$ce_hub_sectors')
+    return type(occupied) == 'table' and not membership(occupied)[tostring(id)]
+end
 function M.isHub(raw)
     local id = M.id(raw)
     return id and C.IsValidComponent(id) and membership(read('$ce_hubs'))[tostring(id)] == true
@@ -78,6 +84,7 @@ local function refresh()
                 local retained = {}
                 for index, value in pairs(lastValid[key]) do retained[index] = value end
                 retained[15] = true
+                retained[19] = false
                 snapshots[key] = retained
             end
         end
@@ -91,6 +98,8 @@ local function decode(id, s)
     result.level, result.population = number(s[2]), number(s[11])
     result.active, result.pausedOffers = yes(s[4]), yes(s[7])
     result.testUpgrade = yes(s[10])
+    result.populationOverride, result.debugFallback = number(s[17]), yes(s[18])
+    result.debugInitial = yes(s[19]) and not yes(s[15])
     result.pauseReason = s[12]
     result.profileError, result.stale = yes(s[14]), yes(s[15])
     result.growth, result.required = number(s[5]), number(s[6])
