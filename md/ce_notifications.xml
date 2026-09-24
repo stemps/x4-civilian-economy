@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Notifications" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <library name="UpgradeStarted">
+      <actions>
+        <!-- Persist per hub/target: recovered build tasks must not announce again. -->
+        <do_if value="$R.$Target gt 0 and @$R.$UpgradeNotifiedTarget != $R.$Target">
+          <set_value name="$R.$UpgradeNotifiedTarget" exact="$R.$Target"/>
+          <show_notification text="{974201,129}.[$R.$Hub.sector.knownname,$R.$Target]"/>
+          <write_to_logbook category="general" title="{974201,128}" text="{974201,129}.[$R.$Hub.sector.knownname,$R.$Target]" object="$R.$Hub" interaction="showonmap"/>
+        </do_if>
+      </actions>
+    </library>
+    <library name="UpgradeCompleted">
+      <actions>
+        <!-- Called once on the committed upgrade, after UpdateOffers; not on repairs. -->
+        <set_value name="$NewGoodsAvailable" exact="false"/>
+        <do_for_each name="$Definition" in="$R.$Definitions">
+          <do_if value="$Definition.{2} gt $PreviousLevel and $Definition.{2} le $R.$Level and $R.$Wares.{$Definition.{1}}.$Active and $R.$Wares.{$Definition.{1}}.$Rate gt 0">
+            <set_value name="$NewGoodsAvailable" exact="true"/>
+          </do_if>
+        </do_for_each>
+        <show_notification text="if $R.$PauseOffers then {974201,132}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,130}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,131}.[$R.$Hub.sector.knownname,$R.$Level]"/>
+        <write_to_logbook category="general" title="{974201,133}" text="if $R.$PauseOffers then {974201,132}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,130}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,131}.[$R.$Hub.sector.knownname,$R.$Level]" object="$R.$Hub" interaction="showonmap"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

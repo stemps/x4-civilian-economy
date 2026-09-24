@@ -7,6 +7,7 @@
 | `md/ce_ownerless_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
 | `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
 | `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers, pricing, account funding and manager setup. |
+| `md/ce_notifications.xml` | Upgrade-start and completion ticker/logbook messages, with saved per-target start deduplication. |
 | `md/ce_diagnostics.xml` | Validated per-hub snapshots and blackboard publication. |
 | `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
@@ -44,6 +45,11 @@ native seller payments and civilian spending totals exclude this extra payout.
 Build-storage purchases are separate from civilian hub offers.
 Positive native tax transfers emit a localized message-ticker notification and
 a General logbook entry linked to the hub, using the amount actually transferred.
+Upgrade construction is announced after processing a valid build task; a saved
+`UpgradeNotifiedTarget` prevents repeats on task recovery/reload and is cleared
+on hub loss. Completion is announced only on level commit, after offer refresh.
+Messages distinguish newly unlocked goods, quantity-only increases, and paused
+offers. Initial construction and module repairs are not level-up events.
 Live demand records own `$Active` membership and `$DisplayOrder`. Diagnostics
 read those records through the captured hub context, independently of definitions.
 Destruction affects only the matching record. Install into a save from before the mod

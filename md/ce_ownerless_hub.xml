@@ -209,6 +209,7 @@
         <set_value name="$R.$Operational" exact="false"/>
         <set_value name="$R.$PauseReason" exact="'hub_unavailable'"/>
         <set_value name="$R.$Target" exact="0"/>
+        <set_value name="$R.$UpgradeNotifiedTarget" exact="0"/>
         <set_value name="$R.$Build" exact="null"/>
         <set_value name="$R.$PlotReady" exact="false"/>
         <set_value name="$R.$InitializedHub" exact="null"/>
@@ -255,6 +256,7 @@
       <actions>
         <!-- Readiness does not read reserves; both branches sync via accrual/rebasing
              before funding or other consumers read targets and shortfalls. -->
+        <set_value name="$UpgradeCompleted" exact="false"/>
         <set_value name="$Hub" exact="$R.$Hub"/>
         <include_actions ref="md.CE_Construction.Readiness"/>
         <do_if value="$Ready">
@@ -269,6 +271,8 @@
           </do_if>
           <include_actions ref="AccrueAll"/>
           <do_if value="$TargetReady">
+            <set_value name="$PreviousLevel" exact="$R.$Level"/>
+            <set_value name="$UpgradeCompleted" exact="true"/>
             <set_value name="$R.$CompletedSequence" exact="$R.$TargetSequence"/>
             <set_value name="$R.$TargetSequence" exact="null"/>
             <set_value name="$R.$Level" exact="$R.$Target"/>
@@ -302,6 +306,9 @@
           </do_if>
         </do_else>
         <include_actions ref="UpdateOffers"/>
+        <do_if value="$UpgradeCompleted">
+          <include_actions ref="md.CE_Notifications.UpgradeCompleted"/>
+        </do_if>
       </actions>
     </library>
     <!-- Compatibility entry point; preparation now uses the current plot first. -->

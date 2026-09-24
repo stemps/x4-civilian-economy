@@ -87,6 +87,14 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### Construction, recovery and saves
 
+- READ (2026-09-24): `CE_Notifications` announces upgrade construction after a
+  valid task reaches `StartBuild`, once per saved target level. Completion is
+  announced on the level-commit transition after `UpdateOffers`, with separate
+  text for new goods, increased existing demand, and paused offers. Both use
+  the message ticker and General logbook with a hub map link. Initial builds,
+  repairs and retry/reload ticks do not independently count as upgrades.
+  Full restart required; notification display remains an in-game check.
+
 - One earned upgrade queues a native expansion. Completed-level demands continue
   until the entire target plan is operational; only then change level, localized
   name, rates and wares, and reset growth to zero. Target completion is distinct

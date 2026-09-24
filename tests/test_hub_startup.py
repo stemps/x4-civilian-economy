@@ -29,7 +29,7 @@ class StartupHarness(unittest.TestCase):
                         signal_cue_instantly=self.generate, find_ship=lambda n:r.set(n.get('name'),List(self.builders)),
                         assign_construction_vessel=self.assign, create_order=self.order,
                         set_object_account=lambda n:None, set_object_name=lambda n:None,
-                        write_to_logbook=lambda n:None, create_ai_unit=lambda n:None,
+                        write_to_logbook=lambda n:None, show_notification=lambda n:None, create_ai_unit=lambda n:None,
                         create_cue_actor=lambda n:r.set(n.get('name'), Component(exists=True)),
                         assign_control_entity=lambda n:setattr(r.expr(n.get('object')),'tradenpc',r.expr(n.get('actor'))),
                         remove_cue_actor=lambda n:None,

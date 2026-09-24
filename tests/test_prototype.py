@@ -173,6 +173,7 @@ class LifecycleTests(unittest.TestCase):
         for name in ('FundAccounts','EnsureManager','RenameHub','UpdateOffers','PublishDiagnostics','AssignBuilder'):
             self.run.stubs[name]=lambda:None
         self.run.native['signal_objects']=lambda n:None
+        self.run.native.update(show_notification=lambda n:None, write_to_logbook=lambda n:None)
         self.created=0
         def add(n):
             self.created+=1

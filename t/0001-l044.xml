@@ -104,5 +104,11 @@
     <t id="125">Debug shortcut: bypass growth requirements and automatically finish the required construction. Layout generation may take time.</t>
     <t id="126">Civilian sales tax received</t>
     <t id="127">Sales tax received: %s\n%s: %s units of %s sold to the civilian hub.</t>
+    <t id="128">Civilian hub upgrade started</t>
+    <t id="129">%s: civilian hub upgrading to level %s. Construction phase started.</t>
+    <t id="130">%s: civilian hub construction complete. Level %s is now accepting newly unlocked goods.</t>
+    <t id="131">%s: civilian hub construction complete. Level %s is now accepting increased quantities of existing goods.</t>
+    <t id="132">%s: civilian hub construction complete at level %s. New purchase offers are currently paused.</t>
+    <t id="133">Civilian hub upgrade completed</t>
   </page>
 </language>

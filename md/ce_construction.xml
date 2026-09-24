@@ -212,6 +212,7 @@
           <set_value name="$R.$ConstructionError" exact="false"/>
           <include_actions ref="md.CE_Placement.Succeeded"/>
           <process_build build="$R.$Build" object="$Hub.buildstorage" buildmodule="$Hub.buildstorage.buildmodule"/>
+          <include_actions ref="md.CE_Notifications.UpgradeStarted"/>
           <debug_text text="'[CE] Build started: hub=%s build=%s'.[$Hub,$R.$Build]"/>
           <include_actions ref="md.CE_OwnerlessHub.FundAccounts"/>
           <debug_text text="'[CE] Build funding checked: hub=%s balance=%s wanted=%s'.[$Hub,$Hub.buildstorage.money,$Hub.buildstorage.wantedmoney]"/>
