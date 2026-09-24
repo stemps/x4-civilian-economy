@@ -15,6 +15,13 @@
         <include_actions ref="md.CE_Reserves.SyncWare"/>
         <set_value name="$W.$Delivered" operation="add" exact="$Delivered"/>
         <set_value name="$W.$Paid" operation="add" exact="$Delivered * event.param.unitprice"/>
+        <!-- Label the native seller payment, independently of player-sector tax. -->
+        <do_if value="event.param.seller.isplayerowned and event.param.seller.order.exists and not event.param.seller.order.isinfinite and not event.param.sellfree and $Delivered gt 0 and event.param.unitprice gt 0Cr">
+          <set_value name="$DeliveryPayment" exact="$Delivered * event.param.unitprice"/>
+          <!-- Native trade completion precedes the orderqueue_remove payment.
+               The AI order can still be waiting for drones after that payment. -->
+          <signal_cue_instantly cue="md.CE_Trade.WatchDeliveryPayment" param="table[$Seller=event.param.seller,$Order=event.param.seller.order,$Amount=$DeliveryPayment,$SectorName=$R.$Hub.sector.knownname,$CompletedAt=player.age,$WareID=$Ware.id]"/>
+        </do_if>
         <!-- Sector ownership is evaluated at completion, independently of the seller. -->
         <include_actions ref="md.CE_Settings.Read"/>
         <do_if value="$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr and $CETaxPercent gt 0">
@@ -25,18 +32,56 @@
           <set_value name="$SalesTaxBalanceBefore" exact="player.money"/>
           <reward_player money="$SalesTax"/>
           <set_value name="$SalesTaxPaid" exact="player.money - $SalesTaxBalanceBefore"/>
+          <do_if value="$SalesTaxPaid gt 0Cr">
+            <!-- VTL 1.14 listens to this description-only event. With no listener it
+                 is harmless. Never call its TransferMoney cue as well: that pays again. -->
+            <raise_lua_event name="'transfer_money'" param="$SalesTaxPaid + ';' + {974201,155}.[$R.$Hub.sector.knownname]"/>
+          </do_if>
           <do_if value="$SalesTaxPaid gt 0Cr and $CETaxNotifications">
             <show_notification text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]"/>
             <write_to_logbook category="general" title="{974201,126}" text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]" money="$SalesTaxPaid" object="$R.$Hub" interaction="showonmap"/>
           </do_if>
-          <debug_text text="'[CE] Sales tax: hub=%s ware=%s amount=%s requested=%s income=%s balance_before=%s balance_after=%s notifications=%s'.[$R.$Hub,$Ware,$Delivered,$SalesTax,$SalesTaxPaid,$SalesTaxBalanceBefore,player.money,$CETaxNotifications]"/>
         </do_if>
-        <debug_text text="'[CE] Completed delivery: ware=%s amount=%s paid=%s reserve=%s delivered_total=%s'.[$Ware,$Delivered,$Delivered * event.param.unitprice,$W.$Reserve,$W.$Delivered]"/>
         <include_actions ref="md.CE_OwnerlessHub.UpdateOffers"/>
         <include_actions ref="md.CE_OwnerlessHub.PublishDiagnostics"/>
         <include_actions ref="md.CE_OwnerlessHub.PublishAllDiagnostics"/>
       </actions>
     </library>
+    <cue name="WatchDeliveryPayment" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <set_value name="$Payment" exact="event.param"/>
+      </actions>
+      <cues>
+        <cue name="DeliveryAccountPaid">
+          <conditions>
+            <!-- Both inspected saves clear this ship account at the player receipt
+                 timestamp. Ignore partial debits and unrelated account balances. -->
+            <event_object_money_updated object="parent.$Payment.$Seller" oldamount="parent.$Payment.$Amount" newamount="0Cr"/>
+          </conditions>
+          <actions>
+            <!-- Queue all receipts before waking Lua; simultaneous payments must
+                 not overwrite a single shared request. Blackboard serialization
+                 converts MD money to Lua credits; do not divide it by 1Cr here. -->
+            <do_if value="not player.entity.$ce_vtl_deliveries?">
+              <set_value name="player.entity.$ce_vtl_deliveries" exact="[]"/>
+            </do_if>
+            <append_to_list name="player.entity.$ce_vtl_deliveries" exact="[$Payment.$Seller,$Payment.$Amount,$Payment.$CompletedAt,player.age,$Payment.$SectorName,@$Payment.$WareID]"/>
+            <raise_lua_event name="'CEVTLDelivery'"/>
+            <cancel_cue cue="parent"/>
+          </actions>
+        </cue>
+        <cue name="DeliveryLabelSellerDestroyed">
+          <conditions><event_object_destroyed object="parent.$Payment.$Seller"/></conditions>
+          <actions><cancel_cue cue="parent"/></actions>
+        </cue>
+        <cue name="DeliveryLabelOrderCancelled">
+          <conditions><event_object_order_cancelled object="parent.$Payment.$Seller" order="parent.$Payment.$Order" immediate="true"/></conditions>
+          <!-- Do not guess the amount/timing of a cancellation refund. -->
+          <actions><cancel_cue cue="parent"/></actions>
+        </cue>
+      </cues>
+    </cue>
     <library name="UpdateWarePrice">
       <actions>
         <set_value name="$RawPrice" exact="$Ware.minprice + ($Ware.maxprice - $Ware.minprice) / 10"/>

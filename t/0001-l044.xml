@@ -131,5 +131,7 @@
     <t id="152">Scale the supplied time required to reach the next level. 0.1 requires one tenth of normal time; 1.0 is normal; 10.0 requires ten times normal time. Earned growth is preserved. Construction time is unaffected.</t>
     <t id="153">Show ticker and logbook messages for civilian sales-tax income. Tax is still paid when messages are disabled. Enabled by default.</t>
     <t id="154">Percentage of completed civilian purchases paid as extra tax income in player-owned sectors. 0 disables tax income; default is 15%. Seller payments are unaffected.</t>
+    <t id="155">Civilian sales tax - %1</t>
+    <t id="156">Civilian hub delivery - %1</t>
   </page>
 </language>

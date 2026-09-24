@@ -48,10 +48,48 @@ sector is currently player-owned. The seller's identity does not affect tax;
 native seller payments and civilian spending totals exclude this extra payout.
 Build-storage purchases are separate from civilian hub offers.
 Tax income uses vanilla's `reward_player` action. The synchronous difference in
-`player.money` before/after the reward determines the amount actually credited;
-the debug trace records requested income and both balances. Native financial
-history is expected to classify this as a generic scripted/mission reward (native
-display remains to be verified). When sales-tax notifications are enabled (the
+`player.money` before/after the reward determines the amount actually credited. Native financial
+history classifies this as a generic mission reward (user-verified). Positive
+income also emits VTL 1.14's description-only `transfer_money` Lua event with
+actual cents and a localized sector label. Verbose Transaction Log optionally
+consumes it; without that listener the native label remains. No external cue or
+manifest dependency is required, and CE never invokes VTL's additional payment.
+Description events are independent of the ticker/logbook toggle. VTL owns tax matching
+and persistence; its time/amount matcher can confuse identical simultaneous payments.
+Completed paid deliveries from player-owned sellers capture their current order,
+ship, sale value and sector name in `CE_Trade.WatchDeliveryPayment`. Its private
+namespace survives changes to controller scratch variables. `DeliveryAccountPaid`
+queues a receipt request when that ship's account changes from exactly the sale
+amount to zero, then cancels the watcher. Trade completion is too early (about one
+second before receipt); AI order completion is too late (the latest save still
+has the captured TradePerform order waiting for drones after receipt).
+The account event also arrives a frame late: slot 4 measured a 17ms gap. Therefore
+`ui/ce_transaction_log.lua` reads native player transaction entries and finds a
+unique `orderqueue_remove` receipt by seller, exact cents and the captured
+completion-to-account-event window. Windows longer than 30 seconds and ambiguous
+or missing receipts retain native text. The adapter drains a shared blackboard
+request list so simultaneous requests cannot overwrite each other.
+Requests retain the MD money type: blackboard serialization converts it to Lua
+credits. The native ledger uses cents, so only the Lua comparison multiplies by 100.
+With VTL enabled and its v1.14 saved-data structure present, the adapter stores
+text 156 against the native entry ID in VTL's lookup table, preserving existing
+descriptions. It synchronously dispatches VTL's `mvtl.onGameLoad` event to reload
+that private cache. VTL then renders and persists the name normally. This is an
+adapter to the installed VTL implementation, not a documented public write API;
+future VTL changes may require maintenance. Missing/disabled VTL is a no-op.
+No external mod file is edited. Receipt naming is verified in-game.
+Each new receipt also stores its ware ID as `ceWare` alongside VTL's description.
+The optional UIX callback fills an empty Detail cell with the ware's localized
+name; it leaves the native ware ID empty so the receipt does not gain an invalid
+expandable trade breakdown. A lazily loaded cache refreshes on VTL boot. Existing
+entries without ware metadata keep their current appearance. Detail rendering
+still needs an in-game test. Temporary receipt/tax diagnostics have been removed.
+Ship destruction or immediate order cancellation cancels the watcher without
+guessing a refund/payment timestamp. Missing or infinite orders are not watched;
+the latter are outside the tested manual-order payment path.
+This label does not require player sector ownership or enabled tax. NPC sales,
+free sales and zero deliveries do not emit it; seller payment remains entirely native.
+When sales-tax notifications are enabled (the
 default), positive credited income emits a localized message-ticker notification
 and a General logbook entry linked to the hub.
 Upgrade construction is announced after processing a valid build task; a saved

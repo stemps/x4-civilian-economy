@@ -17,3 +17,7 @@ lua:
     uv run --offline --with lupa python tools/test_map_status.py
 
 check: validate lua
+
+# Exercise the optional installed VTL source without redistributing it.
+vtl moddir:
+    uv run --offline --with lxml --with lupa python tools/test_transaction_log.py "{{moddir}}"

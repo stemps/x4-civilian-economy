@@ -26,14 +26,14 @@ class SalesTaxTests(unittest.TestCase):
 
     def fixture(self, seller='argon', owned=True, amount=10, price=1300, actual_paid=None):
         run = Runner()
-        hub = Component(sector=Component(isplayerowned=owned))
+        hub = Component(sector=Component(isplayerowned=owned, knownname='Grand Exchange I'))
         state = Table(Active=True, Rate=1, Reserve=0, Delivered=0, Paid=0, Offer=NIL)
         record = Table(Hub=hub, Wares=Table({Ware('food'): state}), Transfers=Table(),
                        Operational=True, Last=0, GrowthSeconds=0, Level=1, Target=0)
         # Reserved amount and current offer price deliberately differ from actual sale.
         state.Price = 9000
-        deal = Component(buyer=hub, seller=Component(owner=seller, money=777),
-                         amount=100, transferredamount=amount, unitprice=price)
+        deal = Component(buyer=hub, seller=Component(owner=seller, money=777, isplayerowned=seller == 'player', order=Component(exists=True)),
+                         amount=100, transferredamount=amount, unitprice=price, sellfree=False)
         record.Transfers[deal] = Ware('food')
         run.env.update(R=record, event=Table(param=deal),
                        faction=Table(ownerless='ownerless', player='player'))
@@ -41,12 +41,33 @@ class SalesTaxTests(unittest.TestCase):
                          PublishAllDiagnostics=lambda: None)
         payments = []
         run.env['player'].money = 100000
+        run.env['player'].entity = Component()
         def reward(node):
             self.assertNotIn(deal, record.Transfers)
             money = run.expr(node.get('money'))
             payments.append(money)
             run.env['player'].money += money if actual_paid is None else actual_paid
         run.native['reward_player'] = reward
+        run.tax_descriptions = []
+        run.delivery_descriptions = []
+        run.delivery_watches = []
+        def watch(node):
+            self.assertEqual(node.get('cue'), 'md.CE_Trade.WatchDeliveryPayment')
+            self.assertNotIn(deal, record.Transfers)
+            run.delivery_watches.append(run.expr(node.get('param')))
+        run.native['signal_cue_instantly'] = watch
+        def description(node):
+            if node.get('name') == "'CEVTLDelivery'":
+                self.assertIsNone(node.get('param'))
+                run.delivery_descriptions.append(run.env['Payment'].Amount)
+                return
+            self.assertEqual(node.get('name'), "'transfer_money'")
+            self.assertEqual(node.get('param'),
+                             "$SalesTaxPaid + ';' + {974201,155}.[$R.$Hub.sector.knownname]")
+            self.assertTrue(payments)
+            self.assertNotIn(deal, record.Transfers)
+            run.tax_descriptions.append(run.env['SalesTaxPaid'])
+        run.native['raise_lua_event'] = description
         run.tax_messages = []
         def message(node):
             self.assertTrue(payments)  # Announce only after native reward changes the account.
@@ -84,6 +105,20 @@ class SalesTaxTests(unittest.TestCase):
             self.assertEqual(run.tax_messages,
                              [('show_notification', paid), ('write_to_logbook', paid)] if paid > 0 else [])
             self.assertEqual(run.env['SalesTaxPaid'], paid)
+            self.assertEqual(run.tax_descriptions, [paid] if paid > 0 else [])
+
+    def test_optional_description_never_makes_an_additional_payment(self):
+        for listener_present in (False, True):
+            for notifications in (False, True):
+                run, record, deal, payments = self.fixture()
+                run.env['md'].CE_Settings.State.TaxNotifications = notifications
+                if not listener_present:
+                    run.native['raise_lua_event'] = lambda node: None
+                run.library('RecordDelivery')
+                self.assertEqual(payments, [1950])
+                self.assertEqual(run.env['player'].money, 101950)
+                self.assertEqual(run.tax_descriptions, [1950] if listener_present else [])
+                self.assertEqual(len(run.tax_messages), 2 if notifications else 0)
 
     def test_reported_water_delivery_credits_player_and_announces_income(self):
         run, record, deal, payments = self.fixture(amount=1666, price=3700)
@@ -92,6 +127,105 @@ class SalesTaxTests(unittest.TestCase):
         self.assertEqual(run.env['player'].money, 1024630)
         self.assertEqual(run.tax_messages,
                          [('show_notification', 924630), ('write_to_logbook', 924630)])
+
+    def test_delivery_label_is_independent_of_tax_and_does_not_pay_seller_again(self):
+        for owned in (False, True):
+            for seller in ('player', 'argon'):
+                for tax in (0, 15):
+                    run, record, deal, payments = self.fixture(seller=seller, owned=owned,
+                                                              amount=1666, price=3700)
+                    run.env['md'].CE_Settings.State.update(TaxPercent=tax, TaxNotifications=False)
+                    run.library('RecordDelivery')
+                    self.assertEqual(run.delivery_descriptions, [])
+                    self.assertEqual([p.Amount for p in run.delivery_watches], [6164200] if seller == 'player' else [])
+                    self.assertEqual(payments, [924630] if owned and tax else [])
+                    self.assertEqual(deal.seller.money, 777)
+                    self.assertEqual(record.Wares[Ware('food')].Paid, 6164200)
+
+    def test_unpaid_deliveries_do_not_queue_a_financial_label(self):
+        for amount, price, free in ((0,1300,False),(10,0,False),(10,1300,True)):
+            run, record, deal, payments = self.fixture(seller='player', amount=amount, price=price)
+            deal.sellfree = free
+            run.library('RecordDelivery')
+            self.assertEqual(run.delivery_descriptions, [])
+            self.assertEqual(run.delivery_watches, [])
+
+    def test_delivery_description_waits_for_account_payment_and_keeps_captured_context(self):
+        run, record, deal, payments = self.fixture(seller='player', amount=1666, price=3700)
+        run.env['player'].age = 240858.740
+        run.library('RecordDelivery')
+        payment, = run.delivery_watches
+        self.assertEqual(run.delivery_descriptions, [])
+        self.assertIs(payment.Order, deal.seller.order)
+        self.assertIs(payment.Seller, deal.seller)
+        self.assertEqual(payment.CompletedAt, 240858.740)
+        # Execute the shipped listener's capture actions, then move caller state.
+        run.env['event'] = Table(param=payment)
+        run.actions(run.trade.xpath('//cue[@name="WatchDeliveryPayment"]/actions')[0])
+        deal.seller.order = Component(exists=True)
+        record.Hub.sector.knownname = 'Another sector'
+        record.Hub = NIL
+        listener = run.trade.xpath('//cue[@name="DeliveryAccountPaid"]')[0]
+        event = listener.find('conditions/event_object_money_updated')
+        run.env['parent'] = Table(Payment=payment)
+        self.assertIs(run.expr(event.get('object')), payment.Seller)
+        self.assertEqual(run.expr(event.get('oldamount')), 6164200)
+        self.assertEqual(run.expr(event.get('newamount')), 0)
+        # The captured AI order need not finish: slot 4 still has it in the
+        # critical/waitingdrones state after the account payment.
+        self.assertIsNone(event.get('order'))
+        self.assertIsNot(payment.Order, deal.seller.order)
+        self.assertEqual(payment.SectorName, 'Grand Exchange I')
+        run.env['player'].age = 240859.741
+        cancelled = []
+        run.native['cancel_cue'] = lambda n: cancelled.append(n.get('cue'))
+        run.actions(listener.find('actions'))
+        self.assertEqual(run.delivery_descriptions, [6164200])
+        self.assertEqual(run.env['player'].entity.ce_vtl_deliveries,
+                         [[payment.Seller, 6164200, 240858.740, 240859.741, 'Grand Exchange I', 'food']])
+        # This interpreter stops at MD values (cents). The game's blackboard
+        # serializes money to Lua credits; do not pre-divide the MD amount.
+        self.assertEqual(payments, [924630])
+        self.assertEqual(cancelled, ['parent'])
+
+    def test_payment_filter_rejects_other_ships_balances_and_partial_debits(self):
+        run, record, deal, payments = self.fixture(seller='player', amount=1666, price=3700)
+        run.library('RecordDelivery')
+        payment, = run.delivery_watches
+        run.env['parent'] = Table(Payment=payment)
+        event = run.trade.xpath('//cue[@name="DeliveryAccountPaid"]/conditions/event_object_money_updated')[0]
+        expected = (run.expr(event.get('object')), run.expr(event.get('oldamount')), run.expr(event.get('newamount')))
+        for source, old, new, match in (
+            (deal.seller, 6164200, 0, True),
+            (Component(), 6164200, 0, False),
+            (deal.seller, 6164200, 100, False),
+            (deal.seller, 7000000, 0, False),
+        ):
+            self.assertEqual((source, old, new) == expected, match)
+
+    def test_missing_order_does_not_guess_a_payment_timestamp(self):
+        run, record, deal, payments = self.fixture(seller='player')
+        deal.seller.order = NIL
+        run.library('RecordDelivery')
+        self.assertEqual(run.delivery_watches, [])
+
+    def test_persistent_trading_order_does_not_accumulate_finish_listeners(self):
+        run, record, deal, payments = self.fixture(seller='player')
+        deal.seller.order.isinfinite = True
+        run.library('RecordDelivery')
+        self.assertEqual(run.delivery_watches, [])
+
+    def test_destruction_and_cancellation_discard_labels_without_paying(self):
+        run, record, deal, payments = self.fixture(seller='player')
+        run.library('RecordDelivery')
+        for name in ('DeliveryLabelSellerDestroyed', 'DeliveryLabelOrderCancelled'):
+            cancelled = []
+            run.native['cancel_cue'] = lambda n: cancelled.append(n.get('cue'))
+            actions = run.trade.xpath('//cue[@name=$name]/actions', name=name)[0]
+            run.actions(actions)
+            self.assertEqual(cancelled, ['parent'])
+            self.assertEqual(run.delivery_descriptions, [])
+        self.assertEqual(payments, [1950])
 
 
 if __name__ == '__main__':

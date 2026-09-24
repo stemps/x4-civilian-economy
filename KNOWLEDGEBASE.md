@@ -43,6 +43,33 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ## How this Mod Works
 
+### 2026-09-24 - optional-verbose-transaction-log
+
+- VTL v114 (`VerboseTransactionLog`) is optional. Its `transfer_money` Lua event
+  only annotates; its `TransferMoney` MD cue also pays money and must not be used
+  alongside CE's payout. Tax labels use the Lua event and are verified in-game.
+- MEASURED: delivery completion, AI order completion and player receipt occur at
+  different times; even the account notification reached Lua 17ms after the ledger
+  entry. VTL requires exact timestamps, so event timing cannot reliably label
+  deliveries. Its amount/time matcher can also confuse equal simultaneous payments.
+- IMPLEMENTED: the delivery adapter finds a unique native `orderqueue_remove`
+  receipt by seller, exact cents and completion-to-account-event window (at most
+  30 seconds). It stores the receipt ID in VTL's `lookupTable` and synchronously
+  calls `mvtl.onGameLoad` to refresh VTL's cache. Missing/disabled VTL, unsupported
+  data, missing/ambiguous receipts and existing descriptions are left unchanged.
+  This depends on VTL internals and may need maintenance after VTL updates.
+- Native ledger queries require `UniverseID` values (`C.GetPlayerID()` and
+  `ConvertIDTo64Bit` for blackboard components); blackboard access requires Lua
+  IDs. Tests must distinguish these representations.
+- MEASURED: the blackboard converts MD money to Lua credits. Pass the original
+  money value; dividing by `1Cr` first double-scales it (51800 internal cents
+  became 5.18 Lua credits). Native transaction-log amounts remain in cents.
+- USER-VERIFIED: delivery names now render correctly. New receipts store `ceWare`
+  alongside VTL's description; UIX renders its localized name in the empty Detail
+  cell without setting `entry.ware` (which would enable trade expansion). Ware
+  Detail rendering is covered by automated tests but awaits in-game verification.
+  Temporary troubleshooting output is removed; old entries are not migrated.
+
 ### 2026-09-24 - tax-negative-transfer-result
 
 - MEASURED: debug.txt at game time 240902.10 records the new debug hub

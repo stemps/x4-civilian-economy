@@ -28,10 +28,10 @@ instructions.
 - Make sure to keep all language translation files in sync with the English
   version, in which the mod is developed. Auto-translate all new and changed
   keys into all languages.
-- after each turn, inform the user whether a full restart is required, or if a
-  `/reloadui` command suffices.
+- after each turn with code changes, inform the user whether a full restart is
+  required, or if a `/reloadui` command suffices.
 
 ## Validation
 
-- Use `just` to run checks (execut without options to get a list of possible
+- Use `just` to run checks (execute without options to get a list of possible
   tasks). Run validations for areas affected by your changes after each turn.
