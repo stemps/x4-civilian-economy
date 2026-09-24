@@ -8,6 +8,15 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### Demand, payment and progression
 
+- READ (2026-09-24): `CE_Trade.RecordDelivery` pays 15% sales-tax income to
+  `faction.player` from `faction.ownerless` for completed civilian purchases in
+  a currently player-owned sector, regardless of seller. It uses actual
+  transferred quantity and deal unit price after consuming the duplicate guard.
+  Seller payment and `$Paid` remain the original transaction value. Zero-value
+  deliveries pay no tax; separate build-storage purchases do not enter this path.
+  Native payout still requires in-game verification. MD changes require a full
+  restart; UI `/reload` is insufficient.
+
 - Every sector with at least 100 million accessible population gets one ownerless hub with
   ten economic levels. Base X4 9.00 is required, with no DLC. No custom faction,
   diplomacy changes, production or habitation modules are introduced.
@@ -187,6 +196,18 @@ hub and open **Custom Actions → Civilian Economy — Testing**.
 
 
 ## Game Engine Findings
+
+- READ (2026-09-24): `libraries/common.xsd` documents `show_notification` as a
+  non-interactive message-ticker notification (default timeout five seconds),
+  `show_interactive_notification` as a target-monitor interaction, `show_help`
+  as tutorial/help text, and `write_to_logbook` as a persistent log entry.
+  Vanilla `md/notifications.xml` uses General log entries with `money`,
+  `object` and `interaction="showonmap"` for station-defence rewards, and has
+  optional generic money-added notifications. `md/diplomacy.xml` pairs ticker
+  messages with log entries. CE tax income uses that pair, with localized
+  sector/ware details and native money formatting. `transfer_money/@result`
+  supplies the actual amount paid; zero results produce no success message.
+  Notification display still needs in-game verification.
 
 - A station is not an entity blackboard: the prototype's station marker write
   failed. Persist exact hub identity on `player.entity.$ce_hub`, repaired from

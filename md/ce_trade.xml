@@ -15,6 +15,16 @@
         <include_actions ref="md.CE_Reserves.SyncWare"/>
         <set_value name="$W.$Delivered" operation="add" exact="$Delivered"/>
         <set_value name="$W.$Paid" operation="add" exact="$Delivered * event.param.unitprice"/>
+        <!-- Sector ownership is evaluated at completion, independently of the seller. -->
+        <do_if value="$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr">
+          <set_value name="$SalesTax" exact="$Delivered * event.param.unitprice * 15 / 100"/>
+          <transfer_money from="faction.ownerless" to="faction.player" amount="$SalesTax" result="$SalesTaxPaid"/>
+          <do_if value="$SalesTaxPaid gt 0Cr">
+            <show_notification text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]"/>
+            <write_to_logbook category="general" title="{974201,126}" text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]" money="$SalesTaxPaid" object="$R.$Hub" interaction="showonmap"/>
+          </do_if>
+          <debug_text text="'[CE] Sales tax: hub=%s ware=%s amount=%s income=%s'.[$R.$Hub,$Ware,$Delivered,$SalesTaxPaid]"/>
+        </do_if>
         <debug_text text="'[CE] Completed delivery: ware=%s amount=%s paid=%s reserve=%s delivered_total=%s'.[$Ware,$Delivered,$Delivered * event.param.unitprice,$W.$Reserve,$W.$Delivered]"/>
         <include_actions ref="md.CE_OwnerlessHub.UpdateOffers"/>
         <include_actions ref="md.CE_OwnerlessHub.PublishDiagnostics"/>

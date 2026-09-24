@@ -102,5 +102,7 @@
     <t id="123">Civilian Economy: construction for population race %s could not be prepared. Check the component definitions and debug log. No replacement components were selected.</t>
     <t id="124">Advance to level %d</t>
     <t id="125">Debug shortcut: bypass growth requirements and automatically finish the required construction. Layout generation may take time.</t>
+    <t id="126">Civilian sales tax received</t>
+    <t id="127">Sales tax received: %s\n%s: %s units of %s sold to the civilian hub.</t>
   </page>
 </language>

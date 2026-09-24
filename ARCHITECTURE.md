@@ -6,7 +6,7 @@
 | --- | --- |
 | `md/ce_ownerless_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
 | `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
-| `md/ce_trade.xml` | Delivery accounting, guarded native offers, pricing, account funding and manager setup. |
+| `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers, pricing, account funding and manager setup. |
 | `md/ce_diagnostics.xml` | Validated per-hub snapshots and blackboard publication. |
 | `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
@@ -37,6 +37,13 @@ to their actual population.
 
 Each hub's instantiated delivery watcher has its own namespace and captured
 record reference, preventing later loop iterations from redirecting deliveries.
+After consuming the completion guard, delivery accounting pays the player an
+additional 15% of actual delivered quantity times deal unit price if the hub's
+sector is currently player-owned. The seller's identity does not affect tax;
+native seller payments and civilian spending totals exclude this extra payout.
+Build-storage purchases are separate from civilian hub offers.
+Positive native tax transfers emit a localized message-ticker notification and
+a General logbook entry linked to the hub, using the amount actually transferred.
 Live demand records own `$Active` membership and `$DisplayOrder`. Diagnostics
 read those records through the captured hub context, independently of definitions.
 Destruction affects only the matching record. Install into a save from before the mod

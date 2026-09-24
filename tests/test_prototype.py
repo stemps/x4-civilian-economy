@@ -7,7 +7,7 @@ from generate_plans import plans
 
 class ControllerTests(unittest.TestCase):
     def setUp(self):
-        self.run=Runner(); self.r=Table(GrowthSeconds=0.0,Last=0.0,Level=1,Target=0,Operational=True,Wares=Table(),Transfers=Table(),Hub='hub')
+        self.run=Runner(); self.r=Table(GrowthSeconds=0.0,Last=0.0,Level=1,Target=0,Operational=True,Wares=Table(),Transfers=Table(),Hub=Component(sector=Component(isplayerowned=False)))
         self.run.env['R']=self.r
         self.w=Table(Reserve=0.0,Active=True,Rate=2000.,Cap=4000.,Demand=0.,Delivered=0,Paid=0,Offer=NIL)
         self.r.Wares[Ware('food')]=self.w
