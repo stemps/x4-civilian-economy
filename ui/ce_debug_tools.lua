@@ -11,6 +11,10 @@ local section = 'actions_ce_debug'
 local registered = false
 local M = CEHubStatus
 local text, isHub, statusFor = M.text, M.isHub, M.getFresh
+local function debugEnabled()
+    local value = GetNPCBlackboard(ConvertStringToLuaID(tostring(C.GetPlayerID())), '$ce_debug_enabled')
+    return value == true or value == 1
+end
 local function canCreate(id)
     return id and C.IsValidComponent(id) and C.IsComponentClass(id, 'sector') and M.canCreateInSector(id)
 end
@@ -26,6 +30,7 @@ local function canAdvance(id, level)
     return s and s.active and s.target == 0 and level > s.level and level <= 10
 end
 local function buildActions()
+    if not debugEnabled() then return end
     local menu = Helper.getMenu('InteractMenu')
     local raw = menu and menu.componentSlot and menu.componentSlot.component
     if not raw then return end
@@ -33,7 +38,7 @@ local function buildActions()
     if canCreate(id) then
         local used = false
         menu.insertInteractionContent(section, {text=text(138), active=true, mouseOverText=text(139), script=function()
-            if used or not canCreate(id) then return end
+            if used or not debugEnabled() or not canCreate(id) then return end
             used = true
             AddUITriggeredEvent('CESectorTesting', 'create_hub_5b', ConvertStringToLuaID(tostring(id)))
             menu.onCloseElement('close')
@@ -67,7 +72,7 @@ local function buildActions()
     local function action(label, allowed, run, hint)
         local used = false
         menu.insertInteractionContent(section, {text=label, active=not not allowed(), mouseOverText=hint or (label == text(11) and text(12) or label), script=function()
-            if used or not allowed() then return end
+            if used or not debugEnabled() or not allowed() then return end
             used = true
             run()
             menu.onCloseElement('close')
@@ -107,7 +112,7 @@ local function register()
             if result then return result end
             local raw = menu.componentSlot and menu.componentSlot.component
             local entries = menu.actions and menu.actions[section]
-            if raw and (isHub(M.id(raw)) or canCreate(M.id(raw))) and type(entries) == 'table' and #entries > 0 then
+            if debugEnabled() and raw and (isHub(M.id(raw)) or canCreate(M.id(raw))) and type(entries) == 'table' and #entries > 0 then
                 DebugError('[CE] Displaying prepared civilian testing section')
                 return true
             end

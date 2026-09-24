@@ -7,14 +7,16 @@ lua=LuaRuntime()
 strings={int(e.get('id')):''.join(e.itertext()) for e in E.parse(str(root/'t/0001-l044.xml')).iter('t')}
 lua.globals().translations=lua.table_from(strings)
 lua.execute('''
+local nativeffi = require('ffi')
 marked, valid, progress, waiting = true, true, 0, false
+debugEnabled = nil
 occupied, owner = {}, 'ownerless'
 calls, closes = 0, 0
 entries, commands = {}, {}
 status = {42, 1, 0, true, 60, 120, false, true,
     {{"Food Rations",500.5,4000,300,200,1000,13000,900.9,2000,"foodrations"}}, false, nil, nil, 3}
 local C = {
- GetPlayerID=function() return 1 end,
+ GetPlayerID=function() return nativeffi.new('uint64_t', 1) end,
  IsValidComponent=function() return valid end,
  IsObjectKnown=function() return true end,
  IsComponentClass=function(id, class) return id==80 and class=='sector' end,
@@ -30,7 +32,8 @@ menu={componentSlot={component=42},Add_Custom_Actions_Group=function() end,
  onCloseElement=function() closes=closes+1 end}
 Helper={getMenu=function() return menu end}
 GetNPCBlackboard=function(id,key)
- assert(id==1)
+ assert(type(id)=='number' and id==1, 'GetNPCBlackboard requires a converted Lua component ID')
+ if key=="$ce_debug_enabled" then return debugEnabled end
  if key=="$ce_hubs" then return marked and {42, 43} or {} end
  if key=="$ce_hub_sectors" then return occupied end
  if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 21600, false, true, {}, false, nil, nil, 3}} end
@@ -38,7 +41,10 @@ GetNPCBlackboard=function(id,key)
 end
 getElapsedTime=function() return 0 end
 GetComponentData=function(id, key) assert(key=='owner');return owner end
-ConvertStringToLuaID=tonumber
+ConvertStringToLuaID=function(value)
+ if value=='1ULL' then return 1 end
+ return tonumber(value)
+end
 ConvertStringTo64Bit=tonumber
 ReadText=function(_,id) assert(translations[id]);return translations[id] end
 DebugError=function() end
@@ -59,6 +65,16 @@ lua.execute('assert(loadstring(...))',source)
 lua.execute(source)
 lua.execute('''
 assert(callback)
+-- Default-off covers hubs, sector creation and the placeholder fallback.
+open();assert(#entries==0)
+nativeMenuResult=false;assert(not menu.prepareActions())
+menu.componentSlot.component=80;open();assert(#entries==0)
+debugEnabled=1;open();assert(#entries==1)
+local hiddenAction=entries[1];debugEnabled=false;hiddenAction.script();assert(#commands==0)
+menu.componentSlot.component=42;debugEnabled=true;open()
+hiddenAction=action(11);debugEnabled=0;hiddenAction.script();assert(calls==0)
+open();assert(#entries==0)
+debugEnabled=true
 nativeMenuResult=false;assert(menu.prepareActions()==true)
 marked=false;assert(menu.prepareActions()==false)
 marked=true;nativeMenuResult=true;assert(menu.prepareActions()==true)

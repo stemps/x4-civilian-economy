@@ -59,6 +59,7 @@
     </library>
     <library name="PrepareRates">
       <actions>
+        <include_actions ref="md.CE_Settings.Read"/>
         <set_value name="$CandidateStage" exact="'rates'"/>
         <set_value name="$CandidateRates" exact="[]"/>
         <set_value name="$CandidateSeen" exact="table[]"/>
@@ -70,7 +71,7 @@
           </do_if>
           <set_value name="$CandidateSeen.{$Ware}" exact="true"/>
           <do_if value="$Definition.{2} le $R.$Level">
-            <set_value name="$Rate" exact="$Definition.{3}"/>
+            <set_value name="$Rate" exact="$Definition.{3} * $CEDemandMultiplier"/>
             <do_if value="$R.$Factor?">
               <set_value name="$Rate" exact="$Rate * $R.$Factor"/>
             </do_if>

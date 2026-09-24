@@ -4,11 +4,59 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 [README](README.md) for an introduction and the
 [developer documentation](docs/DEVELOPMENT.md) for development guidance.
 
+## 2026-09-24 - extension-options-settings
+
+- READ: installed packed Mod Support APIs v195 declares ID `ws_2042901274`.
+  `Simple_Menu_API.Register_Options_Menu` registers on its `Reloaded` signal.
+  `Make_CheckBox` calls onClick with checked=0/1; `Make_Slider` takes min/max/step
+  and calls onSliderCellConfirm with value/valuechanged. Native helper.lua also
+  documents fractional slider steps; gameoptions.lua uses a 0.01-step slider.
+- IMPLEMENTED: separate CE_Options presentation and CE_Settings per-save state.
+  All five settings belong to the save, not profile userdata. Ensure only fills
+  missing keys. Default debug visibility is false; tax messages default true.
+  Multipliers now range 0.1-10.0 in 0.1 steps (superseding the initial 1.0 cap);
+  tax ranges 0-50 in whole percentages.
+- READ/FIXED after native screenshot: unspecified checkbox width filled the
+  slider column and stretched its symbol. Both dimensions now use the API's
+  `Helper.standardTextHeight` reference, following native gameoptions.lua's
+  equal-text-height checkbox pattern. Native rendering of the fix is pending.
+- Demand multiplier applies to frozen definition rates, never to already-scaled
+  rates. Changes settle old consumption first, retain reserves and deal/offer
+  identities, then recompute rates and targets. Active unloading still defers
+  offer edits. Time multiplier changes required supplied seconds, preserving
+  earned growth; normal minute ticks own actual qualification/construction.
+- Tax=0 skips the transfer. Notifications=false suppresses ticker and logbook
+  only. Debug visibility gates menu building, stale callbacks and placeholder
+  fallback, but does not cancel asynchronous debug work already requested.
+- MOCKED: 152 action tests passed, including live transitions, reservations,
+  unloading, tax endpoints, callbacks and retained defaults. All three Lua suites
+  passed, including default-hidden hub/sector debug actions. These checks do not
+  establish native menu rendering or save/load acceptance.
+- MEASURED: x4validate includes research XML stored under `.validation/` in its
+  payload/reference scan. Keep extracted research copies as `.xml.txt`; otherwise
+  they introduce unrelated external text references into this mod's validation.
+- Full restart required for the new MD modules and dependency; /reloadui alone
+  cannot install this backend. Once installed, setting changes apply in-session.
+- VALIDATED: final `just schema` passed all 152 action tests, native MD schemas,
+  reference checks and merged build-storage AI validation. `just lua` passed all
+  three suites; `git diff --check` passed. No in-game acceptance was performed.
+
 ## How this Mod Works
+
+### 2026-09-24 - debug-checkbox-component-id
+
+- MEASURED: save_002 load beginning at debug.txt:2556 reports GetNPCBlackboard
+  rejecting cdata as its entity argument during right-click interaction. The
+  deployed debug reader passed C.GetPlayerID() directly, unlike ce_hub_status.
+- FIXED: convert through ConvertStringToLuaID(tostring(C.GetPlayerID())) before
+  reading the debug flag. No settings-state or MD change is required.
+- MOCKED: returning a real LuaJIT uint64_t and rejecting unconverted IDs makes
+  the old code fail in debugEnabled. This replaces the permissive numeric mock.
+  Lua-only fix: /reloadui suffices after deployment; native retest remains pending.
 
 ### Demand, payment and progression
 
-- READ (2026-09-24): `CE_Trade.RecordDelivery` pays 15% sales-tax income to
+- READ (2026-09-24): `CE_Trade.RecordDelivery` pays configurable sales-tax income (default 15%) to
   `faction.player` from `faction.ownerless` for completed civilian purchases in
   a currently player-owned sector, regardless of seller. It uses actual
   transferred quantity and deal unit price after consuming the duplicate guard.
@@ -52,7 +100,7 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
   ware. New games use price-normalized category budgets (see the final-demand
   entry below); existing frozen profiles keep their saved quantities. Hub purchase
   prices remain `ceil(min + (max - min) / 10)`.
-- Advancement from level L requires L+1 cumulative supplied game hours. All
+- Advancement from level L requires (L+1) cumulative supplied game hours times the configured time multiplier. All
   active positive-rate wares must have reserve stock; no requirements means no
   growth. Shortages pause progress without resetting it. Consumption drains each
   ware independently to zero. Earliest exhaustion determines exact supplied time.

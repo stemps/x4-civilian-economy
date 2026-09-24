@@ -4,6 +4,8 @@
 
 | Module | Responsibility and lifetime |
 | --- | --- |
+| `md/ce_settings.xml` | Per-save settings, defaults, validation, live economic transitions and shared growth-time calculation. Publishes the debug-menu visibility flag. |
+| `md/ce_options.xml` | Civilian Economy page in Mod Support APIs Extension Options; checkbox and stepped-slider callbacks. |
 | `md/ce_ownerless_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
 | `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
 | `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers, pricing, account funding and manager setup. |
@@ -41,11 +43,11 @@ to their actual population.
 Each hub's instantiated delivery watcher has its own namespace and captured
 record reference, preventing later loop iterations from redirecting deliveries.
 After consuming the completion guard, delivery accounting pays the player an
-additional 15% of actual delivered quantity times deal unit price if the hub's
+additional configurable percentage (default 15%) of actual delivered quantity times deal unit price if the hub's
 sector is currently player-owned. The seller's identity does not affect tax;
 native seller payments and civilian spending totals exclude this extra payout.
 Build-storage purchases are separate from civilian hub offers.
-Positive native tax transfers emit a localized message-ticker notification and
+When sales-tax notifications are enabled (the default), positive native tax transfers emit a localized message-ticker notification and
 a General logbook entry linked to the hub, using the amount actually transferred.
 Upgrade construction is announced after processing a valid build task; a saved
 `UpgradeNotifiedTarget` prevents repeats on task recovery/reload and is cleared
@@ -62,6 +64,34 @@ Demand scales by accessible population / 8,524,100,000. Population changes accru
 at the previous rate before updating rates, retaining reserves and growth. Zero
 population pauses an existing hub without deleting it. UI snapshots and commands
 are selected by exact hub identity.
+
+## Player settings
+
+`CE_Settings.State` stores five values per save: Debug=false,
+DemandMultiplier=1.0, TimeMultiplier=1.0, TaxNotifications=true and TaxPercent=15.
+Ensure fills only absent fields; Read provides defaults even before initialization.
+No UI userdata is written and loading another save restores that save's settings.
+`CE_Options` registers its two-section page whenever `Simple_Menu_API.Reloaded`
+signals. It uses the installed Mod Support APIs manifest ID `ws_2042901274`.
+Checkboxes use equal width and height from Helper.standardTextHeight and update
+on click. Sliders update on confirmation, with multipliers ranging from 0.1 to
+10.0 in 0.1 steps and tax in 1 percentage-point steps. MD validates and rounds
+typed values too.
+
+Demand changes first accrue every record at its old rate, then rebuild rates from
+frozen definitions with the new multiplier, synchronize targets, and refresh live
+offers/snapshots. Definition, reserve and deal identities are retained. Time changes
+scale the required supplied seconds, preserving absolute earned growth. The normal
+minute tick still owns qualification-triggered construction. These MD calculations
+have no player-sector/attention branch; native delivery behavior is unchanged.
+
+Debug visibility is published as `player.entity.$ce_debug_enabled`; Lua checks it
+using a converted Lua component ID, not the raw FFI value from C.GetPlayerID(),
+when building the right-click menu, invoking a retained action and applying the
+empty-placeholder fallback. Hiding the menu does not revoke already-authorized
+asynchronous debug construction. It leaves the read-only map panel visible.
+TaxNotifications suppresses both the ticker and logbook entry, without changing
+payouts. TaxPercent=0 skips the native tax transfer entirely.
 
 ## Local demand profiles
 

@@ -16,10 +16,11 @@
         <set_value name="$W.$Delivered" operation="add" exact="$Delivered"/>
         <set_value name="$W.$Paid" operation="add" exact="$Delivered * event.param.unitprice"/>
         <!-- Sector ownership is evaluated at completion, independently of the seller. -->
-        <do_if value="$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr">
-          <set_value name="$SalesTax" exact="$Delivered * event.param.unitprice * 15 / 100"/>
+        <include_actions ref="md.CE_Settings.Read"/>
+        <do_if value="$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr and $CETaxPercent gt 0">
+          <set_value name="$SalesTax" exact="$Delivered * event.param.unitprice * $CETaxPercent / 100"/>
           <transfer_money from="faction.ownerless" to="faction.player" amount="$SalesTax" result="$SalesTaxPaid"/>
-          <do_if value="$SalesTaxPaid gt 0Cr">
+          <do_if value="$SalesTaxPaid gt 0Cr and $CETaxNotifications">
             <show_notification text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]"/>
             <write_to_logbook category="general" title="{974201,126}" text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]" money="$SalesTaxPaid" object="$R.$Hub" interaction="showonmap"/>
           </do_if>

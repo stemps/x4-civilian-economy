@@ -28,7 +28,7 @@ class SalesTaxTests(unittest.TestCase):
         hub = Component(sector=Component(isplayerowned=owned))
         state = Table(Active=True, Rate=1, Reserve=0, Delivered=0, Paid=0, Offer=NIL)
         record = Table(Hub=hub, Wares=Table({Ware('food'): state}), Transfers=Table(),
-                       Operational=True, Last=0, GrowthSeconds=0)
+                       Operational=True, Last=0, GrowthSeconds=0, Level=1, Target=0)
         # Reserved amount and current offer price deliberately differ from actual sale.
         state.Price = 9000
         deal = Component(buyer=hub, seller=Component(owner=seller, money=777),

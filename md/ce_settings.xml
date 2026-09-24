@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Settings" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Per-save state, initialized lazily so startup and API reload order do not matter. -->
+    <cue name="State"><conditions><event_cue_signalled/></conditions></cue>
+    <cue name="Start" checkinterval="1s">
+      <conditions><check_value value="player.age ge 1s"/></conditions>
+      <actions><include_actions ref="Ensure"/><include_actions ref="Publish"/></actions>
+    </cue>
+    <cue name="Reload" instantiate="true">
+      <conditions><event_game_loaded/></conditions>
+      <actions><include_actions ref="Ensure"/><include_actions ref="Publish"/></actions>
+    </cue>
+    <library name="Ensure">
+      <actions>
+        <do_if value="not md.CE_Settings.State.$Debug?"><set_value name="md.CE_Settings.State.$Debug" exact="false"/></do_if>
+        <do_if value="not md.CE_Settings.State.$DemandMultiplier?"><set_value name="md.CE_Settings.State.$DemandMultiplier" exact="1.0f"/></do_if>
+        <do_if value="not md.CE_Settings.State.$TimeMultiplier?"><set_value name="md.CE_Settings.State.$TimeMultiplier" exact="1.0f"/></do_if>
+        <do_if value="not md.CE_Settings.State.$TaxNotifications?"><set_value name="md.CE_Settings.State.$TaxNotifications" exact="true"/></do_if>
+        <do_if value="not md.CE_Settings.State.$TaxPercent?"><set_value name="md.CE_Settings.State.$TaxPercent" exact="15"/></do_if>
+      </actions>
+    </library>
+    <library name="Read">
+      <actions>
+        <set_value name="$CEDemandMultiplier" exact="if md.CE_Settings.State.$DemandMultiplier? then md.CE_Settings.State.$DemandMultiplier else 1.0f"/>
+        <set_value name="$CETimeMultiplier" exact="if md.CE_Settings.State.$TimeMultiplier? then md.CE_Settings.State.$TimeMultiplier else 1.0f"/>
+        <set_value name="$CETaxPercent" exact="if md.CE_Settings.State.$TaxPercent? then md.CE_Settings.State.$TaxPercent else 15"/>
+        <set_value name="$CETaxNotifications" exact="if md.CE_Settings.State.$TaxNotifications? then md.CE_Settings.State.$TaxNotifications else true"/>
+      </actions>
+    </library>
+    <library name="Publish">
+      <actions><set_value name="player.entity.$ce_debug_enabled" exact="md.CE_Settings.State.$Debug"/></actions>
+    </library>
+    <library name="RequiredGrowth">
+      <actions>
+        <include_actions ref="md.CE_Settings.Read"/>
+        <set_value name="$RequiredGrowthSeconds" exact="($R.$Level + 1) * 3600.0f * $CETimeMultiplier"/>
+      </actions>
+    </library>
+    <!-- SettingKey/SettingValue are supplied by the options callbacks. -->
+    <library name="Change">
+      <actions>
+        <include_actions ref="md.CE_Settings.Ensure"/>
+        <set_value name="$SettingValid" exact="false"/>
+        <set_value name="$SettingCurrent" exact="null"/>
+        <do_if value="$SettingKey == '$Debug'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$Debug"/></do_if>
+        <do_elseif value="$SettingKey == '$DemandMultiplier'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$DemandMultiplier"/></do_elseif>
+        <do_elseif value="$SettingKey == '$TimeMultiplier'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$TimeMultiplier"/></do_elseif>
+        <do_elseif value="$SettingKey == '$TaxNotifications'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$TaxNotifications"/></do_elseif>
+        <do_elseif value="$SettingKey == '$TaxPercent'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$TaxPercent"/></do_elseif>
+        <set_value name="$SettingType" exact="typeof $SettingValue"/>
+        <do_if value="$SettingKey == '$Debug' or $SettingKey == '$TaxNotifications'">
+          <do_if value="$SettingValue == 0 or $SettingValue == 1 or $SettingValue == false or $SettingValue == true">
+            <set_value name="$SettingValue" exact="$SettingValue == 1 or $SettingValue == true"/>
+            <set_value name="$SettingValid" exact="true"/>
+          </do_if>
+        </do_if>
+        <do_elseif value="$SettingType.isnumeric">
+          <do_if value="$SettingKey == '$DemandMultiplier' or $SettingKey == '$TimeMultiplier'">
+            <do_if value="$SettingValue ge 0.1f and $SettingValue le 10.0f">
+              <set_value name="$SettingValue" exact="(($SettingValue * 10 + 0.5f)i) / 10.0f"/>
+              <set_value name="$SettingValid" exact="true"/>
+            </do_if>
+          </do_if>
+          <do_elseif value="$SettingKey == '$TaxPercent' and $SettingValue ge 0 and $SettingValue le 50">
+            <set_value name="$SettingValue" exact="($SettingValue + 0.5f)i"/>
+            <set_value name="$SettingValid" exact="true"/>
+          </do_elseif>
+        </do_elseif>
+        <do_if value="$SettingValid">
+          <do_if value="$SettingCurrent != $SettingValue">
+            <set_value name="$EconomicChange" exact="$SettingKey == '$DemandMultiplier' or $SettingKey == '$TimeMultiplier'"/>
+            <!-- Settle elapsed consumption using OLD rates and timing before the setting changes. -->
+            <do_if value="$EconomicChange and md.CE_OwnerlessHub.Init.$Registry?">
+              <do_for_each name="$SettingsSector" in="md.CE_OwnerlessHub.Init.$Registry.keys.list">
+                <set_value name="$R" exact="md.CE_OwnerlessHub.Init.$Registry.{$SettingsSector}"/>
+                <include_actions ref="md.CE_Reserves.Accrue"/>
+              </do_for_each>
+            </do_if>
+            <do_if value="$SettingKey == '$Debug'"><set_value name="md.CE_Settings.State.$Debug" exact="$SettingValue"/></do_if>
+            <do_elseif value="$SettingKey == '$DemandMultiplier'"><set_value name="md.CE_Settings.State.$DemandMultiplier" exact="$SettingValue"/></do_elseif>
+            <do_elseif value="$SettingKey == '$TimeMultiplier'"><set_value name="md.CE_Settings.State.$TimeMultiplier" exact="$SettingValue"/></do_elseif>
+            <do_elseif value="$SettingKey == '$TaxNotifications'"><set_value name="md.CE_Settings.State.$TaxNotifications" exact="$SettingValue"/></do_elseif>
+            <do_elseif value="$SettingKey == '$TaxPercent'"><set_value name="md.CE_Settings.State.$TaxPercent" exact="$SettingValue"/></do_elseif>
+            <do_if value="$EconomicChange and md.CE_OwnerlessHub.Init.$Registry?">
+              <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+              <do_for_each name="$SettingsSector" in="$Registry.keys.list">
+                <set_value name="$R" exact="$Registry.{$SettingsSector}"/>
+                <do_if value="$SettingKey == '$DemandMultiplier' and $R.$Definitions?">
+                  <include_actions ref="md.CE_Demand.ApplyLevel"/>
+                </do_if>
+                <include_actions ref="md.CE_Reserves.Qualify"/>
+                <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck">
+                  <include_actions ref="md.CE_Trade.UpdateOffers"/>
+                  <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+                </do_if>
+              </do_for_each>
+              <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+            </do_if>
+          </do_if>
+          <include_actions ref="md.CE_Settings.Publish"/>
+        </do_if>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

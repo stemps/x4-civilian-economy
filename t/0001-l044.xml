@@ -118,5 +118,18 @@
     <t id="139">Create an ownerless civilian hub with a fixed population of 5 billion. Automatically finish its initial construction after a valid layout is ready. Use an Argon profile if this sector has no valid civilian profile. Placement may take time.</t>
     <t id="140">Fixed debug population: 5B</t>
     <t id="141">Debug profile: Argon fallback</t>
+    <t id="142">Civilian Economy</t>
+    <t id="143">Debug</t>
+    <t id="144">Gameplay</t>
+    <t id="145">Show debug options \(right-click menu\)</t>
+    <t id="146">Civilian demand multiplier</t>
+    <t id="147">Time until next level multiplier</t>
+    <t id="148">Show sales tax income notifications</t>
+    <t id="149">Tax percentage</t>
+    <t id="150">Show civilian hub testing actions in the right-click menu. Disabled by default. Settings are stored in this save.</t>
+    <t id="151">Scale civilian consumption and purchase targets. 0.1 means 10% of normal demand; 1.0 is normal; 10.0 means ten times normal demand. Existing reserves and trades are preserved. Construction materials are unaffected.</t>
+    <t id="152">Scale the supplied time required to reach the next level. 0.1 requires one tenth of normal time; 1.0 is normal; 10.0 requires ten times normal time. Earned growth is preserved. Construction time is unaffected.</t>
+    <t id="153">Show ticker and logbook messages for civilian sales-tax income. Tax is still paid when messages are disabled. Enabled by default.</t>
+    <t id="154">Percentage of completed civilian purchases paid as extra tax income in player-owned sectors. 0 disables tax income; default is 15%. Seller payments are unaffected.</t>
   </page>
 </language>
