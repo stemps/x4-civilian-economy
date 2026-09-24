@@ -134,7 +134,8 @@ class SettingsTests(unittest.TestCase):
                 run.env['md'].CE_Settings.State.update(TaxPercent=percent,
                                                        TaxNotifications=notifications)
                 run.library('RecordDelivery')
-                self.assertEqual(payments, [('ownerless', 'player', 13000 * percent / 100)] if percent else [])
+                self.assertEqual(payments, [13000 * percent / 100] if percent else [])
+                self.assertEqual(run.env['player'].money, 100000 + 13000 * percent / 100)
                 self.assertEqual(len(run.tax_messages), 2 if percent and notifications else 0)
                 self.assertEqual(record.Wares[Ware('food')].Paid, 13000)
                 self.assertEqual(deal.seller.money, 777)

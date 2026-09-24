@@ -19,12 +19,17 @@
         <include_actions ref="md.CE_Settings.Read"/>
         <do_if value="$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr and $CETaxPercent gt 0">
           <set_value name="$SalesTax" exact="$Delivered * event.param.unitprice * $CETaxPercent / 100"/>
-          <transfer_money from="faction.ownerless" to="faction.player" amount="$SalesTax" result="$SalesTaxPaid"/>
+          <!-- Use the native scripted player reward, including its financial history.
+               A faction transfer returned a negative result in the water-delivery test.
+               Measure the account change; do not infer credited money from that result. -->
+          <set_value name="$SalesTaxBalanceBefore" exact="player.money"/>
+          <reward_player money="$SalesTax"/>
+          <set_value name="$SalesTaxPaid" exact="player.money - $SalesTaxBalanceBefore"/>
           <do_if value="$SalesTaxPaid gt 0Cr and $CETaxNotifications">
             <show_notification text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]"/>
             <write_to_logbook category="general" title="{974201,126}" text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]" money="$SalesTaxPaid" object="$R.$Hub" interaction="showonmap"/>
           </do_if>
-          <debug_text text="'[CE] Sales tax: hub=%s ware=%s amount=%s income=%s'.[$R.$Hub,$Ware,$Delivered,$SalesTaxPaid]"/>
+          <debug_text text="'[CE] Sales tax: hub=%s ware=%s amount=%s requested=%s income=%s balance_before=%s balance_after=%s notifications=%s'.[$R.$Hub,$Ware,$Delivered,$SalesTax,$SalesTaxPaid,$SalesTaxBalanceBefore,player.money,$CETaxNotifications]"/>
         </do_if>
         <debug_text text="'[CE] Completed delivery: ware=%s amount=%s paid=%s reserve=%s delivered_total=%s'.[$Ware,$Delivered,$Delivered * event.param.unitprice,$W.$Reserve,$W.$Delivered]"/>
         <include_actions ref="md.CE_OwnerlessHub.UpdateOffers"/>

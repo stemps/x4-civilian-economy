@@ -47,8 +47,13 @@ additional configurable percentage (default 15%) of actual delivered quantity ti
 sector is currently player-owned. The seller's identity does not affect tax;
 native seller payments and civilian spending totals exclude this extra payout.
 Build-storage purchases are separate from civilian hub offers.
-When sales-tax notifications are enabled (the default), positive native tax transfers emit a localized message-ticker notification and
-a General logbook entry linked to the hub, using the amount actually transferred.
+Tax income uses vanilla's `reward_player` action. The synchronous difference in
+`player.money` before/after the reward determines the amount actually credited;
+the debug trace records requested income and both balances. Native financial
+history is expected to classify this as a generic scripted/mission reward (native
+display remains to be verified). When sales-tax notifications are enabled (the
+default), positive credited income emits a localized message-ticker notification
+and a General logbook entry linked to the hub.
 Upgrade construction is announced after processing a valid build task; a saved
 `UpgradeNotifiedTarget` prevents repeats on task recovery/reload and is cleared
 on hub loss. Completion is announced only on level commit, after offer refresh.

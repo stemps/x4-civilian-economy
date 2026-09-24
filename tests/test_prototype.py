@@ -150,7 +150,14 @@ class ContentTests(unittest.TestCase):
         self.assertEqual(set(listener.attrib),{'buyer','seller'})
         self.assertFalse(t.xpath('//cue[@name="Start" or @name="WatchLevelHub"]'))
         self.assertTrue(Runner().construction.xpath('//library[@name="Queue"]//do_if[contains(@value,"builds.queued.count")]'))
-        self.assertFalse(any(tree.xpath('//reward_player|//set_faction_relation|//destroy_object|//remove_trade_offer') for tree in Runner().scripts.values()))
+        self.assertFalse(any(tree.xpath('//set_faction_relation|//destroy_object|//remove_trade_offer') for tree in Runner().scripts.values()))
+        # Scripted rewards are restricted to the guarded completed-delivery tax.
+        rewards = [node for tree in Runner().scripts.values() for node in tree.xpath('//reward_player')]
+        self.assertEqual(len(rewards), 1)
+        self.assertEqual(rewards[0].get('money'), '$SalesTax')
+        self.assertEqual(rewards[0].getparent().get('value'),
+                         '$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr and $CETaxPercent gt 0')
+        self.assertEqual(rewards[0].xpath('ancestor::library/@name'), ['RecordDelivery'])
         patch=E.parse(str(ROOT/'aiscripts/build.buildstorage.xml')).find('replace')
         base=E.parse(str(REF/'aiscripts/build.buildstorage.xml'))
         self.assertEqual(len(base.xpath(patch.get('sel'))),1)

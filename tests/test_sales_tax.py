@@ -1,4 +1,4 @@
-"""Execute shipped delivery accounting; money transfers are native-action mocks."""
+"""Execute shipped delivery accounting; native rewards mutate the mocked account."""
 import unittest
 from support import Runner, Table, Component, Ware, NIL
 
@@ -10,7 +10,8 @@ class SalesTaxTests(unittest.TestCase):
                 with self.subTest(seller=seller, player_sector=owned):
                     run, record, deal, payments = self.fixture(seller, owned)
                     run.library('RecordDelivery')
-                    self.assertEqual(payments, [('ownerless', 'player', 1950)] if owned else [])
+                    self.assertEqual(payments, [1950] if owned else [])
+                    self.assertEqual(run.env['player'].money, 100000 + (1950 if owned else 0))
                     self.assertEqual(len(run.tax_messages), 2 if owned else 0)
                     if owned:
                         self.assertEqual([message[0] for message in run.tax_messages],
@@ -39,14 +40,16 @@ class SalesTaxTests(unittest.TestCase):
         run.stubs.update(UpdateOffers=lambda: None, PublishDiagnostics=lambda: None,
                          PublishAllDiagnostics=lambda: None)
         payments = []
-        def transfer(node):
+        run.env['player'].money = 100000
+        def reward(node):
             self.assertNotIn(deal, record.Transfers)
-            payments.append(tuple(run.expr(node.get(key)) for key in ('from', 'to', 'amount')))
-            run.set(node.get('result'), run.expr(node.get('amount')) if actual_paid is None else actual_paid)
-        run.native['transfer_money'] = transfer
+            money = run.expr(node.get('money'))
+            payments.append(money)
+            run.env['player'].money += money if actual_paid is None else actual_paid
+        run.native['reward_player'] = reward
         run.tax_messages = []
         def message(node):
-            self.assertTrue(payments)  # Announce only after native transfer returns.
+            self.assertTrue(payments)  # Announce only after native reward changes the account.
             self.assertNotIn(deal, record.Transfers)
             self.assertEqual(node.get('text'),
                              "{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]")
@@ -74,12 +77,21 @@ class SalesTaxTests(unittest.TestCase):
             self.assertEqual(payments, [])
             self.assertEqual(run.tax_messages, [])
 
-    def test_message_uses_actual_payment_and_suppresses_unsuccessful_transfer(self):
-        for paid in (0, 1000):
+    def test_message_uses_account_delta_and_suppresses_nonpositive_income(self):
+        for paid in (-1000, 0, 1000):
             run, record, deal, payments = self.fixture(actual_paid=paid)
             run.library('RecordDelivery')
             self.assertEqual(run.tax_messages,
-                             [('show_notification', paid), ('write_to_logbook', paid)] if paid else [])
+                             [('show_notification', paid), ('write_to_logbook', paid)] if paid > 0 else [])
+            self.assertEqual(run.env['SalesTaxPaid'], paid)
+
+    def test_reported_water_delivery_credits_player_and_announces_income(self):
+        run, record, deal, payments = self.fixture(amount=1666, price=3700)
+        run.library('RecordDelivery')
+        self.assertEqual(payments, [924630])
+        self.assertEqual(run.env['player'].money, 1024630)
+        self.assertEqual(run.tax_messages,
+                         [('show_notification', 924630), ('write_to_logbook', 924630)])
 
 
 if __name__ == '__main__':

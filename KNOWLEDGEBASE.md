@@ -43,6 +43,30 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ## How this Mod Works
 
+### 2026-09-24 - tax-negative-transfer-result
+
+- MEASURED: debug.txt at game time 240902.10 records the new debug hub
+  `0x1a6ee4` receiving 1,666 water, with sale value 6,164,200 internal cents.
+  Its tax branch ran but `transfer_money/@result` was -924,600 cents. The
+  positive-result guard therefore suppressed both ticker and General logbook.
+  No before/after player balance was recorded, so this does not establish
+  whether the old transfer credited or debited the player.
+- SUPERSEDES the original transfer-result assumption below: tax now uses
+  `reward_player`, following `reference/md/gm_supplyfactory.xml:661`, and
+  computes credited income from the synchronous `player.money` delta. The
+  trace includes requested income, balances and the notification setting.
+- READ: native `ego_detailmonitorhelper/helper.lua` handles `script_add`
+  financial entries as mission rewards. That is the expected generic label
+  for the replacement payout; creation/display of its native transaction entry
+  still requires an in-game test. CE's descriptive tax entry remains in General.
+- MOCKED: tax tests now mutate the player balance rather than inventing a
+  positive transfer return. They cover the reported water sale, no/negative/
+  partial credited income, current sector ownership, duplicate guard and
+  notification/percentage settings. Native rounding is not modeled.
+- VALIDATED: `just schema` passed all 153 action tests, native MD schemas,
+  reference checks and the merged build-storage AI check. Full restart is
+  required; the replacement payout has not yet been tested in-game.
+
 ### 2026-09-24 - debug-checkbox-component-id
 
 - MEASURED: save_002 load beginning at debug.txt:2556 reports GetNPCBlackboard
@@ -56,8 +80,9 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### Demand, payment and progression
 
-- READ (2026-09-24): `CE_Trade.RecordDelivery` pays configurable sales-tax income (default 15%) to
-  `faction.player` from `faction.ownerless` for completed civilian purchases in
+- READ (2026-09-24, updated after the negative-transfer-result test):
+  `CE_Trade.RecordDelivery` pays configurable sales-tax income (default 15%) via
+  `reward_player` for completed civilian purchases in
   a currently player-owned sector, regardless of seller. It uses actual
   transferred quantity and deal unit price after consuming the duplicate guard.
   Seller payment and `$Paid` remain the original transaction value. Zero-value
@@ -261,8 +286,10 @@ hub and open **Custom Actions → Civilian Economy — Testing**.
   `object` and `interaction="showonmap"` for station-defence rewards, and has
   optional generic money-added notifications. `md/diplomacy.xml` pairs ticker
   messages with log entries. CE tax income uses that pair, with localized
-  sector/ware details and native money formatting. `transfer_money/@result`
-  supplies the actual amount paid; zero results produce no success message.
+  sector/ware details and native money formatting. SUPERSEDED assumption:
+  `transfer_money/@result` was originally treated as positive paid income;
+  the later water-delivery test above disproved that sign assumption. Messages
+  now use positive player-balance delta after `reward_player` instead.
   Notification display still needs in-game verification.
 
 - A station is not an entity blackboard: the prototype's station marker write
