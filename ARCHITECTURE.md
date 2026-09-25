@@ -1,5 +1,45 @@
 # Runtime architecture
 
+## Release tooling
+
+The release workflow mirrors Supply Chain View. `just release` requires clean
+`main` tracking and matching `origin/main`. It suggests the next minor version
+(with an editable override), opens commit subjects in Git's configured editor,
+updates `VERSION`, `CHANGELOG.md` and the manifest version/date, runs `just check`,
+commits only that metadata, creates an annotated tag and atomically pushes both.
+Before the first tag, CE derives the suggestion from the existing manifest
+(version 300 suggests 0.4.0); later releases derive it from the latest tag.
+`VERSION` and `CHANGELOG.md` are created by the first release, not pre-seeded.
+
+- `scripts/release.py`: preflight, version/notes, metadata, validation and Git
+  orchestration; preserves concurrent edits and rolls back pre-commit failures.
+- `scripts/release_archive.py`: deterministic ZIPs under `civilian_economy/`,
+  local working-tree builds and reconstruction from verified remote tags.
+  Runtime selection includes the two manifests, UI Lua and XML in `md`, `t`,
+  `aiscripts`, `assets`, `index`, `libraries` and nested `extensions` patches.
+  Promotional images, docs, tools and tests are excluded.
+- `scripts/nexus_publish.py`: Nexus upload/version/changelog publication with
+  resumable receipts in ignored `dist/nexus/`. `nexus.json` targets mod 2405;
+  `X4_NEXUS_KEY` supplies credentials. With `file_id: null`, exactly one main
+  file must exist. For an empty page, set `create_new_file: true`; the successful
+  file binding is retained locally for subsequent releases.
+- `scripts/manual_bbcode.py`: converts the released `docs/MANUAL.md` to
+  `dist/nexus/<tag>/description.bbcode.txt` and opens Notepad for copy/paste.
+  Unsupported Markdown fails before releasing or publishing. The source manual
+  is never modified, and description editing on Nexus remains manual.
+  Continued numbered lists use explicit numbers because Nexus BBCode has no
+  list-start attribute; this preserves CE's dependency-section numbering.
+- `test/`: isolated release repositories/local remotes and fake HTTP responses;
+  run via `just test-release`, also included in `just check`. This directory is
+  separate from the MD controller tests in `tests/`.
+
+`just build-zip` packages dirty and untracked runtime files without changing Git
+or versions. `just publish-nexus vX.Y.Z` resumes an existing release;
+`just nexus-description vX.Y.Z` regenerates only its manual handoff. Release
+tasks use `uv` with pinned `markdown-it-py==4.0.0`, or the existing `CE_PYTHON`
+override (which must have the dependencies installed). Retain `dist/nexus`
+receipts to resume uncertain uploads safely.
+
 ## Civil unrest
 
 `CE_Unrest` owns per-record shortage contributions, eligibility/grace deadlines,

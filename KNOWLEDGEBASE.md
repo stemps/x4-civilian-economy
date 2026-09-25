@@ -1,5 +1,19 @@
 # Mod-local Knowledgebase
 
+## 2026-09-25 - release-runtime-selection
+
+- SOURCE: SCV's release archive whitelist covers UI Lua, MD and translations;
+  CE also requires XML under `aiscripts`, `assets`, `index` and `libraries`.
+  CE's shared archive selector includes these and nested `extensions` XML so
+  local builds and tagged reconstruction use the same runtime membership.
+- SOURCE: the first release suggests the next minor version from the existing
+  manifest when no release tags exist. Do not pre-create `VERSION`: SCV's
+  inherited history guard rejects a VERSION file without a matching release tag.
+- SOURCE: release receipts and the Nexus file binding live in ignored
+  `dist/nexus/`; preserving them matters for safe resumption after uncertain
+  network responses. The released manual is read from its Git commit, not from
+  later edits in the working tree.
+
 ## 2026-09-25 - capital-drone-capacity-aborts-launch
 
 - MEASURED IN GAME: debug.txt at 241496.72 records `raid_3` at hub 0x4acfe,
