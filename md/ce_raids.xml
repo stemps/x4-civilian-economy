@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Raids" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="State"><conditions><event_cue_signalled/></conditions></cue>
+    <library name="Ensure">
+      <actions>
+        <do_if value="not md.CE_Raids.State.$Groups?"><set_value name="md.CE_Raids.State.$Groups" exact="table[]"/></do_if>
+        <do_if value="not md.CE_Raids.State.$NextGroupId?"><set_value name="md.CE_Raids.State.$NextGroupId" exact="0"/></do_if>
+        <!-- Older saves key one group by its hub. Retain that entry and add its origin;
+             new groups use monotonically increasing numeric IDs. -->
+        <do_for_each name="$RaidLegacyKey" in="md.CE_Raids.State.$Groups.keys.list">
+          <do_if value="not md.CE_Raids.State.$Groups.{$RaidLegacyKey}.$Hub?">
+            <set_value name="md.CE_Raids.State.$Groups.{$RaidLegacyKey}.$Hub" exact="$RaidLegacyKey"/>
+          </do_if>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="Request">
+      <actions>
+        <include_actions ref="md.CE_Raids.Ensure"/>
+        <set_value name="$IncidentSuccess" exact="false"/>
+        <set_value name="$IncidentFailure" exact="{974201,231}"/>
+        <set_value name="$RaidTier" exact="$IncidentTier"/>
+        <set_value name="$IncidentKind" exact="'raid_%1'.[$RaidTier]"/>
+        <set_value name="$RaidHubActive" exact="0"/>
+        <do_for_each name="$RaidKey" in="md.CE_Raids.State.$Groups.keys.list">
+          <do_if value="md.CE_Raids.State.$Groups.{$RaidKey}.$Hub == $R.$Hub"><set_value name="$RaidHubActive" operation="add"/></do_if>
+        </do_for_each>
+        <do_if value="not $IncidentDebug and $RaidTier == 3 and player.age / 1s lt $U.$NextCapital"><set_value name="$RaidTier" exact="2"/></do_if>
+        <do_if value="$RaidHubActive lt 5">
+          <set_value name="$RaidDefinitions" exact="[macro.ship_arg_m_bomber_01_a_macro]"/>
+          <set_value name="$RaidSizes" exact="[tag.dock_m]"/>
+          <do_if value="$RaidTier ge 2">
+            <append_list_elements name="$RaidDefinitions" other="[macro.ship_arg_m_bomber_01_a_macro,macro.ship_arg_s_fighter_01_a_macro,macro.ship_arg_s_fighter_01_a_macro]"/>
+            <append_list_elements name="$RaidSizes" other="[tag.dock_m,tag.dock_s,tag.dock_s]"/>
+          </do_if>
+          <do_if value="$RaidTier == 3">
+            <append_list_elements name="$RaidDefinitions" other="[macro.ship_arg_l_destroyer_01_a_macro,macro.ship_arg_s_fighter_01_a_macro,macro.ship_arg_s_fighter_01_a_macro]"/>
+            <append_list_elements name="$RaidSizes" other="[tag.dock_l,tag.dock_s,tag.dock_s]"/>
+          </do_if>
+          <set_value name="$RaidDocks" exact="[]"/>
+          <set_value name="$RaidValid" exact="true"/>
+          <do_for_each name="$RaidSize" in="$RaidSizes">
+            <!-- Reserve distinct external berths within this synchronous launch.
+                 Compatibility alone can return the same occupied dock repeatedly. -->
+            <find_dockingbay name="$RaidDockCandidates" object="$R.$Hub" checkoperational="true" multiple="true"><match_dock size="$RaidSize" free="true" storage="false"/></find_dockingbay>
+            <set_value name="$RaidDock" exact="null"/>
+            <do_for_each name="$RaidDockCandidate" in="$RaidDockCandidates">
+              <do_if value="not $RaidDock and not $RaidDocks.indexof.{$RaidDockCandidate}"><set_value name="$RaidDock" exact="$RaidDockCandidate"/></do_if>
+            </do_for_each>
+            <do_if value="$RaidDock"><append_to_list name="$RaidDocks" exact="$RaidDock"/></do_if>
+            <do_else>
+              <set_value name="$RaidValid" exact="false"/>
+              <debug_text text="'[CE] raid dock capacity unavailable: hub=%s tier=%s size=%s free_candidates=%s reserved=%s'.[$R.$Hub,$RaidTier,$RaidSize,$RaidDockCandidates.count,$RaidDocks.count]"/>
+            </do_else>
+          </do_for_each>
+          <set_value name="$IncidentFailure" exact="{974201,232}"/>
+          <do_if value="$RaidValid">
+            <set_value name="$RaidGroup" exact="table[$Hub=$R.$Hub,$Ships=[],$Tier=$RaidTier,$Sector=$R.$Hub.sector,$Record=$R,$End=player.age + 45min,$Withdraw=false,$Debug=$IncidentDebug]"/>
+            <!-- Register before creation, including failed partial launches, so no ships escape caps/cleanup. -->
+            <set_value name="md.CE_Raids.State.$NextGroupId" operation="add"/>
+            <set_value name="$RaidGroup.$Id" exact="md.CE_Raids.State.$NextGroupId"/>
+            <set_value name="md.CE_Raids.State.$Groups.{md.CE_Raids.State.$NextGroupId}" exact="$RaidGroup"/>
+            <set_value name="$IncidentFailure" exact="{974201,233}"/>
+            <do_for_each name="$RaidMacro" in="$RaidDefinitions" counter="$RaidIndex">
+              <do_if value="$RaidValid">
+                <create_ship name="$RaidShip" dock="$RaidDocks.{$RaidIndex}" macro="$RaidMacro" commandeerable="false">
+                  <owner exact="$R.$Hub.owner" overridenpc="true"/>
+                  <pilot><select faction="faction.argon" tags="tag.commander"/><skills><skill type="piloting" exact="12"/><skill type="morale" exact="12"/></skills></pilot>
+                </create_ship>
+                <do_if value="$RaidShip.exists">
+                  <append_to_list name="$RaidGroup.$Ships" exact="$RaidShip"/>
+                  <do_if value="$RaidIndex == 1 or $RaidMacro == macro.ship_arg_l_destroyer_01_a_macro">
+                    <set_value name="$RaidGroup.$Leader" exact="$RaidShip"/>
+                  </do_if>
+                  <!-- Capital cargo drones have a fixed budget. Generated combat
+                       drones otherwise fill the same bay before add_units runs. -->
+                  <do_if value="$RaidMacro == macro.ship_arg_l_destroyer_01_a_macro">
+                    <generate_loadout result="$RaidLoadouts" faction="faction.argon" macro="$RaidMacro" level="1.0f" flags="units" invertflags="true"/>
+                  </do_if>
+                  <do_else>
+                    <generate_loadout result="$RaidLoadouts" faction="faction.argon" macro="$RaidMacro" level="if $RaidTier == 1 then 0.4f else 0.7f"/>
+                  </do_else>
+                  <do_if value="$RaidLoadouts.count gt 0"><apply_loadout object="$RaidShip" loadout="$RaidLoadouts.{1}"/></do_if>
+                  <do_if value="$RaidMacro == macro.ship_arg_l_destroyer_01_a_macro">
+                    <debug_text text="'[CE] raid drone provisioning: group=%s ship=%s capacity=%s used=%s free=%s cargo=%s'.[$RaidGroup.$Id,$RaidShip,$RaidShip.units.maxcount,$RaidShip.units.count,$RaidShip.units.free,$RaidShip.units.{unitcategory.transport}.count]"/>
+                    <add_units object="$RaidShip" category="unitcategory.transport" mk="1" faction="faction.argon" exact="[5 - $RaidShip.units.{unitcategory.transport}.count,0].max"/>
+                    <do_if value="$RaidShip.units.{unitcategory.transport}.count lt 5">
+                      <set_value name="$RaidValid" exact="false"/>
+                      <set_value name="$IncidentFailure" exact="{974201,236}"/>
+                      <debug_text text="'[CE] raid cargo-drone provisioning failed: group=%s ship=%s capacity=%s used=%s free=%s cargo=%s'.[$RaidGroup.$Id,$RaidShip,$RaidShip.units.maxcount,$RaidShip.units.count,$RaidShip.units.free,$RaidShip.units.{unitcategory.transport}.count]"/>
+                    </do_if>
+                  </do_if>
+                  <find_object_component name="$RaidEngine" object="$RaidShip" class="class.engine"/>
+                  <do_if value="not $RaidEngine or not $RaidShip.pilot or not $RaidShip.dock"><set_value name="$RaidValid" exact="false"/></do_if>
+                </do_if>
+                <do_else><set_value name="$RaidValid" exact="false"/></do_else>
+              </do_if>
+            </do_for_each>
+            <do_if value="$RaidValid">
+              <include_actions ref="md.CE_RaidBehaviour.Prepare"/>
+              <set_value name="$IncidentSuccess" exact="true"/>
+            </do_if>
+            <do_else>
+              <set_value name="$RaidGroup.$Withdraw" exact="true"/>
+              <debug_text text="'[CE] raid launch aborted: group=%s hub=%s spawned=%s reason=%s; partial ships withdraw without pirate ownership or fleet activation'.[$RaidGroup.$Id,$RaidGroup.$Hub,$RaidGroup.$Ships.count,$IncidentFailure]"/>
+            </do_else>
+          </do_if>
+        </do_if>
+        <do_if value="not $IncidentSuccess"><include_actions ref="md.CE_UnrestNotifications.Failure"/></do_if>
+      </actions>
+    </library>
+    <cue name="Lifecycle" instantiate="true" checkinterval="5s">
+      <conditions><check_value value="true"/></conditions>
+      <actions>
+        <include_actions ref="md.CE_Raids.Ensure"/>
+        <do_for_each name="$RaidKey" in="md.CE_Raids.State.$Groups.keys.list">
+          <set_value name="$RaidGroup" exact="md.CE_Raids.State.$Groups.{$RaidKey}"/>
+          <do_if value="@$RaidGroup.$Version == 2"><include_actions ref="md.CE_RaidBehaviour.Tick"/></do_if>
+          <do_else>
+          <do_if value="player.age ge $RaidGroup.$End or not $RaidGroup.$Hub.exists or $RaidGroup.$Hub.iswreck or (not $RaidGroup.$Debug and $RaidGroup.$Record.$Unrest.$Stage lt 2)"><set_value name="$RaidGroup.$Withdraw" exact="true"/></do_if>
+          <do_for_each name="$RaidShip" in="$RaidGroup.$Ships" counter="$RaidIndex" reverse="true">
+            <!-- Repair tracked raids from older saves and initialize a replacement pilot.
+                 Ship components have no MD blackboard; only the pilot entity does. -->
+            <do_if value="$RaidShip.exists and not $RaidShip.iswreck and not $RaidShip.isplayerowned and $RaidShip.pilot">
+              <do_if value="not $RaidShip.pilot.$ce_unrest_sector?">
+                <set_value name="$RaidShip.pilot.$ce_unrest_sector" exact="$RaidGroup.$Sector"/>
+                <set_value name="$RaidShip.pilot.$ce_unrest_withdraw" exact="false"/>
+              </do_if>
+            </do_if>
+            <do_if value="not $RaidShip.exists or $RaidShip.iswreck or $RaidShip.isplayerowned">
+              <do_if value="$RaidShip.exists and $RaidShip.isplayerowned and $RaidShip.pilot"><remove_value name="$RaidShip.pilot.$ce_unrest_sector"/><remove_value name="$RaidShip.pilot.$ce_unrest_withdraw"/></do_if>
+              <remove_value name="$RaidGroup.$Ships.{$RaidIndex}"/>
+            </do_if>
+            <do_elseif value="$RaidGroup.$Withdraw and $RaidShip.pilot and not $RaidShip.boardingoperations.count">
+              <do_if value="not @$RaidShip.pilot.$ce_unrest_withdraw">
+                <set_value name="$RaidShip.pilot.$ce_unrest_withdraw" exact="true"/>
+                <remove_object_commander object="$RaidShip"/>
+                <do_for_each name="$RaidOrder" in="$RaidShip.orders"><cancel_order order="$RaidOrder"/></do_for_each>
+                <create_order object="$RaidShip" id="'Wait'" default="true"><param name="holdfire" value="true"/></create_order>
+                <create_order object="$RaidShip" id="'MoveWait'" immediate="true">
+                  <param name="destination" value="[$RaidGroup.$Sector,position.[150km,0m,150km]]"/>
+                  <param name="withdraw" value="true"/>
+                </create_order>
+              </do_if>
+              <do_elseif value="$RaidShip.attention lt attention.visible and player.age gt $RaidShip.lastattacktime + 2min and not player.entity.hascontext.{$RaidShip}">
+                <destroy_object object="$RaidShip" explosion="false"/>
+              </do_elseif>
+            </do_elseif>
+          </do_for_each>
+          <do_if value="$RaidGroup.$Ships.count == 0"><remove_value name="md.CE_Raids.State.$Groups.{$RaidKey}"/></do_if>
+          </do_else>
+        </do_for_each>
+      </actions>
+    </cue>
+  </cues>
+</mdscript>

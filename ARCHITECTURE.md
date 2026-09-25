@@ -1,5 +1,87 @@
 # Runtime architecture
 
+## Civil unrest
+
+`CE_Unrest` owns per-record shortage contributions, eligibility/grace deadlines,
+stage hysteresis and the continuous critical timer. `CE_Reserves.Accrue` calls it
+before consuming reserves, so shortage starts at depletion within the elapsed
+game-time interval. Supplied time first recovers existing points; recovery cannot
+prepay future deprivation. Frozen racial profiles include ware categories; older
+saves classify existing definitions lazily. The minute controller schedules hubs
+in rotating order.
+
+`CE_Sabotage` selects a player station before choosing an applicable effect. Its
+saved station table holds cooldowns and pending destruction; its pause table owns
+temporary production pauses. `ui/ce_unrest.lua` wraps the native station overview
+pause control and relinquishes CE ownership when the player intervenes. Hacks
+use the native returned affected-component list; cargo uses actual dropped
+amounts. Destruction waits for a missing/wrecked module before committing its
+popup and destructive cooldown. No last-module or last-dock exclusion exists.
+
+`CE_Raids` owns saved group IDs, composition, berth preflight and docked creation.
+Up to five groups may be active per hub, including departing and withdrawing
+ones; there are no global or capital-group caps. Ordinary launch cooldowns remain
+one hour (four hours for capital launches); explicit debug launches bypass them.
+Capital commanders are L destroyers with five verified cargo drones; other tiers
+use their first M. All remaining ships use native `assignment.attack`.
+Capital equipment generation excludes the `units` flag so optional combat/repair
+drones cannot consume the shared drone bay before the five cargo drones are added.
+Failed partial launches never activate pirate ownership or fleet orders; their
+neutral, ungrouped, weapons-held departure is withdrawal cleanup, not a raid.
+
+`CE_RaidBehaviour` controls version-2 groups through saved `departing`, `raiding`
+and `withdrawing` phases. It holds weapons and issues individual MoveWait orders
+to a safe sector rally point beyond the hub. Every surviving member must undock
+and finish its rally order before the commander receives native Plunder. The
+10-minute departure deadline produces safe withdrawal on failure. Pending launches
+reserve cooldowns; failed departures restore them only if no newer reservation
+replaced them. The 45-minute lifetime and single incident popup commit when
+piracy starts. Regrouping cannot replay that popup. Old active groups retain their
+legacy cleanup; they are not upgraded to the new behaviour.
+
+CE AI hooks require true ownership plus versioned pilot blackboard markers.
+`move.seekenemies` preserves the cargo-carrying player-flown ship exception and
+3:1 player ownership weighting; `order.plunder` allows all container goods while
+retaining native demands, responses, collection and refusal attacks. It suppresses
+cover and offload trips. `interrupt.restock` blocks autonomous resupply; full
+holds or loss of the capital commander's cargo drones cause withdrawal.
+`move.generic` rejects remote destinations before native gate travel and signals
+the MD controller to replan locally, with a five-second return delay and a
+30-second controller retry limit. No `move.gate` abort remains.
+
+Raids use native combat and retaliation, including against stations. Plunder mode
+0 selects ship robbery, but CE no longer filters weapon targets or disengages
+when stations attack. Five AI patches retain cargo/target selection, no disguise
+or resupply/offload trips, sector validation and departure/withdrawal guards.
+Added blocking waits carry sinceversion markers with script versions 24
+(move.generic), 28 (Attack) and 7 (Plunder), preserving native resume positions
+in pre-CE saves. Route rejection can still request a local regroup.
+Transition/stall logs record group, commander, ship order, dock and
+drones; demand logs identify the selected target. Capture releases CE markers;
+boarding suspends reordering/disposal. Clearing unrest requests withdrawal for
+all groups from that hub, including debug groups. Ship components cannot store
+script variables, so all AI identity/control markers live on pilots.
+
+`CE_UnrestNotifications` owns penalty tickers, interactive target-monitor alerts,
+General logbook entries and map fallback. Saved penalty state suppresses repeat
+tickers; committed incidents own their alert, including delayed destruction.
+`CE_Trade` reduces only the additional player-sector reward, leaving recorded
+seller payments intact. Routine payment-message settings do not gate unrest
+tickers. Snapshot v3 has optional slot 20 containing score, stage, direction,
+critical time remaining, causes and a one-use debug token; older snapshots remain
+readable but cannot authorize unrest actions.
+
+`CE_DebugUnrest` consumes command-specific tokens after checking debug mode,
+hub identity and ownership. Explicit incidents share production handlers and
+notifications, bypass timing/score gates and retain applicability and raid caps.
+Exact requested effects never fall back. Stage changes use real scoring and
+transition handling. Resetting cooldowns preserves pending and active effects.
+
+Validation executes shipped actions with native-effect mocks, Lua UI contracts,
+native schemas and merged AI diffs. These checks do not replace in-game wreck,
+cargo, docking, combat, boarding and save/load acceptance. MD, faction and AI
+changes require a full game restart; `/reloadui` alone is insufficient.
+
 ## Layers and ownership
 
 | Module | Responsibility and lifetime |
@@ -22,6 +104,7 @@
 | `ui/ce_hub_status.lua` | Read-only cached hub snapshots, metric formatting and explanatory text for the map. |
 | `ui/ce_map_status.lua` | Civilian-only map selection table, height-limited native scrolling and native reserve/growth bars. |
 | `libraries/`, `assets/`, `index/` | Cumulative construction plans and hub definition using vanilla modules/artwork. |
+| `images/` | Promotional images for posting with the mod; separate from runtime game assets. |
 | `aiscripts/build.buildstorage.xml` | Excludes registered hubs from vanilla builder recruitment; MD assigns their builders. |
 | `t/` | Localized names and diagnostics. |
 | `tests/`, `tools/` | MD action tests, Lua mocks, plan generation and schema/toolkit validation. |

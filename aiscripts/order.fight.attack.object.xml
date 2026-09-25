@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<diff>
+  <replace sel="/aiscript/@version">28</replace>
+  <add sel="/aiscript/attention/actions" pos="prepend">
+    <do_if value="this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2 and (not @this.ship.pilot.$ce_unrest_combat or $primarytarget.sector != this.ship.pilot.$ce_unrest_sector)">
+      <set_value name="this.ship.pilot.$ce_unrest_replan" exact="true"/>
+      <cease_fire object="this.ship"/>
+      <wait exact="5s" sinceversion="28"/>
+      <return value="false"/>
+    </do_if>
+  </add>
+</diff>

@@ -35,6 +35,7 @@
               <include_actions ref="md.CE_DebugCreate.Tick"/>
               <include_actions ref="PublishDiagnostics"/>
             </do_for_each>
+            <include_actions ref="md.CE_Unrest.Schedule"/>
             <include_actions ref="PublishAllDiagnostics"/>
           </actions>
         </cue>
@@ -471,7 +472,7 @@
             <set_value name="$CandidateDefinitions" exact="[]"/>
             <include_actions ref="md.CE_PopulationProfiles.Build"/>
             <include_actions ref="md.CE_Construction.Resolve"/>
-            <set_value name="$RaceProfiles.{$ProfileKey}" exact="table[$Race=if $ProfileRace then $ProfileRace.id else '',$Definitions=$CandidateDefinitions,$Valid=$CandidateComplete and $CandidateValid,$Construction=$Construction]"/>
+            <set_value name="$RaceProfiles.{$ProfileKey}" exact="table[$Race=if $ProfileRace then $ProfileRace.id else '',$Definitions=$CandidateDefinitions,$Valid=$CandidateComplete and $CandidateValid,$Construction=$Construction,$Categories=@$CandidateCategories]"/>
           </do_if>
           <set_value name="$SectorProfiles.{$Sector}" exact="$RaceProfiles.{$ProfileKey}"/>
         </do_if>

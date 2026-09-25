@@ -107,6 +107,8 @@ local function drawSummary(panel, s)
             return (not now or not now.available or now.stale or now.profileError) and M.state(now)
                 or (now.pausedOffers and M.text(70) or '')
         end)
+    elseif s.unrest then
+        summaryLine(4,function() return M.unrest(current()) end)
     end
 end
 

@@ -100,6 +100,12 @@ local function decode(id, s)
     result.testUpgrade = yes(s[10])
     result.populationOverride, result.debugFallback = number(s[17]), yes(s[18])
     result.debugInitial = yes(s[19]) and not yes(s[15])
+    if type(s[20]) == 'table' then
+        local u = s[20]
+        result.unrest = {score=number(u[1]) or 0, stage=number(u[2]) or 0,
+            direction=(tonumber(u[3]) == -1 and -1 or (tonumber(u[3]) == 1 and 1 or 0)), critical=number(u[4]) or -1,
+            causes=type(u[5]) == 'table' and u[5] or {}, token=number(u[6])}
+    end
     result.pauseReason = s[12]
     result.profileError, result.stale = yes(s[14]), yes(s[15])
     result.growth, result.required = number(s[5]), number(s[6])
@@ -212,6 +218,15 @@ function M.population(value)
     if value >= 1e6 then return M.text(73, value / 1e6) end
     return string.format('%.0f', value)
 end
+function M.unrest(s)
+    local u = s and s.unrest
+    if not u then return '' end
+    local direction = u.direction > 0 and 254 or (u.direction < 0 and 255 or 256)
+    local value = M.text(251, u.score, M.text(260 + u.stage), M.text(direction))
+    if #u.causes > 0 then value = value .. '\n' .. M.text(252, table.concat(u.causes, ', ')) end
+    if u.critical >= 0 then value = value .. '\n' .. M.text(253, math.ceil(u.critical / 60)) end
+    return value
+end
 function M.state(s)
     local facts = M.classify(s)
     if not facts.available then return M.text(68) end
@@ -231,6 +246,7 @@ end
 function M.tooltip(s)
     local level = s.level and string.format('%.0f', s.level) or M.text(69)
     return M.text(77) .. ': ' .. level .. '\n' .. M.text(76) .. ': ' .. M.population(s.population)
+        .. (s.unrest and ('\n' .. M.unrest(s)) or '')
 end
 function M.progress(s)
     local facts = M.classify(s)
@@ -267,6 +283,7 @@ end
 function M.signature(s)
     if not s then return '' end
     local parts = {tostring(s.id), s.available and 'ready' or 'missing', tostring(s.level), tostring(s.target), tostring(s.stale), tostring(s.profileError), tostring(s.pausedOffers)}
+    if s.unrest then parts[#parts + 1] = tostring(s.unrest.stage) .. ':' .. table.concat(s.unrest.causes, ',') end
     for _, w in ipairs(s.wares) do parts[#parts + 1] = w.key .. ':' .. M.wareCode(w) end
     return table.concat(parts, '\n')
 end

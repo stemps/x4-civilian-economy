@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<diff>
+  <!-- Version added blocking actions so pre-CE saves retain native resume points. -->
+  <replace sel="/aiscript/@version">24</replace>
+  <add sel="/aiscript/attention[1]/actions" pos="prepend">
+    <do_if value="this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2">
+      <do_if value="$destination.exists and $destination != this.ship.pilot.$ce_unrest_sector and @$destination.sector != this.ship.pilot.$ce_unrest_sector">
+        <do_if value="not @this.ship.pilot.$ce_unrest_replan">
+          <debug_text text="'[CE] local route rejected: ship=%s destination=%s order=%s'.[this.ship,$destination,@this.ship.order.id]"/>
+        </do_if>
+        <set_value name="this.ship.pilot.$ce_unrest_replan" exact="true"/>
+        <set_value name="this.ship.pilot.$ce_unrest_combat" exact="false"/>
+        <cease_fire object="this.ship"/>
+        <wait exact="5s" sinceversion="24"/>
+        <return value="false"/>
+      </do_if>
+    </do_if>
+  </add>
+  <add sel="//run_script[@name=&quot;'move.gate'&quot;]" pos="before">
+    <do_if value="this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2 and $gatedestination.sector != this.ship.pilot.$ce_unrest_sector">
+      <set_value name="this.ship.pilot.$ce_unrest_replan" exact="true"/>
+      <set_value name="this.ship.pilot.$ce_unrest_combat" exact="false"/>
+      <cease_fire object="this.ship"/>
+      <wait exact="5s" sinceversion="24"/>
+      <return value="false"/>
+    </do_if>
+  </add>
+</diff>

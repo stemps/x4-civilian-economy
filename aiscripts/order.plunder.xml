@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<diff>
+  <replace sel="/aiscript/@version">7</replace>
+  <replace sel="/aiscript/init/set_value[@name=&quot;$pricethreshold&quot;]/@exact">if this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2 then 0Cr else ware.smartchips.averageprice</replace>
+  <replace sel="/aiscript/patch[@sinceversion='3']/set_value[@name=&quot;$pricethreshold&quot;]/@exact">if this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2 then 0Cr else ware.smartchips.averageprice</replace>
+  <replace sel="//do_if[@value=&quot;$targetzone.policefaction&quot;]/@value">$targetzone.policefaction and not (this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2)</replace>
+  <replace sel="//do_if[contains(@value,&quot;not $evalware.hastag.minable&quot;)]/@value">((this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2 and $evalware.waretransport == waretransport.container) or (not (this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2) and not $evalware.hastag.minable and $evalware.averageprice ge $pricethreshold)) and this.assignedcontrolled.cargo.{$evalware}.free</replace>
+  <add sel="//label[@name=&quot;plunder&quot;]" pos="after">
+    <do_if value="this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2 and (this.ship.cargo.free.all == 0 or (this.ship.iscapitalship and not this.ship.units.{unitcategory.transport}.count))">
+      <set_value name="this.ship.pilot.$ce_unrest_retire" exact="true"/>
+      <wait exact="5s" sinceversion="7"/>
+      <return value="false"/>
+    </do_if>
+  </add>
+  <add sel="//label[@name=&quot;offload&quot;]" pos="after">
+    <do_if value="this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2 and true">
+      <set_value name="this.ship.pilot.$ce_unrest_retire" exact="true"/>
+      <wait exact="5s" sinceversion="7"/>
+      <return value="false"/>
+    </do_if>
+  </add>
+  <add sel="//signal_objects[@param=&quot;'halt'&quot; and @param3=&quot;'piratehalt'&quot;]" pos="before">
+    <do_if value="this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2">
+      <debug_text text="'[CE] raid cargo demand: group=%s ship=%s target=%s cargo=%s'.[@this.ship.pilot.$ce_unrest_group,this.ship,$target,$target.cargo.count]"/>
+    </do_if>
+  </add>
+</diff>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_UnrestNotifications" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="OpenIncident" instantiate="true">
+      <conditions><event_player_interaction param2="'ce_unrest_map'"/></conditions>
+      <actions>
+        <set_value name="$MapObject" exact="if event.param.{1}.exists then event.param.{1} else event.param.{2}"/>
+        <open_menu menu="MapMenu" param="[0,0,true,null,null,'infomode',['info',$MapObject]]"/>
+      </actions>
+    </cue>
+    <library name="Popup">
+      <actions>
+        <show_interactive_notification caption="{974201,200}" text="$IncidentText" timeout="10s" priority="$IncidentPriority" sound="'notification_warning'">
+          <interaction text="{974201,209}" param="[$IncidentObject,$IncidentSector]" param2="'ce_unrest_map'"/>
+        </show_interactive_notification>
+        <write_to_logbook category="general" title="{974201,200}" text="$IncidentText" object="if $IncidentObject.exists then $IncidentObject else $IncidentSector" interaction="showonmap"/>
+      </actions>
+    </library>
+    <library name="Tax">
+      <actions>
+        <include_actions ref="md.CE_Settings.Read"/>
+        <set_value name="$UTaxPenalty" exact="if $U.$Stage ge 3 then 75 else if $U.$Stage == 2 then 50 else if $U.$Stage == 1 then 25 else 0"/>
+        <do_if value="$R.$Hub.exists and $R.$Hub.sector.isplayerowned and $CETaxPercent gt 0">
+          <do_if value="$UTaxPenalty != $U.$TaxSeen and ($UTaxPenalty gt 0 or $U.$TaxSeen gt 0)">
+            <set_value name="$UTaxText" exact="if $UTaxPenalty gt 0 then {974201,201}.[$R.$Hub.sector.knownname,$UTaxPenalty,$CETaxPercent * (100 - $UTaxPenalty) / 100.0f] else {974201,202}.[$R.$Hub.sector.knownname,$CETaxPercent]"/>
+            <show_notification text="$UTaxText" timeout="8s"/>
+            <write_to_logbook category="general" title="{974201,200}" text="$UTaxText" object="$R.$Hub" interaction="showonmap"/>
+          </do_if>
+          <set_value name="$U.$TaxSeen" exact="$UTaxPenalty"/>
+        </do_if>
+        <do_else><set_value name="$U.$TaxSeen" exact="-1"/></do_else>
+      </actions>
+    </library>
+    <library name="Failure">
+      <actions>
+        <do_if value="$IncidentDebug">
+          <show_notification text="{974201,208}.[$IncidentFailure]" timeout="8s"/>
+          <debug_text text="'[CE] TEST incident failed: hub=%s kind=%s reason=%s'.[$R.$Hub,@$IncidentKind,$IncidentFailure]"/>
+        </do_if>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

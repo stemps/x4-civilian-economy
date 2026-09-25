@@ -300,3 +300,13 @@ status[9]={};now=now+1;t=draw();assert(#t.rows==7 and t.topRow==7)
 menu.cleanup();t=draw();assert(t.topRow==7)
 ''')
 print('Map status: metrics, identity, cache, scrolling, refresh, reserve/growth bars and native fallbacks passed')
+
+deferred.execute('''
+status[20]={96,4,1,900,{'Food','Water'},3};now=now+1
+local u=CEHubStatus.getFresh(42)
+local text=CEHubStatus.unrest(u)
+assert(text:find('Critical',1,true) and text:find('Food, Water',1,true) and text:find('15 min',1,true))
+local t=draw();assert(value(t.rows[5][1]):find('Critical',1,true))
+status[20][3]=-1;now=now+1
+assert(CEHubStatus.unrest(CEHubStatus.getFresh(42)):find('recovering',1,true))
+''')

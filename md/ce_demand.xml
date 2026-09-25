@@ -23,6 +23,7 @@
           <do_if value="$CandidateComplete and $CandidateValid and $CandidateRatesComplete">
             <set_value name="$R.$Definitions" exact="$CandidateDefinitions"/>
             <set_value name="$R.$ProfileRace" exact="$CandidateRace"/>
+            <do_if value="@$FrozenProfile.$Categories"><set_value name="$R.$Categories" exact="$FrozenProfile.$Categories"/></do_if>
             <include_actions ref="md.CE_OwnerlessHub.CommitRates"/>
             <do_if value="@$R.$ProfileError">
               <debug_text text="'[CE] Profile recovered: %s'.[$R.$Hub]"/>

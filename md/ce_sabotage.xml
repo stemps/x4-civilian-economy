@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Sabotage" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="State"><conditions><event_cue_signalled/></conditions></cue>
+    <library name="Ensure">
+      <actions>
+        <do_if value="not md.CE_Sabotage.State.$Stations?"><set_value name="md.CE_Sabotage.State.$Stations" exact="table[]"/></do_if>
+        <do_if value="not md.CE_Sabotage.State.$Pauses?"><set_value name="md.CE_Sabotage.State.$Pauses" exact="table[]"/></do_if>
+      </actions>
+    </library>
+    <cue name="PlayerPause" instantiate="true">
+      <conditions><event_ui_triggered screen="'CEProductionPause'"/></conditions>
+      <actions>
+        <include_actions ref="md.CE_Sabotage.Ensure"/>
+        <do_if value="md.CE_Sabotage.State.$Pauses.{event.param3}?"><remove_value name="md.CE_Sabotage.State.$Pauses.{event.param3}"/></do_if>
+      </actions>
+    </cue>
+    <cue name="RestorePauses" instantiate="true" checkinterval="1s">
+      <conditions><check_value value="true"/></conditions>
+      <actions>
+        <include_actions ref="md.CE_Sabotage.Ensure"/>
+        <do_for_each name="$Module" in="md.CE_Sabotage.State.$Pauses.keys.list">
+          <do_if value="not $Module.exists or $Module.iswreck or not $Module.ispausedmanually">
+            <remove_value name="md.CE_Sabotage.State.$Pauses.{$Module}"/>
+          </do_if>
+          <do_elseif value="$Module.owner != faction.player or player.age ge md.CE_Sabotage.State.$Pauses.{$Module}">
+            <set_production_paused object="$Module" paused="false"/>
+            <remove_value name="md.CE_Sabotage.State.$Pauses.{$Module}"/>
+          </do_elseif>
+        </do_for_each>
+      </actions>
+    </cue>
+    <library name="Request">
+      <actions>
+        <include_actions ref="md.CE_Sabotage.Ensure"/>
+        <set_value name="$IncidentSuccess" exact="false"/>
+        <set_value name="$IncidentFailure" exact="{974201,230}"/>
+        <set_value name="$SabotageRequestedKind" exact="$IncidentKind"/>
+        <find_station name="$SabotageStations" space="$R.$Hub.sector" owner="faction.player" multiple="true" checkoperational="true"/>
+        <shuffle_list list="$SabotageStations"/>
+        <do_for_each name="$SabotageStation" in="$SabotageStations">
+          <do_if value="not md.CE_Sabotage.State.$Stations.{$SabotageStation}?">
+            <set_value name="md.CE_Sabotage.State.$Stations.{$SabotageStation}" exact="table[$Next=0.0f,$Destroy=0.0f]"/>
+          </do_if>
+          <set_value name="$SabotageClock" exact="md.CE_Sabotage.State.$Stations.{$SabotageStation}"/>
+          <do_if value="not $IncidentSuccess and not @$SabotageClock.$Pending and ($IncidentDebug or player.age / 1s ge $SabotageClock.$Next)">
+            <set_value name="$SabotageKinds" exact="[$SabotageRequestedKind]"/>
+            <do_if value="not $IncidentDebug">
+              <set_value name="$SabotageKinds" exact="['production','turrets']"/>
+              <shuffle_list list="$SabotageKinds"/>
+              <do_if value="$IncidentTier ge 2">
+                <set_value name="$MajorKinds" exact="['cargo','shields']"/><shuffle_list list="$MajorKinds"/>
+                <append_list_elements name="$MajorKinds" other="$SabotageKinds"/><set_value name="$SabotageKinds" exact="$MajorKinds"/>
+              </do_if>
+              <do_if value="$IncidentTier == 3 and player.age / 1s ge $U.$NextDestruction and player.age / 1s ge $SabotageClock.$Destroy">
+                <set_value name="$DestructiveKinds" exact="['destroy']"/><append_list_elements name="$DestructiveKinds" other="$SabotageKinds"/><set_value name="$SabotageKinds" exact="$DestructiveKinds"/>
+              </do_if>
+            </do_if>
+            <do_for_each name="$IncidentKind" in="$SabotageKinds">
+              <do_if value="not $IncidentSuccess"><include_actions ref="md.CE_Sabotage.Apply"/></do_if>
+            </do_for_each>
+          </do_if>
+        </do_for_each>
+        <do_if value="not $IncidentSuccess"><include_actions ref="md.CE_UnrestNotifications.Failure"/></do_if>
+      </actions>
+    </library>
+    <library name="Apply">
+      <actions>
+        <set_value name="$SabotageComponents" exact="[]"/>
+        <set_value name="$IncidentObject" exact="$SabotageStation"/>
+        <set_value name="$IncidentSector" exact="$SabotageStation.sector"/>
+        <set_value name="$IncidentPriority" exact="3"/>
+        <do_if value="$IncidentKind == 'cargo'">
+          <set_value name="$SabotageWares" exact="$SabotageStation.cargo.list"/><shuffle_list list="$SabotageWares"/>
+          <do_for_each name="$SabotageWare" in="$SabotageWares">
+            <do_if value="not $IncidentSuccess and $SabotageWare.averageprice gt 0Cr">
+              <set_value name="$SabotageLimit" exact="(100000Cr)LF / ($SabotageWare.averageprice)LF"/>
+              <set_value name="$SabotageAmount" exact="([$SabotageStation.cargo.{$SabotageWare}.count / 10.0f,$SabotageLimit].min)i"/>
+              <do_if value="$SabotageAmount gt 0">
+                <drop_cargo object="$SabotageStation" ware="$SabotageWare" exact="$SabotageAmount" amounts="$SabotageDropped"/>
+                <do_if value="$SabotageDropped.count gt 0 and $SabotageDropped.{1} gt 0">
+                  <set_value name="$IncidentSuccess" exact="true"/>
+                  <set_value name="$IncidentText" exact="{974201,205}.[$SabotageStation.knownname,$IncidentSector.knownname,$SabotageWare.name,$SabotageDropped.{1}]"/>
+                </do_if>
+              </do_if>
+            </do_if>
+          </do_for_each>
+        </do_if>
+        <do_elseif value="$IncidentKind == 'destroy'">
+          <set_value name="$SabotageComponents" exact="$SabotageStation.modules.operational.list"/>
+        </do_elseif>
+        <do_else>
+          <find_object_component name="$SabotageComponents" object="$SabotageStation" class="if $IncidentKind == 'production' then class.production else if $IncidentKind == 'turrets' then class.turret else class.shieldgenerator" multiple="true"/>
+        </do_else>
+        <shuffle_list list="$SabotageComponents"/>
+        <do_for_each name="$SabotageComponent" in="$SabotageComponents">
+          <do_if value="not $IncidentSuccess and $SabotageComponent.isoperational and not $SabotageComponent.ishacked and not md.CE_Sabotage.State.$Pauses.{$SabotageComponent}?">
+            <do_if value="$IncidentKind == 'destroy'">
+              <!-- Destruction is asynchronous. A captured watcher reports only a confirmed wreck/removal. -->
+              <signal_cue_instantly cue="md.CE_Sabotage.DestroyModule" param="[$SabotageComponent,$SabotageStation,$R,$IncidentDebug]"/>
+              <set_value name="$IncidentSuccess" exact="true"/>
+            </do_if>
+            <do_elseif value="$IncidentKind == 'production'">
+              <do_if value="not $SabotageComponent.ispaused">
+                <set_production_paused object="$SabotageComponent"/>
+                <do_if value="$SabotageComponent.ispausedmanually">
+                  <set_value name="md.CE_Sabotage.State.$Pauses.{$SabotageComponent}" exact="player.age + 5min"/>
+                  <set_value name="$IncidentSuccess" exact="true"/>
+                </do_if>
+              </do_if>
+            </do_elseif>
+            <do_else>
+              <set_object_hacked object="$SabotageComponent" duration="if $IncidentKind == 'shields' then 10min else 5min" result="$SabotageHacked"/>
+              <set_value name="$IncidentSuccess" exact="$SabotageHacked.count gt 0"/>
+            </do_else>
+            <do_if value="$IncidentSuccess and $IncidentKind != 'destroy'">
+              <set_value name="$IncidentText" exact="{974201,204}.[$SabotageStation.knownname,$IncidentSector.knownname,$SabotageComponent.knownname,if $IncidentKind == 'shields' then 10 else 5]"/>
+            </do_if>
+          </do_if>
+        </do_for_each>
+        <do_if value="$IncidentSuccess and $IncidentKind != 'destroy'">
+          <set_value name="$SabotageClock.$Next" exact="player.age / 1s + 5400"/>
+          <set_value name="$U.$NextSabotage" exact="player.age / 1s + 5400"/>
+          <include_actions ref="md.CE_UnrestNotifications.Popup"/>
+        </do_if>
+      </actions>
+    </library>
+    <cue name="DestroyModule" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <set_value name="$Module" exact="event.param.{1}"/><set_value name="$Station" exact="event.param.{2}"/>
+        <set_value name="$R" exact="event.param.{3}"/><set_value name="$IncidentDebug" exact="event.param.{4}"/>
+        <set_value name="$IncidentSector" exact="$Station.sector"/><set_value name="$IncidentObject" exact="$Station"/>
+        <set_value name="$IncidentText" exact="{974201,206}.[$Station.knownname,$IncidentSector.knownname,$Module.knownname]"/>
+        <set_value name="$IncidentPriority" exact="5"/>
+        <!-- Reserve the station before starting destruction so another hub cannot pick it. -->
+        <set_value name="$PreviousStationNext" exact="md.CE_Sabotage.State.$Stations.{$Station}.$Next"/>
+        <set_value name="$PreviousHubNext" exact="$R.$Unrest.$NextSabotage"/>
+        <set_value name="$ReservedNext" exact="player.age / 1s + 5400"/>
+        <set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Pending" exact="true"/>
+        <set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Next" exact="player.age / 1s + 5400"/>
+        <set_value name="$R.$Unrest.$NextSabotage" exact="player.age / 1s + 5400"/>
+        <destroy_object object="$Module" explosion="true"/>
+      </actions>
+      <cues>
+        <cue name="Confirm" checkinterval="1s">
+          <conditions><check_value value="not $Module.exists or $Module.iswreck or player.age ge parent.time + 10s"/></conditions>
+          <actions>
+            <set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Pending" exact="false"/>
+            <do_if value="not $Module.exists or $Module.iswreck">
+              <set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Destroy" exact="player.age / 1s + 14400"/>
+              <set_value name="$R.$Unrest.$NextDestruction" exact="player.age / 1s + 14400"/>
+              <include_actions ref="md.CE_UnrestNotifications.Popup"/>
+            </do_if>
+            <do_else>
+              <do_if value="md.CE_Sabotage.State.$Stations.{$Station}.$Next == $ReservedNext"><set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Next" exact="$PreviousStationNext"/></do_if>
+              <do_if value="$R.$Unrest.$NextSabotage == $ReservedNext"><set_value name="$R.$Unrest.$NextSabotage" exact="$PreviousHubNext"/></do_if>
+              <set_value name="$IncidentFailure" exact="{974201,233}"/><include_actions ref="md.CE_UnrestNotifications.Failure"/>
+            </do_else>
+          </actions>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+</mdscript>

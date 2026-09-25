@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="//do_if[@value='$plunderbasket.count' and @chance='$debugchance']" pos="before">
+    <!-- Apply only after native detection/eligibility filtering, before native selection. -->
+    <do_if value="$plunder and this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2">
+      <set_value name="$ce_marks" exact="[]"/>
+      <do_for_each name="$ce_mark" in="$detected">
+        <do_if value="not @this.ship.pilot.$ce_unrest_withdraw and $ce_mark.sector == this.ship.pilot.$ce_unrest_sector and ($ce_mark.primarypurpose == purpose.trade or $ce_mark == player.occupiedship) and not $ce_mark.dock and $ce_mark.cargo.count gt 0 and not @$ce_mark.pilot.$haltedby">
+          <append_to_list name="$ce_marks" exact="$ce_mark"/>
+          <do_if value="$ce_mark.isplayerowned"><append_to_list name="$ce_marks" exact="$ce_mark"/><append_to_list name="$ce_marks" exact="$ce_mark"/></do_if>
+        </do_if>
+      </do_for_each>
+      <shuffle_list list="$ce_marks"/>
+      <set_value name="$detected" exact="$ce_marks"/>
+    </do_if>
+  </add>
+</diff>

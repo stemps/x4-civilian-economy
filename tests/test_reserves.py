@@ -9,7 +9,7 @@ class ReserveTests(unittest.TestCase):
     def setUp(self):
         self.run=Runner()
         self.r=Table(Level=1,Target=0,Operational=True,Hub=Object(exists=True,iswreck=False),
-                     Wares=Table(),Transfers=Table(),PauseOffers=False,GrowthSeconds=0.0,Last=0.0)
+                     Wares=Table(),Categories=Table(),Transfers=Table(),PauseOffers=False,GrowthSeconds=0.0,Last=0.0)
         self.run.env['R']=self.r
         self.food=self.add('food',3600)
         self.water=self.add('water',1800)

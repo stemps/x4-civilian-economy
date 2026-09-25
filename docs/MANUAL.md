@@ -24,6 +24,12 @@ But I wanted more and different incentives for my galactic empire.
   the local civilian hub level. Your connections can get you radar visibility of
   local NPC stations, increased odds for diplomatic missions, better prices,
   faster workforce growth, revealed lockbox locations, ...
+- once a hub reaches level 5, the population gets dependent. If their demands
+  are unsatisfied for too long, local unrest will arise resulting in lost tax
+  income, pirate raids or eventually sabotage against your stations. First they
+  will shut down production modules or eject cargo and eventually they will
+  start blowing up your station modules.
+
 
 The main purpose is to give the player another goal for trade, apart from your
 own shipyard, for which there isn't really a good reason to have more than one
@@ -40,8 +46,9 @@ The mod relies on the in-game lore for population size and the race's local
 foods. I hope this makes it work out of the box with mods that add sectors or
 total conversions.
 
-This adds additional mechanics and more economic demand, which likely changes
-the game balance. I tried to design it responsibly, but you have been warned.
+This mod adds additional mechanics and more economic demand, which likely causes
+notable changes to the game balance. I tried to design it responsibly, but you
+have been warned.
 
 For those interested in numbers: The Argon Prime population, which is about
 middle-ish, generates per hour about 150k Cr worth of demand at level 1 and just

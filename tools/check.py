@@ -8,6 +8,7 @@ import argparse
 import os
 import sys
 import unittest
+from copy import deepcopy
 from lxml import etree
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,24 +45,48 @@ def main():
         # x4validate reports diff-rooted AI scripts as uncheckable. Validate the
         # merged native script ourselves, reporting only newly introduced errors.
         from x4validate import _xsd
-        base = etree.parse(str(reference / "aiscripts" / "build.buildstorage.xml"))
-        patch = etree.parse(str(ROOT / "aiscripts" / "build.buildstorage.xml"))
         compiled = _xsd._compiled(str(reference / "libraries" / "aiscripts.xsd"))
-        compiled.validate(base)
-        baseline = {e.message for e in compiled.error_log}
-        for change in patch.getroot():
-            if not isinstance(change.tag, str):
+        merged_failed = False
+        for path in sorted((ROOT / 'aiscripts').glob('*.xml')):
+            patch = etree.parse(str(path))
+            if patch.getroot().tag == 'aiscript':
+                compiled.assertValid(patch)
                 continue
-            matches = base.xpath(change.get("sel"))
-            if change.tag != "replace" or len(matches) != 1:
-                raise ValueError("Unexpected build-storage patch structure")
-            matches[0].getparent().set(matches[0].attrname, change.text)
-        compiled.validate(base)
-        introduced = {e.message for e in compiled.error_log} - baseline
-        if introduced:
-            print("Merged AI schema failures:", *sorted(introduced), sep="\n")
+            if patch.getroot().tag != 'diff':
+                raise ValueError(f'Expected an AI diff: {path}')
+            base = etree.parse(str(reference / 'aiscripts' / path.name))
+            compiled.validate(base)
+            baseline = {e.message for e in compiled.error_log}
+            for change in patch.getroot():
+                if not isinstance(change.tag, str):
+                    continue
+                matches = base.xpath(change.get('sel'))
+                if len(matches) != 1:
+                    raise ValueError(f'AI selector is not unique: {path}: {change.get("sel")}')
+                target=matches[0]
+                if change.tag == 'replace' and getattr(target, 'is_attribute', False):
+                    target.getparent().set(target.attrname, change.text)
+                elif change.tag == 'replace':
+                    parent=target.getparent(); index=parent.index(target)
+                    parent.remove(target)
+                    for child in change:
+                        parent.insert(index,deepcopy(child));index+=1
+                elif change.tag == 'add' and change.get('pos') in ('before','after','prepend'):
+                    parent=target if change.get('pos') == 'prepend' else target.getparent()
+                    index=0 if change.get('pos') == 'prepend' else parent.index(target) + (change.get('pos') == 'after')
+                    for child in change:
+                        parent.insert(index,deepcopy(child));index+=1
+                else:
+                    raise ValueError(f'Unsupported AI patch operation: {path}: {change.tag}')
+            compiled.validate(base)
+            introduced = {e.message for e in compiled.error_log} - baseline
+            if introduced:
+                print(f'Merged {path.name} schema failures:', *sorted(introduced), sep='\n')
+                merged_failed = True
+            else:
+                print(f'Merged {path.name} AI schema: no introduced errors')
+        if merged_failed:
             return 1
-        print("Merged build-storage AI schema: no introduced errors")
     return result or 0
 
 

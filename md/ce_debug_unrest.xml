@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_DebugUnrest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="Request" instantiate="true" namespace="this">
+      <conditions><event_ui_triggered screen="'CEUnrestTesting'"/></conditions>
+      <actions>
+        <include_actions ref="md.CE_Settings.Ensure"/>
+        <do_if value="md.CE_Settings.State.$Debug and md.CE_OwnerlessHub.Init.$Registry?">
+          <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+          <do_for_each name="$Sector" in="$Registry.keys.list">
+            <set_value name="$R" exact="$Registry.{$Sector}"/>
+            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and event.param3 == $R.$Hub">
+              <include_actions ref="md.CE_Unrest.Ensure"/>
+              <set_value name="$DebugCommands" exact="['stage_1','stage_2','stage_3','stage_4','clear','warning','raid_1','raid_2','raid_3','production','turrets','cargo','shields','destroy','cooldowns']"/>
+              <!-- Each freshly published menu uses one MD-owned token. Consume before any mutation. -->
+              <do_for_each name="$DebugCommand" in="$DebugCommands">
+                <set_value name="$ExpectedCommand" exact="'%1:%2'.[$DebugCommand,$U.$Token]"/>
+                <do_if value="event.param2 == $ExpectedCommand">
+                  <set_value name="$U.$Token" operation="add"/>
+                  <include_actions ref="md.CE_Reserves.Accrue"/>
+                  <include_actions ref="md.CE_DebugUnrest.Dispatch"/>
+                  <include_actions ref="md.CE_UnrestNotifications.Tax"/>
+                  <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+                  <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+                  <break/>
+                </do_if>
+              </do_for_each>
+            </do_if>
+          </do_for_each>
+        </do_if>
+      </actions>
+    </cue>
+    <library name="Dispatch">
+      <actions>
+        <set_value name="$IncidentDebug" exact="true"/>
+        <debug_text text="'[CE] TEST unrest: hub=%s command=%s token=%s'.[$R.$Hub,$DebugCommand,$U.$Token]"/>
+        <set_value name="$DebugStage" exact="['stage_1','stage_2','stage_3','stage_4'].indexof.{$DebugCommand}"/>
+        <do_if value="$DebugStage or $DebugCommand == 'clear' or $DebugCommand == 'warning'">
+          <set_value name="$DebugScore" exact="0.0f"/>
+          <do_if value="$DebugStage"><set_value name="$DebugScore" exact="[25.0f,60.0f,80.0f,95.0f].{$DebugStage}"/></do_if>
+          <do_if value="$DebugCommand == 'warning'"><set_value name="$DebugScore" exact="95.0f"/><set_value name="$U.$CriticalSince" exact="0.0f"/></do_if>
+          <set_value name="$U.$Scores" exact="[$DebugScore,0.0f,0.0f]"/>
+          <set_value name="$U.$Direction" exact="0"/>
+          <set_value name="$U.$Causes" exact="[]"/>
+          <include_actions ref="md.CE_Unrest.Evaluate"/>
+          <do_if value="$DebugCommand == 'clear'">
+            <include_actions ref="md.CE_Raids.Ensure"/>
+            <do_for_each name="$DebugRaidKey" in="md.CE_Raids.State.$Groups.keys.list">
+              <do_if value="md.CE_Raids.State.$Groups.{$DebugRaidKey}.$Hub == $R.$Hub">
+                <set_value name="md.CE_Raids.State.$Groups.{$DebugRaidKey}.$Withdraw" exact="true"/>
+              </do_if>
+            </do_for_each>
+          </do_if>
+        </do_if>
+        <do_elseif value="$DebugCommand == 'cooldowns'">
+          <set_value name="$U.$NextRaid" exact="0.0f"/><set_value name="$U.$NextCapital" exact="0.0f"/>
+          <set_value name="$U.$NextSabotage" exact="0.0f"/><set_value name="$U.$NextDestruction" exact="0.0f"/>
+          <include_actions ref="md.CE_Sabotage.Ensure"/>
+          <do_for_each name="$DebugStation" in="md.CE_Sabotage.State.$Stations.keys.list">
+            <do_if value="$DebugStation.exists and $DebugStation.owner == faction.player and $DebugStation.sector == $R.$Hub.sector">
+              <set_value name="md.CE_Sabotage.State.$Stations.{$DebugStation}.$Next" exact="0.0f"/>
+              <set_value name="md.CE_Sabotage.State.$Stations.{$DebugStation}.$Destroy" exact="0.0f"/>
+            </do_if>
+          </do_for_each>
+          <show_notification text="{974201,234}"/>
+        </do_elseif>
+        <do_elseif value="['raid_1','raid_2','raid_3'].indexof.{$DebugCommand}">
+          <set_value name="$IncidentTier" exact="['raid_1','raid_2','raid_3'].indexof.{$DebugCommand}"/>
+          <include_actions ref="md.CE_Raids.Request"/>
+        </do_elseif>
+        <do_else>
+          <set_value name="$IncidentTier" exact="3"/><set_value name="$IncidentKind" exact="$DebugCommand"/>
+          <include_actions ref="md.CE_Sabotage.Request"/>
+        </do_else>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

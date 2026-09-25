@@ -51,7 +51,7 @@ DebugError=function() end
 events={}
 RegisterEvent=function(name, fn) events[name]=fn end
 AddUITriggeredEvent=function(screen,command,id)
- assert((screen=="CELevelTesting" and id==42) or (screen=="CESectorTesting" and id==80));commands[#commands+1]=command
+ assert(((screen=="CELevelTesting" or screen=="CEUnrestTesting") and id==42) or (screen=="CESectorTesting" and id==80));commands[#commands+1]=command
 end
 function open() entries={};callback() end
 function action(id)
@@ -178,4 +178,37 @@ status[3]=0;progress=-1;events.CEInitialBuildReady(nil,42);assert(calls==before)
 waiting=true;events.CEInitialBuildReady(nil,42);assert(calls==before+1 and commands[#commands]=='initial_complete')
 status[19]=false;events.CEInitialBuildReady(nil,42);assert(calls==before+1)
 ''')
-print('LuaJIT diagnostics, sector creation, stale-object guards and build completion passed')
+lua.execute('''
+status[20]={80,3,1,-1,{'Food Rations'},7};status[15]=false;debugEnabled=true;valid=true;marked=true
+local expected={'stage_1','stage_2','stage_3','stage_4','clear','warning','raid_1','raid_2','raid_3',
+ 'production','turrets','cargo','shields','destroy','cooldowns'}
+for i,command in ipairs(expected) do
+ open();local entry=action(210+i);assert(entry.active)
+ local count=#commands;entry.script();entry.script()
+ assert(#commands==count+1 and commands[#commands]==command..':7')
+end
+open();local stale=action(224);status[20][6]=8;local count=#commands;stale.script();assert(#commands==count)
+open();local disabled=action(217);debugEnabled=false;disabled.script();assert(#commands==count)
+debugEnabled=true;status[15]=true;open();assert(not action(217).active)
+status[15]=false
+''')
+print('LuaJIT diagnostics, debug incidents, stale-token guards and build completion passed')
+lua.execute('''
+pauseEvents, nativePauses = {}, {}
+productionMenu={buttonPauseProductionModules=function(modules,pause)
+ nativePauses[#nativePauses+1]={modules,pause};return 'native result'
+end}
+Helper.getMenu=function(name) if name=='StationOverviewMenu' then return productionMenu end end
+AddUITriggeredEvent=function(screen,command,id)
+ assert(screen=='CEProductionPause' and command=='player');pauseEvents[#pauseEvents+1]=id
+end
+''')
+lua.execute((root/'ui/ce_unrest.lua').read_text(encoding='utf-8'))
+lua.execute('''
+local wrapped=productionMenu.buttonPauseProductionModules
+events.CEPopulationRequest();assert(wrapped==productionMenu.buttonPauseProductionModules)
+assert(wrapped({101,102},true)=='native result')
+assert(#pauseEvents==2 and pauseEvents[1]==101 and pauseEvents[2]==102 and #nativePauses==1)
+wrapped({101},false);assert(#pauseEvents==3 and not nativePauses[2][2])
+''')
+print('Unrest production pause hook preserves native behavior and relinquishes CE ownership')

@@ -51,6 +51,10 @@ class Component(Table):
 
 class List(list):
     @property
+    def min(self): return min(self)
+    @property
+    def max(self): return max(self)
+    @property
     def random(self): return self[1] if self else NIL
     @property
     def list(self): return self
@@ -85,6 +89,10 @@ def split(s):
         elif c == ',' and depth == 0:
             yield s[start:i]; start=i+1
     if s[start:]: yield s[start:]
+
+class BreakLoop(Exception):
+    pass
+
 
 class Runner:
     def __init__(self):
@@ -123,6 +131,18 @@ class Runner:
         if s.startswith('if '):
             cond,rest=s[3:].split(' then ',1); a,b=rest.split(' else ',1)
             return self.expr(a if self.expr(cond) else b)
+        formatted = re.fullmatch(r"'([^']*)'\.\[(.*)\]", s)
+        if formatted:
+            args=[self.expr(arg) for arg in split(formatted[2])]
+            return re.sub(r'%([1-9]\d*)', lambda m: str(args[int(m[1])-1]), formatted[1])
+        # Literal text references are not expressions. Dynamic IDs use readtext.
+        for text_id in re.findall(r'\{\d+,([^}]+)\}', s):
+            if not text_id.strip().isdigit():
+                raise ValueError('Literal text references require constant integer IDs')
+        textref = re.fullmatch(r'\{(\d+),(\d+)\}(?:\.\[(.*)\])?', s)
+        if textref:
+            return (int(textref[1]), self.expr(textref[2]),
+                    tuple(self.expr(arg) for arg in split(textref[3] or '')))
         s=self.path(s)
         s=re.sub(r'typeof (\w+(?:\.[\w]+|\[[^\]]+\])*)',r'datatype_of(\1)',s)
         s=re.sub(r'(\w+(?:\.[\w]+|\[[^\]]+\])*)\?',r'defined(\1)',s)
@@ -133,7 +153,15 @@ class Runner:
         for md,py in [(' ge ',' >= '),(' le ',' <= '),(' gt ',' > '),(' lt ',' < ')]: s=s.replace(md,py)
         while re.search(r'\[([^\[\]]+)\]\.(min|max)',s):
             s=re.sub(r'\[([^\[\]]+)\]\.(min|max)',r'\2(\1)',s)
-        return wrap(eval(s, {'__builtins__':{},'min':min,'max':max,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
+        # Native literal lists support one-based indexing and .indexof before
+        # assignment as well as after it. Convert AST literals, not string text.
+        import ast
+        class NativeLists(ast.NodeTransformer):
+            def visit_List(self, node):
+                self.generic_visit(node)
+                return ast.copy_location(ast.Call(func=ast.Name(id='List', ctx=ast.Load()), args=[node], keywords=[]), node)
+        code = compile(ast.fix_missing_locations(NativeLists().visit(ast.parse(s, mode='eval'))), '<md expression>', 'eval')
+        return wrap(eval(code, {'__builtins__':{},'List':List,'min':min,'max':max,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
     def set(self,path,v,remove=False):
         if isinstance(v, PseudoValue):
             raise ValueError('Native pseudo-values cannot be stored; read a property directly')
@@ -182,18 +210,25 @@ class Runner:
             elif tag=='do_for_each':
                 items=list(self.expr(n.get('in')))
                 if n.get('reverse')=='true':items.reverse()
-                for item in items:self.set(n.get('name'),item);self.actions(n)
+                for i,item in enumerate(items):
+                    self.set(n.get('name'),item)
+                    if n.get('counter'):self.set(n.get('counter'),len(items)-i if n.get('reverse')=='true' else i+1)
+                    try:self.actions(n)
+                    except BreakLoop:break
             elif tag=='do_all':
                 for i in range(int(self.expr(n.get('exact')))):
                     if n.get('counter'): self.set(n.get('counter'),i+1)
-                    self.actions(n)
+                    try:self.actions(n)
+                    except BreakLoop:break
             elif tag=='do_while':
                 count=0
                 while self.expr(n.get('value')):
                     self.actions(n);count+=1
                     if count>10000:raise RuntimeError('loop guard')
             elif tag=='include_actions': self.library(n.get('ref'))
+            elif tag=='break': raise BreakLoop()
             elif tag=='append_to_list': self.expr(n.get('name')).append(self.expr(n.get('exact')))
+            elif tag=='append_list_elements': self.expr(n.get('name')).extend(self.expr(n.get('other')))
             elif tag=='remove_value': self.set(n.get('name'),None,remove=True)
             elif tag=='clear_table': self.expr(n.get('table')).clear()
             elif tag=='debug_text':

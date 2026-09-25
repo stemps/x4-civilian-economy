@@ -4,6 +4,16 @@ from support import Runner, Table, Component, Ware, NIL
 
 
 class SalesTaxTests(unittest.TestCase):
+    def test_unrest_reduces_only_extra_sector_income(self):
+        for stage, remaining in enumerate((100, 75, 50, 25, 25)):
+            with self.subTest(stage=stage):
+                run, record, deal, payments = self.fixture(amount=100, price=1000)
+                record.Unrest = Table(Stage=stage)
+                run.library('RecordDelivery')
+                self.assertEqual(payments, [15000 * remaining / 100])
+                self.assertEqual(record.Wares[Ware('food')].Paid, 100000)
+                self.assertEqual(deal.seller.money, 777)
+
     def test_completed_sales_pay_current_sector_owner_regardless_of_seller(self):
         for seller in ('player', 'argon', 'teladi'):
             for owned in (True, False):

@@ -1,5 +1,342 @@
 # Mod-local Knowledgebase
 
+## 2026-09-25 - capital-drone-capacity-aborts-launch
+
+- MEASURED IN GAME: debug.txt at 241496.72 records `raid_3` at hub 0x4acfe,
+  followed by cargo-drone provisioning failure on ship 0x1a7f38 with count 1.
+  There is no departure-accepted or piracy-started transition for that launch.
+  Failure precedes CE ownership/fleet setup; partial ships use weapons-held
+  withdrawal. This explains the reported neutral, ungrouped, non-fighting ships
+  in this failed test, rather than proving active piracy or scanning is broken.
+- SOURCE: the Argon L destroyer has ten drone slots; a read-only merge of the
+  currently active installed mods also returns ten, with no ship-macro override.
+  Unrestricted generated
+  loadouts may fill that shared bay before mandatory cargo drones are added.
+  `generate_loadout flags="units" invertflags="true"` excludes ordinary drones;
+  `drones` is a separate flag for ability drones. Capital equipment now excludes
+  ordinary drones, then adds and verifies the required five cargo drones.
+- LIMIT: the old log did not record the other drones or free capacity, so the
+  exact loadout occupancy in that run remains unmeasured. New diagnostics record
+  capacity, total units, free slots and cargo drones, plus partial-launch aborts.
+- MOCKED: finite ten-slot bay reproduces the one-cargo-drone result with nine
+  pre-existing other drones. The revised launch reaches seven CE-owned ships,
+  an L-led fleet, armed piracy and one popup after departure. The former mock
+  incorrectly treated add_units as unbounded and apply_loadout as a no-op.
+
+
+## 2026-09-25 - native-station-retaliation-restored
+
+- User removed the never-fight-stations requirement. Removed four combat weapon
+  patches, the CE station handler/helper, AttackHandler exclusion and four
+  handler-only movement/order patches; removed the handler from Plunder/Attack.
+  Raid AI now consists of five native-script patches and no custom AI helper.
+- Native combat, station retaliation and turret targeting are restored. MD still
+  supplies Plunder mode 0 (ship robbery), preserves 3:1 eligible-player weighting,
+  and manages departure, lifetime, caps, withdrawal and sector replanning.
+- Attack's phase/sector guard remains, without target-class restrictions. Old
+  station avoidance markers are ignored and removed during capture cleanup if
+  present. No station-triggered disarm/regroup remains.
+- This supersedes the strict station protection described in earlier entries and
+  removes the event-payload error source entirely. The blocking-action version
+  fixes below remain necessary. Full restart and older-save retest required.
+- VALIDATED: focused raid tests and just schema pass, including merged AI patches.
+  In-game combat and old-save resume recovery remain acceptance checks.
+
+## 2026-09-25 - raid-ai-event-and-resume-errors
+
+- MEASURED: live debug.txt reports repeated event.param.isclass failures in
+  MoveWait, Wait and Plunder from CE's AttackHandler exclusion. CE prepended the
+  payload check before native event matching; unrelated signals can carry strings
+  or lists. Move the guard after the native event check_any and use optional
+  station/container lookups. The dedicated CE handler also guards its payload.
+- MEASURED: on loading at 241481.02, ordinary combat pilots report fighter,
+  bigtarget and capital-steering returns being assigned to $movesuccess, although
+  the installed merged Attack script assigns that result only to move.generic.
+  Movement also resumes with missing/invalid $safepos. This precedes the new CE
+  raid launch at 241739.37.
+- SOURCE-VERIFIED defect / INFERRED cause of these resume errors: CE inserted
+  five blocking waits without sinceversion markers or script-version increments.
+  Egosoft aiscripts.xsd defines sinceversion on blocking actions, and native
+  move.generic uses it for added waits. Version the new waits at MoveGeneric 24,
+  Attack 28 and Plunder 7. This targets older pre-CE saves; saves already written
+  with misaligned execution state are not proven recoverable by these markers.
+- Installed merge inspection found no skipped sources: Attack also has fs_pat,
+  MoveGeneric galaxy_trader, and AttackHandler kuertee_friendly_fire_tweaks and
+  pirate DLC. These fixes do not rewrite other mods or mask missing return values.
+- Regression checks cover native station combat eligibility, phase/sector guards
+  and new-wait versioning. Native resume recovery still needs a full-restart test on an older
+  save; mocks do not implement the engine's saved execution stack.
+
+## 2026-09-25 - native-cutlass-live-comparison
+
+- CLOSED: user abandoned the cutlass investigation. Removed ce_raid_status.lua,
+  its addon registration and diagnostic-only tests. No CE map-list substitute
+  or selected-ship diagnostic hook remains; native raid AI is unchanged. The
+  observations below are retained as investigation history, not pending tests.
+
+- ALLEGIANCE COMPARISON at 242280.22: CE 35409935 and newly selected vanilla
+  pirate 626612 both have reveal=100, commands unlocked, started/enabled default
+  Plunder and no queued orders. CE is enemy/hostile, not ally; vanilla is covered
+  as Paranid and is ally, not enemy/hostile. User reports the vanilla cutlass.
+  Native MapMenu distinguishes allied order rendering (SetMapRenderAllAllyOrderQueues)
+  from player orders. Allied disclosure is now the leading explanation, not
+  inactive Plunder or missing scanning. The exact native marker-renderer condition
+  is not exposed in Lua, so this correlation is not a proven hostile-icon rule.
+  Do not alter CE allegiance/disguises or AI merely to force an icon.
+
+- FOLLOW-UP MEASURED: at 242136.61/242183.55, scanned CE commander 35409935
+  has revealpercent=100, operator_commands=true, active/enabled default Plunder
+  and no queued order. User still sees no cutlass. Scanning is NOT sufficient;
+  the earlier information-disclosure hypothesis is unconfirmed and must not be
+  presented as a fix. Installed effective Plunder order definition/icon mapping
+  is unchanged; saved map order/allied-order toggles are both false. Diagnostics
+  now include native isally/isenemy/ishostile to compare apparent ownership rather
+  than infer allegiance from Argon disguise. Root cause remains unresolved.
+
+- MEASURED in debug.txt at 241793.10 and 241832.74: CE commander 1775577 and
+  vanilla pirate 422663 both have default Plunder, state started, enabled true,
+  no queued orders and no commander. CE revealpercent=0/operator_commands=false;
+  vanilla revealpercent=100/operator_commands=true (covered as Argon).
+- Native infounlocklist.xml sets operator_commands at 80 percent. Information
+  disclosure is the leading explanation for the missing native cutlass, not a
+  proven rendering cause yet. Next acceptance step is normally scanning the CE
+  commander, selecting it again and comparing icon plus diagnostic visibility.
+  Do not force global information unlocks or change Plunder to test this theory.
+- MEASURED: GetNPCBlackboard returns CE combat/withdraw booleans as 1/0 in this
+  session. Lua consumers must accept numeric boolean values (not only true/false).
+- Separate log error: installed Assailer Sector Patrol 1.11 (fs_pat),
+  aiscripts/sectorpatrol.xml:20 uses location condition $fs_space.zone.exists,
+  although fs_space is a required sector parameter defaulting to null. Invalid
+  parameter causes repeated UI order-location errors; no CE source owns this code.
+
+## 2026-09-25 - native-cutlass-diagnostic
+
+- User means the native cutlass beside the ship marker, not a map-list name icon.
+  Removed CE's list decoration. Native parameters.xml holomap/orders/icons uses
+  prefix order_; icons.xml defines order_plunder and MapMenu's legend lists it.
+  Vanilla SCA jobs and CE both configure Plunder as the default order. The native
+  marker's missing-display cause is NOT established; do not infer engine inability
+  from getOrderInfo's separate Lua object-list ownership guard.
+- ce_raid_status.lua now only logs selected ship data with CE debug enabled:
+  owner/pilot/commander, scan reveal and operator_commands access, default/current
+  orders and state, CE phase markers. One-second checks, unchanged-state suppression,
+  max 30 records per map session; no orders, map settings or rendering are changed.
+- To compare live CE and vanilla pirates, reload UI and select each on the map;
+  inspect [CE] Native raid icon lines in debug.txt. Native result remains pending.
+
+## 2026-09-25 - raid-map-activity-icon
+
+- SOURCE-VERIFIED: native MapMenu.getOrderInfo returns empty order icons for
+  non-player-owned ships. Running Plunder does not automatically expose its icon.
+- CE decorates getContainerNameAndColors with the native order_plunder inline
+  icon and localized ReadText(1041,231) tooltip. Requires live, name-unlocked CE
+  ownership, pilot behavior version 2, combat enabled, no withdrawal, and enabled
+  default Plunder. Escorts, departure/regroup and captured ships do not qualify.
+- Indicator describes the active piracy behavior, including pursuit/collection,
+  rather than the instant of issuing a cargo demand. No simulation names or orders
+  are changed. Rendering still needs native in-game acceptance.
+- Native object-list refresh runs every two seconds, so phase/order changes are
+  re-read without a CE polling loop. MOCKED: LuaJIT checks phase transitions,
+  capture/privacy guards, tooltip formatting and idempotent deferred registration.
+
+## 2026-09-25 - predictable-sector-local-raids
+
+- SOURCE: native `order.plunder` builds a valuable-cargo table using the smartchip
+  price threshold and excludes minable wares; CE now scopes the replacement to
+  container cargo. `move.seekenemies` already exempts `player.occupiedship` from
+  purpose restrictions, but CE's former post-filter removed that exception.
+- SOURCE: capital Plunder signals resupply when transport drones are missing.
+  CE provisions and verifies five Argon cargo drones before accepting a new
+  capital group (`add_units` otherwise defaults to the temporary hub owner).
+  This is a plausible contributor to the reported docked destroyers, not a
+  proven explanation of those particular ships' live orders.
+- SOURCE: `move.generic` expects `move.gate` to cross sectors and emits a retry
+  error when it returns without doing so. The previous CE gate-level rejection
+  violated that contract. Version-2 guards reject the destination/route in the
+  caller before invoking gate travel, signal local replanning and wait five
+  seconds. MD reissues local movement at most once per 30 seconds.
+- SOURCE: native defence computers dispatch turret lists and low-attention
+  attack strength independently of pilot Attack orders. CE filters these paths
+  as well as station retaliation; guarding only `order.fight.attack.object`
+  cannot prevent autonomous station fire. Missile turret targets remain allowed.
+- IMPLEMENTED: departing groups hold weapons, fly to a safe rally point, and
+  wait for every surviving member's undocking/order completion. The L commands
+  capital groups; escorts use `assignment.attack`. A 10-minute deadline rolls
+  failed departures into tracked safe cleanup without a success popup. The
+  45-minute piracy lifetime starts on successful departure. Popup guards,
+  phase/deadline/order references and cooldown reservations are saved.
+- SOURCE: native Wait with `holdfire=true` restores saved weapon modes on abort.
+  Departure Wait uses `holdfire=false`; MD owns the hold/rearm transition so
+  leaving Wait cannot restore stale hold-fire modes over the piracy setup.
+- IMPLEMENTED: true-owner plus pilot version markers scope all new hooks;
+  apparent pirate cover cannot bypass them. CE blocks cover, resupply and
+  offload trips. Full commander holds or lost required drones retire the group.
+  Existing active groups are not migrated to behaviour version 2.
+- MOCKED: loaded player fighters, cheap goods, empty ships, berths, missing
+  drones, departure timeout/reload, exact fleet leadership, station aggression,
+  weapon filtering, bounded replan, capture/boarding and lifetime/relief cleanup.
+- UNMEASURED IN GAME: complete capital departure, native demand/comply/refuse,
+  coordinated attacks, high/low-attention station avoidance, and continued relief
+  deliveries. Source/schema/mock checks cannot prove these engine behaviours.
+
+
+## 2026-09-25 - capital-destroyer-commander
+
+- User requirement: the L destroyer commands a capital raid, with both M ships
+  and all four S escorts below it. Light/strong raids retain their first M leader.
+  New groups save an explicit Leader selected during creation; the destroyer
+  replaces the initial M selection. Only that leader receives Plunder.
+- LOCAL SOURCE: `order.plunder.xml` excludes spacesuits and laser towers, not L
+  ships; the Argon destroyer storage macro supplies 2300 container capacity.
+  Native cargo demands are therefore retained on the capital commander.
+- Ownership transfer and command assignment are separate passes. Because the L
+  spawns after some escorts, assigning earlier ships immediately would reference
+  a commander still owned by the hub. All ships must have CE ownership first.
+- MOCKED: all three tiers assert exactly one Plunder order, the expected leader,
+  and every other ship assigned to it with matching CE ownership. Existing saved
+  fleets retain orders; new launches use this hierarchy. Native fleet behavior
+  remains an in-game acceptance step. Full restart required.
+- VALIDATED: `just validate` passed 193 backend tests and reference/attribute
+  checks; `git diff --check` passed. Full schemas were not rerun for this
+  commander-selection/control-flow change.
+
+## 2026-09-25 - distinct-free-raid-berths
+
+- MEASURED IN GAME (local debug.txt, game time 241095.02): capital attempt at
+  hub 0x4aa0c selected `dockingbay_arg_m_01_hightech_macro` 0x4aa17 twice. Native
+  creation rejected the second Minotaur because the first ship already occupied
+  the dock. The failure happened before the destroyer; compatibility was not
+  sufficient to allocate a multi-ship wave.
+- LOCAL SOURCE: `common.xsd` match_dock supports free=true and defaults to
+  external storage=false berths. Native `scenario_combat.xml` uses free=true
+  for docking selection. CE now enumerates free operational compatible external
+  docks and excludes those already selected for the same synchronous wave.
+  Known capacity shortages reject before creating any ship or group. Unexpected
+  native creation failures retain the existing partial-group cleanup.
+- User-facing capacity feedback now distinguishes insufficient free docks from
+  an engine application failure. Diagnostic capacity messages include tier,
+  size, free candidate count and selected-berth count; raid failures set their
+  incident kind instead of logging null.
+- MOCKED: raid fixtures return stable dock identities and reject occupied berth
+  reuse. Tests require seven distinct capital-wave berths and reject a one-M-berth
+  hub or occupied L pier without spawning ships, announcing success or spending
+  cooldowns. Native launch after the correction remains unverified.
+  Full restart required; no UI-only reload can install the MD allocation change.
+- VALIDATED: `just schema` passed 193 backend tests, native MD schemas, reference
+  checks and merged AI schemas for the combined fleet and docking corrections.
+  `git diff --check` passed.
+
+## 2026-09-25 - one-fleet-per-raid
+
+- MEASURED IN GAME (user report): strong raids appeared as M/S/S plus a lone M.
+  The launch loop gave both first and second M ships independent Plunder orders,
+  then assigned only later ships to the first M.
+- New raids now give only the first M a Plunder order. All other ships, including
+  the second M and capital-tier L, receive native defence commander assignment
+  to that M. This follows the native `cpu_ship_manager.xml` assignment pattern.
+  Active saved raids are not reissued orders; the change applies to new launches.
+- MOCKED: every tier verifies exactly one Plunder order and a common commander
+  for all remaining ships. Actual fleet behavior still needs in-game acceptance.
+  Full restart required for the MD launch change.
+
+## 2026-09-25 - five-raid-groups-per-hub
+
+- User balance change: five active groups per hub, no global cap and no separate
+  capital-group cap. Withdrawals still occupy slots. Ordinary 60-minute launch
+  and four-hour capital cooldowns remain; debug launches bypass both.
+- Groups previously keyed by hub cannot represent multiple concurrent waves.
+  New groups have monotonically allocated numeric IDs and an explicit Hub field.
+  Legacy component-keyed entries receive their original hub field lazily and
+  retain ships, deadlines, boarding protection and cleanup state. Numeric and
+  component keys coexist until old groups finish; no destructive migration.
+- Cleanup checks the explicit origin hub. Clear-unrest dispatch withdraws all
+  matching groups, including legacy entries, without affecting other hubs.
+  The localized cap failure now names only the five-group per-hub limit.
+- MOCKED: five capital waves at each of two hubs succeed (ten globally); a sixth
+  wave at the same hub is rejected, including when a group is withdrawing.
+  Tests cover legacy migration, all-local clear, capture cleanup and unchanged
+  normal capital-cooldown fallback. Native save/load migration still needs
+  in-game confirmation. Full restart required for the MD changes.
+- VALIDATED: `just schema` passed all 191 backend tests, native MD schemas,
+  reference checks and merged AI schemas. `git diff --check` passed.
+
+## 2026-09-25 - raid-pilot-blackboard-and-text-ids
+
+- MEASURED IN GAME (user log, game time 241055.56): a debug light raid reached
+  ship creation, then failed writing `$ce_unrest_sector` and
+  `$ce_unrest_withdraw` on the ship component; its incident text evaluated null.
+  Prior mocks accepted component variables and calculated literal text IDs,
+  so their success did not validate either engine contract.
+- LOCAL SOURCE: `scriptproperties.xml` defines `$<variable>` on entity, not
+  component. Native `cpu_ship_manager.xml` writes ship state through
+  `$CPUShip.pilot.$noattackresponse`. CE now stores and reads raid markers on
+  pilots in MD and both AI patches. Lifecycle repairs missing markers on tracked
+  saved raids or replacement pilots; captured ships remain exempt.
+- LOCAL SOURCE: native dynamic text lookup uses
+  `readtext.{$Page}.{$TextOffset + 1}` (`gmc_assisted_task.xml`), not arithmetic
+  inside `{page,id}` literals. CE now selects constant translated tier and
+  composition strings before formatting the raid notification.
+- MOCKED: raid fixtures now reject ship marker writes; the expression harness
+  rejects nonconstant literal text IDs. Tests cover all tier labels, pilot state,
+  old-group repair without duplicate popups, and both reported invalid forms.
+  Actual launch/notification behavior after this correction still needs an
+  in-game retest. Full restart required for MD and AI changes.
+- VALIDATED: `just schema` passed 188 action tests, native MD schemas, references
+  and all merged AI patches. The final 14-test incident suite additionally passed
+  pilot-based gate guards, player/NPC weighting and captured-ship exemption.
+  `git diff --check` passed.
+
+## 2026-09-25 - civil-unrest-native-incidents
+
+- LOCAL SOURCE: `common.xsd` exposes docked `create_ship`, scoped
+  `set_object_hacked` with a returned component list, manual production pause,
+  native cargo drops, interactive notifications and `destroy_object`.
+  `rml_buildstation.xml` uses destruction on operational station modules;
+  destruction is distinct from removing a construction-plan entry. CE waits for
+  a missing/wrecked target to confirm success. An explosion alone is insufficient.
+- LOCAL SOURCE: `order.plunder.xml` searches for cargo targets through
+  `move.seekenemies`, demands cargo and attacks on refusal. Its target parameter
+  is not a general trader-target override. CE therefore filters native eligible
+  contacts immediately before selection and weights player traders 3:1. The
+  separate `move.gate` guard prevents tagged CE ships using outbound gates.
+  Both patches exempt ordinary ships and player-captured raiders.
+- IMPLEMENTED: saved shortage state lives on each hub record. Scoring runs before
+  reserve consumption, counts only the tail after depletion and grace, recovers
+  at twice accumulation speed and uses the worst ware per category. Recovery is
+  clamped before adding later shortage: calm supplies cannot prepay deprivation.
+  Category assignments are frozen with resolved racial profiles; legacy records
+  classify existing definitions without regenerating demand.
+- IMPLEMENTED: all player station types qualify for real sabotage, including a
+  final operational module or dock. Native affected lists/dropped quantities and
+  destruction confirmation gate success popups. Saved cooldowns, pending
+  destruction, pause deadlines and raid groups own cleanup across saves. Player
+  intervention through the native station overview pause control revokes CE's
+  temporary-pause ownership rather than being overwritten at its deadline.
+- IMPLEMENTED: normal and debug incidents share handlers and alerts. Debug
+  requests consume command-specific snapshot tokens, validate fresh hub/debug
+  state, retain target applicability/caps and never substitute another effect.
+  Partial raid launches remain tracked while withdrawing without a success
+  popup. Captured ships are released; boarding delays disposal. Clearing unrest
+  withdraws debug groups too, while explicit raids can otherwise be tested at
+  calm scores.
+- MOCKED: action tests cover grace, partial delivery, recovery, hysteresis,
+  critical warning guards, tax transitions, exact debug dispatch, replay rejection,
+  native-effect failure, cargo limits, final-module eligibility, raid composition,
+  partial launches, captures and boarding. Separate accounting tests confirm
+  stage penalties reduce only CE's additional sector reward. Lua tests cover
+  real-effect menus, stale tokens, unrest display and manual-pause interception.
+- UNMEASURED IN GAME: physical wreck/rebuild and collateral behavior, collectible
+  cargo, actual dock launches/loadouts, combat/targeting and sector containment,
+  native alert interaction, and save/load during effects or boarding. Schema and
+  action-mock success must not be promoted to native gameplay acceptance.
+- VALIDATED: `just schema` passed 185 action tests, 18 full MD schemas, reference
+  checks and all three merged AI schemas with no introduced errors. The added
+  tax-penalty accounting test then passed with the 14-test sales-tax suite.
+  `just lua` and `git diff --check` passed after the final UI/documentation edits.
+- Only English translations currently exist; unrest keys are synchronized there.
+  Full game restart required; `/reloadui` cannot install the new MD/AI/faction
+  behavior. README and `docs/` remain unchanged.
+
 Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 [README](README.md) for an introduction and the
 [developer documentation](docs/DEVELOPMENT.md) for development guidance.
@@ -220,6 +557,7 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### Hub appearance and optional testing UI
 
+- Promotional images live in `images/`; `assets/` retains the native game layout.
 - `ce_civilian_hub_macro` is indexed in `index/macros.xml`, reuses the generic
   factory component/control room and sets `mapob_tradestation` /
   `si_tradestation` artwork without workforce capacity or ownership claim.

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Unrest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="State"><conditions><event_cue_signalled/></conditions></cue>
+    <library name="Schedule">
+      <actions>
+        <set_value name="$USectors" exact="$Registry.keys.list"/>
+        <do_if value="not md.CE_Unrest.State.$Cursor? or md.CE_Unrest.State.$Cursor ge $USectors.count"><set_value name="md.CE_Unrest.State.$Cursor" exact="0"/></do_if>
+        <do_all exact="$USectors.count" counter="$UScheduleIndex">
+          <set_value name="$USectorIndex" exact="$UScheduleIndex + md.CE_Unrest.State.$Cursor"/>
+          <do_if value="$USectorIndex gt $USectors.count"><set_value name="$USectorIndex" exact="$USectorIndex - $USectors.count"/></do_if>
+          <set_value name="$R" exact="$Registry.{$USectors.{$USectorIndex}}"/>
+          <include_actions ref="md.CE_Unrest.Tick"/>
+          <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+        </do_all>
+        <set_value name="md.CE_Unrest.State.$Cursor" operation="add"/>
+      </actions>
+    </library>
+    <library name="Ensure">
+      <actions>
+        <do_if value="not $R.$Unrest?">
+          <set_value name="$R.$Unrest" exact="table[$Scores=[0.0f,0.0f,0.0f],$Score=0.0f,$Stage=0,$CriticalSince=0.0f,$Grace=0.0f,$Eligible=false,$Wares=table[],$Direction=0,$Causes=[],$NextRaid=0.0f,$NextCapital=0.0f,$NextSabotage=0.0f,$NextDestruction=0.0f,$Token=0,$TaxSeen=-1]"/>
+        </do_if>
+        <set_value name="$U" exact="$R.$Unrest"/>
+      </actions>
+    </library>
+    <!-- Called BEFORE reserve consumption, at every consumption boundary. Times are seconds. -->
+    <library name="Accrue">
+      <actions>
+        <include_actions ref="md.CE_Unrest.Ensure"/>
+        <set_value name="$UNow" exact="player.age / 1s"/>
+        <set_value name="$UHasDemand" exact="false"/>
+        <do_for_each name="$UCheck" in="$R.$Wares.keys.list"><do_if value="@$R.$Wares.{$UCheck}.$Active and $R.$Wares.{$UCheck}.$Rate gt 0"><set_value name="$UHasDemand" exact="true"/></do_if></do_for_each>
+        <do_if value="$R.$Level ge 5 and $R.$Operational and not $R.$PauseOffers and $UHasDemand">
+          <include_actions ref="md.CE_Unrest.Classify"/>
+          <do_if value="not $U.$Eligible">
+            <set_value name="$U.$Eligible" exact="true"/>
+            <set_value name="$U.$Grace" exact="$UNow + 7200.0f"/>
+          </do_if>
+          <set_value name="$UElapsed" exact="[0.0f,$UNow - [$R.$Last,$U.$Grace].max].max"/>
+          <set_value name="$UMissing" exact="[0.0f,0.0f,0.0f]"/>
+          <set_value name="$U.$Causes" exact="[]"/>
+          <do_for_each name="$UWare" in="$R.$Wares.keys.list">
+            <set_value name="$UW" exact="$R.$Wares.{$UWare}"/>
+            <do_if value="@$UW.$Active and $UW.$Rate gt 0">
+              <do_if value="not $U.$Wares.{$UWare}?">
+                <set_value name="$U.$Wares.{$UWare}" exact="$UNow + 3600.0f"/>
+              </do_if>
+              <set_value name="$UCategory" exact="if $R.$Categories? and $R.$Categories.{$UWare}? then $R.$Categories.{$UWare} else 2"/>
+              <set_value name="$UStart" exact="[$R.$Last,$U.$Grace,$U.$Wares.{$UWare},$R.$Last + $UW.$Reserve * 3600.0f / $UW.$Rate].max"/>
+              <set_value name="$UShort" exact="[0.0f,$UNow - $UStart].max"/>
+              <set_value name="$UMissing.{$UCategory}" exact="[$UMissing.{$UCategory},$UShort].max"/>
+              <do_if value="$UShort gt 0"><append_to_list name="$U.$Causes" exact="$UWare.name"/></do_if>
+            </do_if>
+          </do_for_each>
+          <set_value name="$UOld" exact="$U.$Score"/>
+          <set_value name="$URates" exact="[25.0f,8.0f,2.0f]"/>
+          <set_value name="$UCaps" exact="[100.0f,30.0f,15.0f]"/>
+          <do_all exact="3" counter="$Ui">
+            <!-- Reserves are consumed first, so recovery precedes the missing tail.
+                 Clamp at that boundary: surplus calm time cannot prepay later deprivation. -->
+            <set_value name="$URecovered" exact="[0.0f,$U.$Scores.{$Ui} - 2.0f * $URates.{$Ui} * ($UElapsed - $UMissing.{$Ui}) / 3600.0f].max"/>
+            <set_value name="$U.$Scores.{$Ui}" exact="[$UCaps.{$Ui},$URecovered + $URates.{$Ui} * $UMissing.{$Ui} / 3600.0f].min"/>
+          </do_all>
+          <include_actions ref="md.CE_Unrest.Evaluate"/>
+          <set_value name="$U.$Direction" exact="if $U.$Score gt $UOld then 1 else if $U.$Score lt $UOld then -1 else 0"/>
+        </do_if>
+        <do_else><set_value name="$U.$Direction" exact="0"/></do_else>
+      </actions>
+    </library>
+    <library name="Classify">
+      <actions>
+        <do_if value="not $R.$Categories?">
+          <!-- Classify frozen definitions only; never reprice or rebuild their rates. -->
+          <set_value name="$R.$Categories" exact="table[]"/>
+          <include_actions ref="md.CE_PopulationProfiles.Configure"/>
+          <set_value name="$ULocal" exact="[]"/>
+          <set_value name="$UImported" exact="[]"/>
+          <do_for_each name="$URace" in="lookup.race.list">
+            <do_for_each name="$UF" in="$URace.workforce.resources.list">
+              <do_if value="$URace.id == @$R.$ProfileRace"><append_to_list name="$ULocal" exact="$UF.id"/></do_if>
+              <do_elseif value="$UF.group.id != 'water' and $UF.group.id != 'pharmaceutical'"><append_to_list name="$UImported" exact="$UF.id"/></do_elseif>
+            </do_for_each>
+          </do_for_each>
+          <set_value name="$URaceKey" exact="'$' + @$R.$ProfileRace"/>
+          <do_if value="$ProfileStaples.{$URaceKey}?"><append_list_elements name="$ULocal" other="$ProfileStaples.{$URaceKey}"/></do_if>
+          <do_if value="$ProfileMedicines.{$URaceKey}?"><append_list_elements name="$ULocal" other="$ProfileMedicines.{$URaceKey}"/></do_if>
+          <do_for_each name="$UD" in="$R.$Definitions">
+            <set_value name="$UF" exact="$UD.{1}"/>
+            <set_value name="$UClass" exact="2"/>
+            <do_if value="$UF.id == 'energycells' or $UF.group.id == 'water' or $UF.group.id == 'pharmaceutical' or $ULocal.indexof.{$UF.id}"><set_value name="$UClass" exact="1"/></do_if>
+            <do_elseif value="$UImported.indexof.{$UF.id} or ['spacefuel','spaceweed','majadust','stimulants'].indexof.{$UF.id}"><set_value name="$UClass" exact="3"/></do_elseif>
+            <set_value name="$R.$Categories.{$UF}" exact="$UClass"/>
+          </do_for_each>
+        </do_if>
+      </actions>
+    </library>
+    <library name="Evaluate">
+      <actions>
+        <set_value name="$U.$Score" exact="[100.0f,$U.$Scores.{1} + $U.$Scores.{2} + $U.$Scores.{3}].min"/>
+        <set_value name="$UThresholds" exact="[25,60,80,95]"/>
+        <set_value name="$UStage" exact="0"/>
+        <do_all exact="4" counter="$Ui">
+          <do_if value="$U.$Score ge $UThresholds.{$Ui} or ($U.$Stage ge $Ui and $U.$Score ge $UThresholds.{$Ui} - 5)"><set_value name="$UStage" exact="$Ui"/></do_if>
+        </do_all>
+        <set_value name="$U.$Stage" exact="$UStage"/>
+        <do_if value="$U.$Score ge 95">
+          <do_if value="$U.$CriticalSince == 0">
+            <set_value name="$U.$CriticalSince" exact="player.age / 1s"/>
+            <set_value name="$IncidentText" exact="{974201,207}.[$R.$Hub.sector.knownname]"/>
+            <set_value name="$IncidentObject" exact="$R.$Hub"/>
+            <set_value name="$IncidentSector" exact="$R.$Hub.sector"/>
+            <set_value name="$IncidentPriority" exact="5"/>
+            <include_actions ref="md.CE_UnrestNotifications.Popup"/>
+          </do_if>
+        </do_if>
+        <do_else><set_value name="$U.$CriticalSince" exact="0.0f"/></do_else>
+      </actions>
+    </library>
+    <library name="Tick">
+      <actions>
+        <include_actions ref="md.CE_Unrest.Ensure"/>
+        <include_actions ref="md.CE_UnrestNotifications.Tax"/>
+        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Operational and $R.$Level ge 5 and not $R.$PauseOffers and $U.$Stage ge 2 and player.age / 1s ge $U.$Grace">
+          <set_value name="$IncidentDebug" exact="false"/>
+          <set_value name="$IncidentTier" exact="if $U.$Score ge 95 and $U.$CriticalSince gt 0 and player.age / 1s ge $U.$CriticalSince + 3600 then 3 else if $U.$Stage ge 3 then 2 else 1"/>
+          <do_if value="player.age / 1s ge $U.$NextRaid"><include_actions ref="md.CE_Raids.Request"/></do_if>
+          <do_if value="player.age / 1s ge $U.$NextSabotage">
+            <set_value name="$IncidentKind" exact="''"/>
+            <include_actions ref="md.CE_Sabotage.Request"/>
+          </do_if>
+        </do_if>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

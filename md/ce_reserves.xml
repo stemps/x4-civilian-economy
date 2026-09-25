@@ -32,6 +32,7 @@
         <include_actions ref="md.CE_Settings.RequiredGrowth"/>
         <include_actions ref="md.CE_Reserves.SyncAll"/>
         <set_value name="$ReserveNow" exact="player.age / 1s"/>
+        <include_actions ref="md.CE_Unrest.Accrue"/>
         <set_value name="$ReserveElapsed" exact="[0.0f,$ReserveNow - $R.$Last].max"/>
         <set_value name="$SuppliedSeconds" exact="$ReserveElapsed"/>
         <set_value name="$RequiredWares" exact="0"/>

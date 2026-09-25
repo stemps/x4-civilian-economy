@@ -26,6 +26,10 @@
         <include_actions ref="md.CE_Settings.Read"/>
         <do_if value="$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr and $CETaxPercent gt 0">
           <set_value name="$SalesTax" exact="$Delivered * event.param.unitprice * $CETaxPercent / 100"/>
+          <do_if value="$R.$Unrest?">
+            <set_value name="$TaxPenalty" exact="if $R.$Unrest.$Stage ge 3 then 75 else if $R.$Unrest.$Stage == 2 then 50 else if $R.$Unrest.$Stage == 1 then 25 else 0"/>
+            <set_value name="$SalesTax" exact="$SalesTax * (100 - $TaxPenalty) / 100"/>
+          </do_if>
           <!-- Use the native scripted player reward, including its financial history.
                A faction transfer returned a negative result in the water-delivery test.
                Measure the account change; do not infer credited money from that result. -->

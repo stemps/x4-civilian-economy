@@ -94,6 +94,21 @@ local function buildActions()
     action(text(s and s.pausedOffers and 42 or 41), function() return statusFor(id) ~= nil end, function()
         AddUITriggeredEvent('CELevelTesting', 'pause_offers', ConvertStringToLuaID(tostring(id)))
     end)
+    if s and s.unrest and s.unrest.token then
+        row(text(210))
+        local token = s.unrest.token
+        local commands = {'stage_1','stage_2','stage_3','stage_4','clear','warning',
+            'raid_1','raid_2','raid_3','production','turrets','cargo','shields','destroy','cooldowns'}
+        for index, command in ipairs(commands) do
+            local control = command .. ':' .. string.format('%d', token)
+            action(text(210 + index), function()
+                local fresh = statusFor(id)
+                return fresh and not fresh.stale and fresh.unrest and fresh.unrest.token == token
+            end, function()
+                AddUITriggeredEvent('CEUnrestTesting', control, ConvertStringToLuaID(tostring(id)))
+            end, text(226))
+        end
+    end
 end
 local function register()
     if registered then return true end

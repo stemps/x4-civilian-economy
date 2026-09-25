@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<diff>
+  <add sel="//handler[@name='ResupplyHandler']/conditions/check_value[1]" pos="before">
+    <check_value value="not (this.ship.trueowner == faction.ce_unrest and @this.ship.pilot.$ce_unrest_version == 2)"/>
+  </add>
+</diff>

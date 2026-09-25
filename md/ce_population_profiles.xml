@@ -73,6 +73,8 @@
             </do_if>
           </do_for_each>
           <set_value name="$CandidateDefinitions" exact="[]"/>
+          <set_value name="$CandidateCategories" exact="table[]"/>
+          <set_value name="$ProfileCategory" exact="1"/>
           <set_value name="$ProfileSeen" exact="table[]"/>
           <!-- Local foods precede shared and imported wares, preventing duplicates. -->
           <do_if value="$ProfileFoods.{'$' + $CandidateRace}?">
@@ -89,6 +91,7 @@
             <set_value name="$ProfileCommon" exact="$ProfileRaceDemands.{'$' + $CandidateRace}"/>
           </do_if>
           <do_for_each name="$ProfileDefinition" in="$ProfileCommon">
+            <set_value name="$ProfileCategory" exact="2"/>
             <include_actions ref="md.CE_PopulationProfiles.Add"/>
           </do_for_each>
           <do_for_each name="$DiscoveredRace" in="lookup.race.list">
@@ -97,6 +100,7 @@
                 <!-- Water and medicine are sustain, never exotic cuisine. -->
                 <do_if value="$ProfileWares.{'$' + $ProfileID}? and $ProfileWares.{'$' + $ProfileID}.group.id != 'water' and $ProfileWares.{'$' + $ProfileID}.group.id != 'pharmaceutical'">
                   <set_value name="$ProfileDefinition" exact="[$ProfileID,8,75000.0f,'budget']"/>
+                  <set_value name="$ProfileCategory" exact="3"/>
                   <include_actions ref="md.CE_PopulationProfiles.Add"/>
                 </do_if>
               </do_for_each>
@@ -147,6 +151,11 @@
             </do_if>
             <do_if value="$CandidateValid and $ProfileDefinition.count == 3 and $ProfileDefinition.{3} gt 0 and $ProfileDefinition.{3} le 1000000000000.0f">
               <append_to_list name="$CandidateDefinitions" exact="[$ProfileWares.{'$' + $ProfileAddID},$ProfileDefinition.{2},$ProfileDefinition.{3}]"/>
+              <set_value name="$ProfileClass" exact="$ProfileCategory"/>
+              <do_if value="$ProfileAddID == 'energycells' or $ProfileWares.{'$' + $ProfileAddID}.group.id == 'water' or $ProfileWares.{'$' + $ProfileAddID}.group.id == 'pharmaceutical'"><set_value name="$ProfileClass" exact="1"/></do_if>
+              <do_elseif value="['spacefuel','spaceweed','majadust','stimulants'].indexof.{$ProfileAddID}"><set_value name="$ProfileClass" exact="3"/></do_elseif>
+              <set_value name="$ProfileClassWare" exact="$ProfileWares.{'$' + $ProfileAddID}"/>
+              <set_value name="$CandidateCategories.{$ProfileClassWare}" exact="$ProfileClass"/>
               <set_value name="$ProfileSeen.{'$' + $ProfileAddID}" exact="true"/>
             </do_if>
             <do_else>
