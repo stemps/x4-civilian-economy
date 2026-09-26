@@ -1,7 +1,7 @@
 """Run shipped debug creation and lifecycle actions with native construction mocks."""
 import copy
 from support import Table, List, NIL, Component
-from test_hub_startup import StartupHarness
+from support_startup import StartupHarness
 
 
 class DebugCreateTests(StartupHarness):

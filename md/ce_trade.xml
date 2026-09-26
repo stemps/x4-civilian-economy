@@ -15,13 +15,7 @@
         <include_actions ref="md.CE_Reserves.SyncWare"/>
         <set_value name="$W.$Delivered" operation="add" exact="$Delivered"/>
         <set_value name="$W.$Paid" operation="add" exact="$Delivered * event.param.unitprice"/>
-        <!-- Label the native seller payment, independently of player-sector tax. -->
-        <do_if value="event.param.seller.isplayerowned and event.param.seller.order.exists and not event.param.seller.order.isinfinite and not event.param.sellfree and $Delivered gt 0 and event.param.unitprice gt 0Cr">
-          <set_value name="$DeliveryPayment" exact="$Delivered * event.param.unitprice"/>
-          <!-- Native trade completion precedes the orderqueue_remove payment.
-               The AI order can still be waiting for drones after that payment. -->
-          <signal_cue_instantly cue="md.CE_Trade.WatchDeliveryPayment" param="table[$Seller=event.param.seller,$Order=event.param.seller.order,$Amount=$DeliveryPayment,$SectorName=$R.$Hub.sector.knownname,$CompletedAt=player.age,$WareID=$Ware.id]"/>
-        </do_if>
+        <include_actions ref="md.CE_TransactionLog.WatchPayment"/>
         <!-- Sector ownership is evaluated at completion, independently of the seller. -->
         <include_actions ref="md.CE_Settings.Read"/>
         <do_if value="$R.$Hub.sector.isplayerowned and $Delivered gt 0 and event.param.unitprice gt 0Cr and $CETaxPercent gt 0">
@@ -36,11 +30,7 @@
           <set_value name="$SalesTaxBalanceBefore" exact="player.money"/>
           <reward_player money="$SalesTax"/>
           <set_value name="$SalesTaxPaid" exact="player.money - $SalesTaxBalanceBefore"/>
-          <do_if value="$SalesTaxPaid gt 0Cr">
-            <!-- VTL 1.14 listens to this description-only event. With no listener it
-                 is harmless. Never call its TransferMoney cue as well: that pays again. -->
-            <raise_lua_event name="'transfer_money'" param="$SalesTaxPaid + ';' + {974201,155}.[$R.$Hub.sector.knownname]"/>
-          </do_if>
+          <include_actions ref="md.CE_TransactionLog.LabelTax"/>
           <do_if value="$SalesTaxPaid gt 0Cr and $CETaxNotifications">
             <show_notification text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]"/>
             <write_to_logbook category="general" title="{974201,126}" text="{974201,127}.[$SalesTaxPaid.formatted.{'%s %Cr'},$R.$Hub.sector.name,$Delivered,$Ware.name]" money="$SalesTaxPaid" object="$R.$Hub" interaction="showonmap"/>
@@ -51,6 +41,7 @@
         <include_actions ref="md.CE_OwnerlessHub.PublishAllDiagnostics"/>
       </actions>
     </library>
+    <!-- Retain saved watcher identities and captured Payment in this namespace. -->
     <cue name="WatchDeliveryPayment" instantiate="true" namespace="this">
       <conditions><event_cue_signalled/></conditions>
       <actions>
@@ -64,14 +55,7 @@
             <event_object_money_updated object="parent.$Payment.$Seller" oldamount="parent.$Payment.$Amount" newamount="0Cr"/>
           </conditions>
           <actions>
-            <!-- Queue all receipts before waking Lua; simultaneous payments must
-                 not overwrite a single shared request. Blackboard serialization
-                 converts MD money to Lua credits; do not divide it by 1Cr here. -->
-            <do_if value="not player.entity.$ce_vtl_deliveries?">
-              <set_value name="player.entity.$ce_vtl_deliveries" exact="[]"/>
-            </do_if>
-            <append_to_list name="player.entity.$ce_vtl_deliveries" exact="[$Payment.$Seller,$Payment.$Amount,$Payment.$CompletedAt,player.age,$Payment.$SectorName,@$Payment.$WareID]"/>
-            <raise_lua_event name="'CEVTLDelivery'"/>
+            <include_actions ref="md.CE_TransactionLog.PublishPayment"/>
             <cancel_cue cue="parent"/>
           </actions>
         </cue>
@@ -132,48 +116,12 @@
     </library>
     <library name="FundAccounts">
       <actions>
-        <set_value name="$Hub" exact="$R.$Hub"/>
-        <do_if value="$Hub.isclass.container">
-          <set_object_account object="$Hub"/>
-          <set_value name="$TargetMoney" exact="0Cr"/>
-          <do_for_each name="$Ware" in="$R.$Wares.keys.list">
-            <set_value name="$TargetMoney" operation="add" exact="$R.$Wares.{$Ware}.$Cap * $R.$Wares.{$Ware}.$Price * 2"/>
-          </do_for_each>
-          <do_if value="$Hub.money lt $TargetMoney">
-            <transfer_money from="faction.ownerless" to="$Hub" amount="$TargetMoney - $Hub.money" result="$Funded"/>
-            <debug_text text="'[CE] Civilian funding=%s balance=%s'.[$Funded,$Hub.money]"/>
-          </do_if>
-        </do_if>
-        <do_if value="$Hub.buildstorage.exists">
-          <set_value name="$ManagedObject" exact="$Hub.buildstorage"/>
-          <include_actions ref="md.CE_OwnerlessHub.EnsureManager"/>
-          <set_object_account object="$Hub.buildstorage"/>
-          <set_value name="$BuildBudget" exact="$Hub.buildstorage.wantedmoney"/>
-          <do_if value="$BuildBudget gt $Hub.buildstorage.money">
-            <transfer_money from="faction.ownerless" to="$Hub.buildstorage" amount="$BuildBudget - $Hub.buildstorage.money" result="$Funded"/>
-            <debug_text text="'[CE] Construction funding=%s budget=%s'.[$Funded,$BuildBudget]"/>
-          </do_if>
-        </do_if>
+        <include_actions ref="md.CE_Accounts.FundAccounts"/>
       </actions>
     </library>
     <library name="EnsureManager">
       <actions>
-        <do_if value="$ManagedObject.isoperational and not $ManagedObject.tradenpc.exists">
-          <!-- Explicit appearance avoids ownerless.primaryrace lookup; ownership stays ownerless. -->
-          <create_cue_actor name="$Manager" cue="md.CE_OwnerlessHub.Init">
-            <select faction="faction.argon" tags="controlpost.manager.tag"/>
-            <owner exact="faction.ownerless"/>
-          </create_cue_actor>
-          <do_if value="$Manager">
-            <assign_control_entity object="$ManagedObject" actor="$Manager" post="controlpost.manager" transfer="true"/>
-            <remove_cue_actor actor="$Manager" cue="md.CE_OwnerlessHub.Init"/>
-            <create_ai_unit object="$ManagedObject"/>
-            <debug_text text="'[CE] Ownerless manager initialised on %s'.[$ManagedObject]"/>
-          </do_if>
-          <do_else>
-            <debug_text text="'[CE] BLOCKED: could not create ownerless manager on %s'.[$ManagedObject]"/>
-          </do_else>
-        </do_if>
+        <include_actions ref="md.CE_Accounts.EnsureManager"/>
       </actions>
     </library>
   </cues>

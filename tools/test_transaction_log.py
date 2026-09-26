@@ -12,14 +12,16 @@ mod = Path(sys.argv[1])
 manifest = etree.parse(str(mod / 'content.xml'))
 assert manifest.getroot().get('id') == 'VerboseTransactionLog'
 trade = etree.parse(str(root / 'md/ce_trade.xml'))
-event, = trade.xpath('//raise_lua_event[contains(@param,"{974201,155}")]')
+transaction_log = etree.parse(str(root / 'md/ce_transaction_log.xml'))
+event, = transaction_log.xpath('//raise_lua_event[contains(@param,"{974201,155}")]')
 assert event.get('param') == "$SalesTaxPaid + ';' + {974201,155}.[$R.$Hub.sector.knownname]"
 assert event.getparent().get('value') == '$SalesTaxPaid gt 0Cr'
 label, = etree.parse(str(root / 't/0001-l044.xml')).xpath('//t[@id="155"]/text()')
-delivery_event, = trade.xpath('//raise_lua_event[@name="\'CEVTLDelivery\'"]')
+delivery_event, = transaction_log.xpath('//raise_lua_event[@name="\'CEVTLDelivery\'"]')
 assert delivery_event.get('param') is None
-assert delivery_event.xpath('ancestor::cue[1]/@name') == ['DeliveryAccountPaid']
-assert not trade.xpath('//cue[@name="DeliveryAccountPaid"]//raise_lua_event[@name="\'transfer_money\'"]')
+assert delivery_event.xpath('ancestor::library/@name') == ['PublishPayment']
+assert trade.xpath('//cue[@name="DeliveryAccountPaid"]/actions/include_actions/@ref') == ['md.CE_TransactionLog.PublishPayment']
+assert not transaction_log.xpath('//library[@name="PublishPayment"]//raise_lua_event[@name="\'transfer_money\'"]')
 delivery_label, = etree.parse(str(root / 't/0001-l044.xml')).xpath('//t[@id="156"]/text()')
 
 lua = LuaRuntime()

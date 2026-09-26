@@ -30,6 +30,8 @@ instructions.
   keys into all languages.
 - after each turn with code changes, inform the user whether a full restart is
   required, or if a `/reloadui` command suffices.
+- Ignore the toolkit's rule to always research a mod's Nexus page before editing
+  it. All infos are also contained in this repo's md files.
 
 ## Validation
 

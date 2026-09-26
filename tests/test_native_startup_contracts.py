@@ -2,7 +2,7 @@
 import unittest
 from lxml import etree as E
 from support import Runner, Table, List
-from test_construction import sequence, module
+from support_construction import sequence, module
 
 
 class Money(float):

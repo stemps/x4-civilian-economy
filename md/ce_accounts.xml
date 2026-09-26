@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Accounts" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Synchronous actions use the caller namespace; no persistent state lives here. -->
+    <library name="FundAccounts">
+      <actions>
+        <set_value name="$Hub" exact="$R.$Hub"/>
+        <do_if value="$Hub.isclass.container">
+          <set_object_account object="$Hub"/>
+          <set_value name="$TargetMoney" exact="0Cr"/>
+          <do_for_each name="$Ware" in="$R.$Wares.keys.list">
+            <set_value name="$TargetMoney" operation="add" exact="$R.$Wares.{$Ware}.$Cap * $R.$Wares.{$Ware}.$Price * 2"/>
+          </do_for_each>
+          <do_if value="$Hub.money lt $TargetMoney">
+            <transfer_money from="faction.ownerless" to="$Hub" amount="$TargetMoney - $Hub.money" result="$Funded"/>
+            <debug_text text="'[CE] Civilian funding=%s balance=%s'.[$Funded,$Hub.money]"/>
+          </do_if>
+        </do_if>
+        <do_if value="$Hub.buildstorage.exists">
+          <set_value name="$ManagedObject" exact="$Hub.buildstorage"/>
+          <include_actions ref="md.CE_OwnerlessHub.EnsureManager"/>
+          <set_object_account object="$Hub.buildstorage"/>
+          <set_value name="$BuildBudget" exact="$Hub.buildstorage.wantedmoney"/>
+          <do_if value="$BuildBudget gt $Hub.buildstorage.money">
+            <transfer_money from="faction.ownerless" to="$Hub.buildstorage" amount="$BuildBudget - $Hub.buildstorage.money" result="$Funded"/>
+            <debug_text text="'[CE] Construction funding=%s budget=%s'.[$Funded,$BuildBudget]"/>
+          </do_if>
+        </do_if>
+      </actions>
+    </library>
+    <library name="EnsureManager">
+      <actions>
+        <do_if value="$ManagedObject.isoperational and not $ManagedObject.tradenpc.exists">
+          <!-- Explicit appearance avoids ownerless.primaryrace lookup; ownership stays ownerless. -->
+          <create_cue_actor name="$Manager" cue="md.CE_OwnerlessHub.Init">
+            <select faction="faction.argon" tags="controlpost.manager.tag"/>
+            <owner exact="faction.ownerless"/>
+          </create_cue_actor>
+          <do_if value="$Manager">
+            <assign_control_entity object="$ManagedObject" actor="$Manager" post="controlpost.manager" transfer="true"/>
+            <remove_cue_actor actor="$Manager" cue="md.CE_OwnerlessHub.Init"/>
+            <create_ai_unit object="$ManagedObject"/>
+            <debug_text text="'[CE] Ownerless manager initialised on %s'.[$ManagedObject]"/>
+          </do_if>
+          <do_else>
+            <debug_text text="'[CE] BLOCKED: could not create ownerless manager on %s'.[$ManagedObject]"/>
+          </do_else>
+        </do_if>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

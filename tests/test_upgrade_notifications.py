@@ -1,6 +1,6 @@
 """Lifecycle notifications through shipped construction and controller actions."""
 from support import Table, Component, NIL
-from test_hub_startup import StartupHarness
+from support_startup import StartupHarness
 
 
 class UpgradeNotificationTests(StartupHarness):

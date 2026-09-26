@@ -2,10 +2,10 @@
 import copy
 import unittest
 from support import Runner, Table, List, Component, Ware, NIL
-import test_sales_tax
+from support_sales_tax import SalesTaxFixture
 
 
-class SettingsTests(unittest.TestCase):
+class SettingsTests(SalesTaxFixture, unittest.TestCase):
     def setUp(self):
         self.run = Runner()
         self.run.env['player'].entity = Table()
@@ -127,10 +127,9 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(record.Snapshot[9][1][9], 360)
 
     def test_tax_endpoints_and_notification_toggle_do_not_change_seller_accounting(self):
-        fixture = test_sales_tax.SalesTaxTests()
         for percent in (0, 15, 50):
             for notifications in (False, True):
-                run, record, deal, payments = fixture.fixture()
+                run, record, deal, payments = self.fixture()
                 run.env['md'].CE_Settings.State.update(TaxPercent=percent,
                                                        TaxNotifications=notifications)
                 run.library('RecordDelivery')

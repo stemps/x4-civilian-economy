@@ -8,12 +8,12 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from release_archive import local_zip, tagged_zip, ReleaseError
-import test_release
+from release_support import ReleaseFixture
 
 
 class ArchiveTests(unittest.TestCase):
     def setUp(self):
-        self.fixture = test_release.ReleaseTests('test_first_and_subsequent_release')
+        self.fixture = ReleaseFixture()
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
         self.root = self.fixture.root

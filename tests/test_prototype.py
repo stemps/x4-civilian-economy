@@ -174,15 +174,26 @@ class LifecycleTests(unittest.TestCase):
         self.run.env['PlanIDs']=List(['p'+str(i) for i in range(1,11)])
         self.run.env['faction']=Table(ownerless='ownerless')
         self.hub=Component(exists=True,iswreck=False,owner='ownerless',
+                       isoperational=True,isclass=Table(container=True),money=0,
                        constructionsequence=List([Table(id=str(i)) for i in range(6)]),
                        planmodule=Table({str(i):Table(isoperational=i<4) for i in range(6)}),
-                       buildstorage=Table(exists=True,builds=Table(queued=List(),inprogress=List()),buildmodule='module'))
+                       buildstorage=Table(exists=True,isoperational=True,money=0,wantedmoney=50000,
+                                          builds=Table(queued=List(),inprogress=List()),buildmodule='module'))
         self.r=Table(GrowthSeconds=0.0,Last=0.0,Level=1,Target=2,Build=NIL,Hub=self.hub,InitializedHub=self.hub,Operational=True,
                      Wares=Table(),Transfers=Table(),PlotReady=True,PauseOffers=False,TestUpgrade=False,
                      CompletedSequence=List(self.hub.constructionsequence[:4]),TargetSequence=self.hub.constructionsequence)
         self.run.env['R']=self.r;self.run.library('ApplyLevel')
-        for name in ('FundAccounts','EnsureManager','RenameHub','UpdateOffers','PublishDiagnostics','AssignBuilder'):
+        for name in ('RenameHub','UpdateOffers','PublishDiagnostics','AssignBuilder'):
             self.run.stubs[name]=lambda:None
+        # Exercise the real provisioning libraries; mock only native side effects.
+        def transfer(node):
+            amount=self.run.expr(node.get('amount'))
+            self.run.expr(node.get('to')).money += amount
+            self.run.set(node.get('result'),amount)
+        self.run.native.update(transfer_money=transfer,set_object_account=lambda n:None,
+            create_cue_actor=lambda n:self.run.set(n.get('name'),Component(exists=True)),
+            assign_control_entity=lambda n:setattr(self.run.expr(n.get('object')),'tradenpc',self.run.expr(n.get('actor'))),
+            remove_cue_actor=lambda n:None,create_ai_unit=lambda n:None)
         self.run.native['signal_objects']=lambda n:None
         self.run.native.update(show_notification=lambda n:None, write_to_logbook=lambda n:None)
         self.created=0
@@ -197,6 +208,10 @@ class LifecycleTests(unittest.TestCase):
         self.run.env['player']['age']=60
         self.run.library('UpdateHub')
         self.assertTrue(self.r.Operational);self.assertEqual(self.r.Level,1)
+        self.assertTrue(self.hub.tradenpc.exists)
+        self.assertTrue(self.hub.buildstorage.tradenpc.exists)
+        self.assertEqual(self.hub.money,sum(w.Cap*w.Price*2 for w in self.r.Wares.values()))
+        self.assertEqual(self.hub.buildstorage.money,self.hub.buildstorage.wantedmoney)
         self.assertEqual(set(self.r.Wares),{'foodrations','water'})
         before=self.r.Wares['foodrations'].Reserve
         for m in self.hub.planmodule.values():m['isoperational']=True

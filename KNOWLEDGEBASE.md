@@ -1,5 +1,49 @@
 # Mod-local Knowledgebase
 
+## 2026-09-26 - trade-and-fixture-extraction
+
+- SOURCE: `CE_Accounts` owns funding and manager provisioning;
+  `CE_TransactionLog` owns optional seller-payment requests, tax labels and
+  receipt publication. Both contain synchronous libraries only. Existing
+  controller/trade entry points and `CE_Trade.WatchDeliveryPayment` plus its
+  child cue identities, conditions, captured `$Payment` and cancellation remain.
+- MEASURED: expanding the new include-actions calls and comparing XML element
+  names, attributes, text and order reproduces the pre-refactor `CE_Trade`
+  tree exactly (comments/formatting excluded). All other existing MD files are
+  byte-identical. The ownership and raid review findings remain intentionally
+  unaddressed at the user's request.
+- SOURCE: construction, startup, unrest and sales-tax fixtures now live in
+  focused `tests/support_*.py` modules. Release/archive tests share
+  `test/release_support.py`; no suite imports another suite. Lifecycle tests
+  exercise real funding/manager libraries with only native effects mocked.
+- MOCKED: all 205 MD tests, Lua checks, 60 release-tooling tests and the installed
+  VTL integration test pass after extraction. Native save/load remains an
+  in-game acceptance boundary; full restart is required for the MD extraction.
+- VALIDATED: `just schema` reports no issues, including all six merged AI
+  patches. A subsequent static pass without the backup in the mod also passes.
+  Keep XML baselines outside the mod: the validator included the ignored
+  `.snapshots` backup in its reference inventory (98 payload files with this
+  backup, 79 after moving it out), although schema checks target live scripts.
+
+## 2026-09-25 - review-ownership-and-raid-lifecycle
+
+- MOCKED, not in-game verified: executing `UpdateHub` with the existing
+  `LifecycleTests` fixture after changing hub ownership to player sets
+  `PauseReason=owner_changed` but still invokes `FundAccounts`. SOURCE:
+  the non-ready branch only checks existence/wreck status before funding;
+  `CE_Trade.FundAccounts` has no ownerless guard for either station account.
+- MOCKED: a version-2 raid whose ship loses its pilot enters withdrawing but
+  remains registered after repeated lifecycle ticks at age 10000. SOURCE:
+  `CE_RaidBehaviour.Withdraw` places both departure and eventual destruction
+  inside the pilot-present guard. Such a surviving ship retains its group slot.
+- MOCKED: replacing a version-2 raider's pilot after departure leaves the new
+  pilot without CE version/sector markers on the next tick. SOURCE: marker
+  initialization is in Prepare; the legacy lifecycle repair does not run for
+  version-2 groups. AI guards require those markers. The frequency and native
+  circumstances of pilot replacement/loss remain unmeasured.
+- Review only: these runtime paths were not changed. Reproductions used the
+  shipped MD action interpreter and existing fixtures with native effects mocked.
+
 ## 2026-09-25 - release-runtime-selection
 
 - SOURCE: SCV's release archive whitelist covers UI Lua, MD and translations;

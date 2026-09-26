@@ -1,7 +1,7 @@
 """Current-plot-first retries exercise the real construction/placement libraries."""
 from support import Table, List, NIL, Component
-from test_hub_startup import StartupHarness
-from test_construction import sequence
+from support_startup import StartupHarness
+from support_construction import sequence
 
 
 class PlotRetryTests(StartupHarness):

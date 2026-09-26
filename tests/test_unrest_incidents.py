@@ -3,7 +3,7 @@ import unittest
 from types import SimpleNamespace
 from lxml import etree as E
 from support import Table,List,Component,Ware,NIL,ROOT
-import test_unrest
+from support_unrest import UnrestFixture
 
 
 class RaidShip(Component):
@@ -22,8 +22,7 @@ class DroneBay(Table):
     def free(self):return max(0,self.maxcount-self.count)
 
 
-class IncidentTests(unittest.TestCase):
-    setUp=test_unrest.UnrestTests.setUp
+class IncidentTests(UnrestFixture, unittest.TestCase):
 
     def sabotage(self, kind, available=True):
         self.station=Component(exists=True,owner='player',sector=self.sector,knownname='Station',cargo=Table(list=List()))

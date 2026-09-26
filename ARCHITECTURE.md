@@ -130,7 +130,9 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_options.xml` | Civilian Economy page in Mod Support APIs Extension Options; checkbox and stepped-slider callbacks. |
 | `md/ce_ownerless_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
 | `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
-| `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers, pricing, account funding and manager setup. |
+| `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers and pricing. Retains payment watcher cue identities and compatibility provisioning entry points. |
+| `md/ce_accounts.xml` | Synchronous station/build-storage funding and manager provisioning, behind the existing trade/controller entry points. |
+| `md/ce_transaction_log.xml` | Synchronous optional payment-label integration: capture requests, tax labels and receipt publication. Owns no persistent cue state. |
 | `md/ce_notifications.xml` | Upgrade-start and completion ticker/logbook messages, with saved per-target start deduplication. |
 | `md/ce_diagnostics.xml` | Validated per-hub snapshots and blackboard publication. |
 | `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
@@ -587,11 +589,23 @@ the combined ware-name/time column. Buying uses native `ConvertIntegerString`.
 ## Test support and configured paths
 
 `tests/support.py` owns fixture data, reference resolution and the reusable
-profile fixture. Test suites do not import helpers from other test suites.
+profile fixture. `support_construction.py`, `support_startup.py`,
+`support_unrest.py` and `support_sales_tax.py` own focused shared fixtures;
+test suites do not import helpers or setup methods from other test suites.
+Release/archive tests share the disposable local Git fixture in
+`test/release_support.py`. Lifecycle tests execute real account/manager
+provisioning libraries with native side effects mocked.
 `tools/check.py --reference` passes its resolved path through `CE_REFERENCE` to
 all fixtures; `X4_REFERENCE` and `X4_TOOLKIT` set defaults for isolated worktrees.
 `tools/md_test_runtime.py` dispatches fully qualified library calls by the shipped
 MD script name. Controller forwarding calls preserve existing test interception.
+
+Payment watchers remain at `CE_Trade.WatchDeliveryPayment` with the same child
+cue names, conditions and captured `$Payment`. Only synchronous action bodies
+delegate to `CE_TransactionLog`; receipt cancellation stays in the original
+child cue. Account extraction likewise keeps caller namespaces, action order,
+funding policy and manager ownership unchanged. These refactorings introduce
+no saved-state migration or fixes to the ownership/raid review findings.
 
 ## Debug advance to a chosen level
 

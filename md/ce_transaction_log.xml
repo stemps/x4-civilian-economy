@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_TransactionLog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Synchronous actions use the caller namespace; no persistent state lives here. -->
+    <library name="WatchPayment">
+      <actions>
+        <!-- Label the native seller payment, independently of player-sector tax. -->
+        <do_if value="event.param.seller.isplayerowned and event.param.seller.order.exists and not event.param.seller.order.isinfinite and not event.param.sellfree and $Delivered gt 0 and event.param.unitprice gt 0Cr">
+          <set_value name="$DeliveryPayment" exact="$Delivered * event.param.unitprice"/>
+          <!-- Native trade completion precedes the orderqueue_remove payment.
+               The AI order can still be waiting for drones after that payment. -->
+          <signal_cue_instantly cue="md.CE_Trade.WatchDeliveryPayment" param="table[$Seller=event.param.seller,$Order=event.param.seller.order,$Amount=$DeliveryPayment,$SectorName=$R.$Hub.sector.knownname,$CompletedAt=player.age,$WareID=$Ware.id]"/>
+        </do_if>
+      </actions>
+    </library>
+    <library name="LabelTax">
+      <actions>
+        <do_if value="$SalesTaxPaid gt 0Cr">
+          <!-- VTL 1.14 listens to this description-only event. With no listener it
+               is harmless. Never call its TransferMoney cue as well: that pays again. -->
+          <raise_lua_event name="'transfer_money'" param="$SalesTaxPaid + ';' + {974201,155}.[$R.$Hub.sector.knownname]"/>
+        </do_if>
+      </actions>
+    </library>
+    <library name="PublishPayment">
+      <actions>
+        <!-- Queue all receipts before waking Lua; simultaneous payments must
+             not overwrite a single shared request. Blackboard serialization
+             converts MD money to Lua credits; do not divide it by 1Cr here. -->
+        <do_if value="not player.entity.$ce_vtl_deliveries?">
+          <set_value name="player.entity.$ce_vtl_deliveries" exact="[]"/>
+        </do_if>
+        <append_to_list name="player.entity.$ce_vtl_deliveries" exact="[$Payment.$Seller,$Payment.$Amount,$Payment.$CompletedAt,player.age,$Payment.$SectorName,@$Payment.$WareID]"/>
+        <raise_lua_event name="'CEVTLDelivery'"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>
