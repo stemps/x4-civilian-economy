@@ -39,14 +39,19 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
             self.run.set(n.get('result'),List([self.module]))
         self.run.native['set_object_hacked']=hack
 
-    def test_each_hack_uses_actual_result_and_shared_popup(self):
+    def test_each_hack_reports_station_attack_type_and_affected_module(self):
         for kind in ('production','turrets','shields'):
             with self.subTest(kind=kind):
                 self.setUp();self.sabotage(kind)
+                self.module.module = self.module if kind == 'production' else Component(exists=True, knownname='Defense module')
                 self.run.library('md.CE_Sabotage.Request')
                 self.assertTrue(self.run.env['IncidentSuccess'])
                 self.assertEqual(len(self.messages),1)
                 self.assertEqual(self.messages[0][1][1],204)
+                details = self.messages[0][1][2]
+                self.assertEqual(details[:2], ('Station','Sector'))
+                self.assertEqual(details[2], 'Module' if kind == 'production' else (974201,300,('Module','Defense module')))
+                self.assertEqual(details[4], (974201,{'production':297,'turrets':298,'shields':299}[kind],()))
                 self.assertEqual(self.u.NextSabotage,5400)
                 self.assertEqual(self.run.env['md'].CE_Sabotage.State.Stations[self.station].Next,5400)
 
@@ -107,6 +112,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.module.iswreck=True
         self.run.actions(tree.xpath('//cue[@name="Confirm"]/actions')[0])
         self.assertEqual(self.messages[0][1][1],206)
+        self.assertEqual(self.messages[0][1][2],('Station','Sector','Module'))
         self.assertEqual(self.u.NextDestruction,14400)
 
     def test_debug_dispatch_rejects_replays_wrong_hub_and_disabled_debug(self):
@@ -212,7 +218,9 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
             leader=next((ship for ship in self.created if ship.macro=='L'),self.created[0])
             self.assertIs(self.run.env['md'].CE_Raids.State.Groups[1].Leader,leader)
             self.assertFalse(any(order=='Plunder' for _,order in self.orders))
-            self.assertEqual(self.messages,[])
+            self.assertEqual(len(self.messages),1)  # Mobilisation is reported before undocking.
+            self.assertTrue(self.run.env['md'].CE_Raids.State.Groups[1].Announced)
+            self.assertFalse(self.run.env['md'].CE_Raids.State.Groups[1].CombatStarted)
             self.depart()
             self.assertEqual([(s,o) for s,o in self.orders if o=='Plunder'],[(leader,'Plunder')])
             self.assertIs(leader.commander,NIL)
@@ -230,7 +238,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
                 self.assertFalse(ship.pilot.ce_unrest_withdraw)
             self.assertEqual(self.u.NextRaid,3600)
 
-    def test_departure_timeout_rolls_back_cooldowns_without_popup(self):
+    def test_departure_timeout_rolls_back_cooldowns_despite_early_warning(self):
         self.setup_raids(3);self.u.NextRaid=23;self.u.NextCapital=47
         self.run.library('md.CE_Raids.Request')
         group=self.run.env['md'].CE_Raids.State.Groups[1]
@@ -239,9 +247,10 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.run.env['player'].age=601;self.tick()
         self.assertEqual(group.Phase,'withdrawing')
         self.assertEqual((self.u.NextRaid,self.u.NextCapital),(23,47))
-        self.assertFalse(any(m[0]=='popup' for m in self.messages))
-        self.assertEqual(len(self.messages),1)  # Debug failure feedback.
-        self.tick();self.assertEqual(len(self.messages),1)
+        self.assertEqual(sum(m[0]=='popup' for m in self.messages),1)
+        self.assertFalse(group.CombatStarted)
+        self.assertEqual(len(self.messages),2)  # Mobilisation plus debug failure feedback.
+        self.tick();self.assertEqual(len(self.messages),2)
 
     def test_capital_loadout_reserves_capacity_instead_of_aborting_after_one_drone(self):
         self.setup_raids(3)
@@ -278,12 +287,41 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         group=self.run.env['md'].CE_Raids.State.Groups[1]
         for ship in group.Ships:
             if ship is not group.Leader:ship.dock=NIL;group.Moves[ship].exists=False
-        self.tick();self.assertEqual(group.Phase,'departing');self.assertEqual(self.messages,[])
+        self.tick();self.assertEqual(group.Phase,'departing');self.assertEqual(len(self.messages),1)
         # Reparse shipped code with the same persisted MD state/order references.
         self.run.scripts=Runner().scripts
+        self.run.env['player'].age=180
         self.depart();self.assertEqual(group.Phase,'raiding');self.assertEqual(len(self.messages),1)
         self.run.scripts=Runner().scripts;self.tick();self.assertEqual(len(self.messages),1)
         self.assertEqual(group.End,self.run.env['player'].age+2700)
+
+    def test_old_v2_flags_migrate_without_replay_or_lifetime_extension(self):
+        self.setup_raids(1);self.run.library('md.CE_Raids.Request');self.depart()
+        group=self.run.env['md'].CE_Raids.State.Groups[1]
+        end=group.End
+        group.pop('CombatStarted')  # Old Announced=true meant piracy already started.
+        self.run.env['player'].age=120
+        self.tick()
+        self.assertTrue(group.CombatStarted)
+        self.assertEqual(group.End,end)
+        self.assertEqual(len(self.messages),1)
+        self.run.env['RaidGroup']=group
+        self.run.library('md.CE_RaidBehaviour.Begin')  # Resume following regroup.
+        self.assertEqual(group.End,end)
+        self.assertEqual(len(self.messages),1)
+
+    def test_old_v2_departing_save_announces_once_and_still_refunds_failure(self):
+        self.setup_raids(3);self.u.NextRaid=23;self.u.NextCapital=47
+        self.run.library('md.CE_Raids.Request')
+        group=self.run.env['md'].CE_Raids.State.Groups[1]
+        group.pop('CombatStarted');group.Announced=False;self.messages.clear()
+        self.tick();self.tick()
+        self.assertFalse(group.CombatStarted)
+        self.assertTrue(group.Announced)
+        self.assertEqual(len(self.messages),1)
+        self.run.env['player'].age=601;self.tick()
+        self.assertEqual((self.u.NextRaid,self.u.NextCapital),(23,47))
+        self.assertEqual(sum(m[0]=='popup' for m in self.messages),1)
 
     def test_full_hold_or_lost_drones_withdraw_and_preserve_boarding(self):
         for cause in ('hold','drones','lifetime','relief'):

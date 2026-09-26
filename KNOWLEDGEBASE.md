@@ -1,5 +1,60 @@
 # Mod-local Knowledgebase
 
+## 2026-09-26 - broadcast-interaction-and-station-conversation-research
+
+- READ: CE_UnrestNotifications.Broadcast explicitly supplies the cutscene
+  interaction; OpenBroadcast stops event.param3 and opens the incident object
+  (or surviving sector) on the map. It does not currently call an NPC.
+- READ: reference/libraries/common.xsd:31139 makes play_cutscene/interaction
+  optional. Its silent attribute suppresses flashing only (7598 onward), and
+  abortable is ignored for target-monitor cutscenes. Omitting interaction is
+  the source-supported approach to a passive broadcast; prompt disappearance
+  remains UNMEASURED in game.
+- READ: reference/md/notifications.xml:2906 and 2953-2963 provide the vanilla
+  handoff: interactive monitor cutscene, stop_cutscene, then start_conversation
+  actor=... conversation=... convparam=... type="unqueued". The same file at
+  3021 supplies a target-monitor cutscene without interaction.
+- PROPOSED, not implemented: sabotage can pass an incident snapshot to a custom
+  conversation with the station manager, offering damage details, map and goodbye.
+  Current payload contains only object/sector, so details must be added. Recheck
+  station/manager existence when clicked; queued video may outlive either.
+  Native add_npc_line uses page/line voice data, not a free-form text attribute;
+  dynamic report presentation and custom voice/subtitle behavior need testing.
+
+## 2026-09-26 - production-broadcasts-and-left-ticker
+
+- IMPLEMENTED: every raid/sabotage Broadcast submits the full IncidentText to the
+  left message ticker for 12 seconds and logs it once. The right target monitor
+  plays the approved red scrolling news video with a short native caption.
+  Null cutscene IDs fall back to the interactive alert without another ticker/log.
+- IMPLEMENTED: attack details distinguish production, turret and shield sabotage,
+  cargo ejection and module destruction. Native component.module supplies the
+  containing module for affected turret/shield equipment (scriptproperties.xml).
+  Destruction captures station/module names before removal, then reports only
+  confirmed destruction. Raids identify their source hub, sector, tier and fleet.
+- IMPLEMENTED: removed the dedicated video experiment, test/preview menu actions,
+  playback diagnostic logs, synthetic assets, experiment strings and comparison
+  generator mode. Real incident debug actions remain available.
+- USER-APPROVED: images/broadcast/ supplies the two production artworks. The
+  generator (just news-videos) fits the whole image above an 84px red banner;
+  bold white text (English IDs 291-292,296) scrolls left at 110px/sec.
+- MEASURED: production clips decode to 288 H.264/yuv420p frames, 1280x720 at 24fps,
+  12 seconds. Their frames matched the approved MP4 comparisons before cleanup.
+- READ: play_cutscene supports caption/interaction but no general body text,
+  dynamic image or priority parameter. Video references omit the MKV suffix.
+  Native queuing can delay the right monitor independently of the left ticker.
+- READ: old Announced also guarded raid lifetime and failed-departure cooldown
+  refunds. CombatStarted now owns those duties; Announced deduplicates departure
+  warnings. Old v2 state migrates from the prior flag to preserve active deadlines.
+- USER-VERIFIED: the earlier native-video experiment played in-game. Its caption
+  showed a missing-glyph box for an em dash; use ASCII hyphens in game strings.
+- UNMEASURED IN GAME: final incident ticker readability, production video queuing
+  and module detail display. Full restart is required for changed MD/text assets.
+- READ: the installed extension is a junction to this workspace; no copy needed.
+- VALIDATED: cleanup passes 213 controller tests, native MD/cutscene and merged
+  AI schema checks, Lua checks and release tests. Rebuilt ZIP contains only the
+  two production videos, byte-identical to the workspace assets.
+
 ## 2026-09-26 - trade-and-fixture-extraction
 
 - SOURCE: `CE_Accounts` owns funding and manager provisioning;

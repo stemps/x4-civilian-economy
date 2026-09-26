@@ -65,6 +65,22 @@ class ArchiveTests(unittest.TestCase):
         local_zip(self.root)
         self.assertNotEqual(archive.read_bytes(), original)
 
+    def test_broadcast_assets_included_without_unrelated_video_files(self):
+        files = ('cutscenes/ce_news_raid.xml', 'videos/ce_news_raid.mkv',
+                 'cutscenes/ce_news_sabotage.xml', 'videos/ce_news_sabotage.mkv')
+        for name in files:
+            self.fixture.write(name, 'synthetic test asset')
+        self.fixture.write('videos/unrelated.mkv', 'exclude')
+        self.fixture.write('videos/ce_news_raid.tmp.mkv', 'exclude')
+        self.fixture.write('cutscenes/notes.txt', 'exclude')
+        archive = local_zip(self.root)
+        with zipfile.ZipFile(archive) as zipped:
+            for name in files:
+                self.assertEqual(zipped.read('civilian_economy/' + name), b'synthetic test asset')
+            self.assertNotIn('civilian_economy/videos/unrelated.mkv', zipped.namelist())
+            self.assertNotIn('civilian_economy/videos/ce_news_raid.tmp.mkv', zipped.namelist())
+            self.assertNotIn('civilian_economy/cutscenes/notes.txt', zipped.namelist())
+
     def test_md_in_local_release_and_tagged_archives(self):
         self.fixture.write('md/ce_logistics.xml', '<mdscript name="CE_Logistics"/>\n')
         self.fixture.write('md/notes.txt', 'Not runtime content')

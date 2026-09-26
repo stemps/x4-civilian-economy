@@ -136,8 +136,8 @@
     <t id="200">Civil unrest</t>
     <t id="201">%1: unrest reduces civilian tax income by %2%. Effective tax rate: %3%.</t>
     <t id="202">%1: civilian tax income restored. Effective tax rate: %2%.</t>
-    <t id="203">Pirate raid in %1, launched from %2. %3 tier: %4 ships — %5.</t>
-    <t id="204">Hack at %1 in %2: %3 disabled for %4 minutes.</t>
+    <t id="203">Pirate mobilisation detected in %1, departing from %2. %3 tier: %4 ships - %5.</t>
+    <t id="204">%5 at %1 in %2: %3 disabled for %4 minutes.</t>
     <t id="205">Storage sabotage at %1 in %2: %4 units of %3 ejected.</t>
     <t id="206">Destructive sabotage at %1 in %2: %3 destroyed.</t>
     <t id="207">Critical unrest in %1. Restore essential supplies within 60 game-minutes to prevent destructive sabotage and capital raids.</t>
@@ -165,7 +165,7 @@
     <t id="232">The hub does not have enough free, operational docks and piers compatible with this raid. Wait for docked ships to depart and try again.</t>
     <t id="233">The engine did not confirm the requested effect. See the debug log.</t>
     <t id="234">Incident cooldowns reset for this hub and local player stations. Active effects remain.</t>
-    <t id="235">The raid could not depart within ten game-minutes. Its ships are withdrawing; no raid was announced.</t>
+    <t id="235">The raid could not depart within ten game-minutes. Its ships are withdrawing; piracy did not begin.</t>
     <t id="236">The capital raider could not be provisioned with five cargo drones.</t>
     <t id="247">%1 M raiders, %2 S escorts, %3 L destroyers</t>
     <t id="241">Light</t><t id="242">Strong</t><t id="243">Capital</t>
@@ -175,5 +175,15 @@
     <t id="252">Shortages: %s</t><t id="253">Critical incidents eligible in %d min</t>
     <t id="254">rising</t><t id="255">recovering</t><t id="256">steady</t>
     <t id="260">Calm</t><t id="261">Dissatisfaction</t><t id="262">Unrest</t><t id="263">Severe</t><t id="264">Critical</t>
+    <t id="291">Pirate mobilisation detected</t>
+    <t id="292">Station sabotage reported</t>
+    <t id="293">Pirate mobilisation - %1</t>
+    <t id="294">Station sabotage - %1</t>
+    <t id="295">Module destroyed - %1</t>
+    <t id="296">BREAKING</t>
+    <t id="297">Production sabotage</t>
+    <t id="298">Turret sabotage</t>
+    <t id="299">Shield sabotage</t>
+    <t id="300">%1 on module %2</t>
   </page>
 </language>

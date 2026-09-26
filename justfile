@@ -27,6 +27,10 @@ release:
 build-zip:
     if ('{{python}}') { & '{{python}}' scripts/release.py build-zip; exit $LASTEXITCODE } else { uv run python scripts/release.py build-zip; exit $LASTEXITCODE }
 
+# Render and fully decode the approved runtime broadcast videos.
+news-videos:
+    if ('{{python}}') { & '{{python}}' tools/build_news_videos.py; exit $LASTEXITCODE } else { uv run --with imageio-ffmpeg python tools/build_news_videos.py; exit $LASTEXITCODE }
+
 # Publish or resume an existing tagged release on Nexus Mods.
 publish-nexus tag *args:
     if ('{{python}}') { & '{{python}}' scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE }

@@ -75,9 +75,13 @@ to a safe sector rally point beyond the hub. Every surviving member must undock
 and finish its rally order before the commander receives native Plunder. The
 10-minute departure deadline produces safe withdrawal on failure. Pending launches
 reserve cooldowns; failed departures restore them only if no newer reservation
-replaced them. The 45-minute lifetime and single incident popup commit when
-piracy starts. Regrouping cannot replay that popup. Old active groups retain their
-legacy cleanup; they are not upgraded to the new behaviour.
+replaced them. A single news broadcast commits when departure is accepted;
+the 45-minute lifetime starts only when piracy begins. Separate saved `Announced`
+and `CombatStarted` guards prevent repeat warnings/lifetime resets on regrouping.
+Old version-2 groups initialize `CombatStarted` from their former `Announced`
+flag before any warning is sent; departing groups receive a warning on their next
+eligible lifecycle tick, while active groups retain their existing end time.
+Pre-version-2 groups retain their legacy cleanup and are not upgraded.
 
 CE AI hooks require true ownership plus versioned pilot blackboard markers.
 `move.seekenemies` preserves the cargo-carrying player-flown ship exception and
@@ -105,6 +109,30 @@ script variables, so all AI identity/control markers live on pilots.
 `CE_UnrestNotifications` owns penalty tickers, interactive target-monitor alerts,
 General logbook entries and map fallback. Saved penalty state suppresses repeat
 tickers; committed incidents own their alert, including delayed destruction.
+Raids and successful sabotage call `Broadcast` with an explicit cutscene key and
+short localized caption. `ce_news_raid` and `ce_news_sabotage` play 12-second still
+clips in the native target monitor, with a warning sound and map interaction.
+The broadcast interaction stops its own cutscene before opening the affected
+object or surviving sector; critical-unrest text alerts keep their original event.
+Full incident details appear in the left message ticker for 12 seconds at submission
+and are written once to the General logbook. Sabotage names its attack type and
+affected equipment/module; destruction captures names before removal. A null cutscene
+result falls back to the original interactive text alert. Native monitor queuing
+is retained. The cutscene API exposes no priority parameter.
+The sabotage image is generic incident artwork for all sabotage effects; the
+caption and log describe the actual outcome, including non-destructive hacks.
+
+`images/broadcast/` contains the approved art sources. `tools/build_news_videos.py`
+encodes H.264/yuv420p clips using imageio-ffmpeg and an installed TrueType font,
+fitting the full images above a solid red lower third without cropping. Bold white
+headlines scroll left at 110 pixels/sec, prefixed with BREAKING. Strings come from
+English text IDs 291-292 and 296 (the only current language is English);
+future language additions also need localized strip renders and clip selection.
+Runtime captions remain native text. These are packaged videos, not a runtime
+image-generation or encoder dependency. Only the two production broadcast MKVs are
+included in release archives, along with cutscene XML.
+`just news-videos` rebuilds and fully decodes the runtime MKVs.
+
 `CE_Trade` reduces only the additional player-sector reward, leaving recorded
 seller payments intact. Routine payment-message settings do not gate unrest
 tickers. Snapshot v3 has optional slot 20 containing score, stage, direction,

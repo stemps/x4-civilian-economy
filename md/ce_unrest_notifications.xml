@@ -4,15 +4,44 @@
     <cue name="OpenIncident" instantiate="true">
       <conditions><event_player_interaction param2="'ce_unrest_map'"/></conditions>
       <actions>
-        <set_value name="$MapObject" exact="if event.param.{1}.exists then event.param.{1} else event.param.{2}"/>
-        <open_menu menu="MapMenu" param="[0,0,true,null,null,'infomode',['info',$MapObject]]"/>
+        <include_actions ref="md.CE_UnrestNotifications.OpenMap"/>
       </actions>
     </cue>
+    <cue name="OpenBroadcast" instantiate="true">
+      <conditions><event_player_interaction param2="'ce_unrest_broadcast_map'"/></conditions>
+      <actions>
+        <stop_cutscene cutscene="event.param3"/>
+        <include_actions ref="md.CE_UnrestNotifications.OpenMap"/>
+      </actions>
+    </cue>
+    <library name="OpenMap">
+      <actions>
+        <set_value name="$MapObject" exact="if event.param.{1}.exists then event.param.{1} else event.param.{2}"/>
+        <do_if value="$MapObject.exists"><open_menu menu="MapMenu" param="[0,0,true,null,null,'infomode',['info',$MapObject]]"/></do_if>
+      </actions>
+    </library>
+    <!-- Callers explicitly supply BroadcastKey/Caption; critical warnings use Popup. -->
+    <library name="Broadcast">
+      <actions>
+        <show_notification text="$IncidentText" timeout="12s"/>
+        <set_value name="$IncidentCutscene" exact="null"/>
+        <play_cutscene key="$BroadcastKey" result="$IncidentCutscene" targetmonitor="true" timeout="12s" caption="$BroadcastCaption" sound="'notification_warning'">
+          <interaction text="{974201,209}" param="[$IncidentObject,$IncidentSector]" param2="'ce_unrest_broadcast_map'"/>
+        </play_cutscene>
+        <do_if value="$IncidentCutscene"><include_actions ref="md.CE_UnrestNotifications.Log"/></do_if>
+        <do_else><include_actions ref="md.CE_UnrestNotifications.Popup"/></do_else>
+      </actions>
+    </library>
     <library name="Popup">
       <actions>
         <show_interactive_notification caption="{974201,200}" text="$IncidentText" timeout="10s" priority="$IncidentPriority" sound="'notification_warning'">
           <interaction text="{974201,209}" param="[$IncidentObject,$IncidentSector]" param2="'ce_unrest_map'"/>
         </show_interactive_notification>
+        <include_actions ref="md.CE_UnrestNotifications.Log"/>
+      </actions>
+    </library>
+    <library name="Log">
+      <actions>
         <write_to_logbook category="general" title="{974201,200}" text="$IncidentText" object="if $IncidentObject.exists then $IncidentObject else $IncidentSector" interaction="showonmap"/>
       </actions>
     </library>

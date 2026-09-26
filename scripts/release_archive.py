@@ -16,7 +16,9 @@ def runtime_path(name):
                  or (name.startswith('ui/') and name.endswith('.lua'))
                  or (path.parts[0] in ('md', 'aiscripts', 'assets', 'index', 'libraries', 'extensions')
                      and name.endswith('.xml'))
-                 or (name.startswith('t/') and name.endswith('.xml'))))
+                 or (name.startswith('t/') and name.endswith('.xml'))
+                 or (name.startswith('cutscenes/') and name.endswith('.xml'))
+                 or name in ('videos/ce_news_raid.mkv', 'videos/ce_news_sabotage.mkv')))
 
 
 def git_bytes(root, *args, data=None):

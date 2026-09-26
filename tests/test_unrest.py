@@ -121,7 +121,7 @@ class UnrestTests(UnrestFixture, unittest.TestCase):
         self.assertEqual(sabotage.xpath('//destroy_object/@object'),['$Module'])
         confirm=sabotage.xpath('//cue[@name="Confirm"]/actions/do_if')[0]
         self.assertIn('$Module.iswreck',confirm.get('value'))
-        self.assertTrue(confirm.xpath('.//include_actions[@ref="md.CE_UnrestNotifications.Popup"]'))
+        self.assertTrue(confirm.xpath('.//include_actions[@ref="md.CE_UnrestNotifications.Broadcast"]'))
         raids=self.run.scripts['CE_Raids']
         cleanup=raids.xpath('//destroy_object')[0]
         guards=' '.join(cleanup.xpath('ancestor::*/@value'))

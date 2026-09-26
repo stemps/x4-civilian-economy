@@ -114,14 +114,18 @@
               <set_value name="$IncidentSuccess" exact="$SabotageHacked.count gt 0"/>
             </do_else>
             <do_if value="$IncidentSuccess and $IncidentKind != 'destroy'">
-              <set_value name="$IncidentText" exact="{974201,204}.[$SabotageStation.knownname,$IncidentSector.knownname,$SabotageComponent.knownname,if $IncidentKind == 'shields' then 10 else 5]"/>
+              <set_value name="$SabotageAttackText" exact="if $IncidentKind == 'production' then {974201,297} else if $IncidentKind == 'turrets' then {974201,298} else {974201,299}"/>
+              <set_value name="$SabotageAffectedText" exact="if $SabotageComponent.module.exists and $SabotageComponent.module != $SabotageComponent then {974201,300}.[$SabotageComponent.knownname,$SabotageComponent.module.knownname] else $SabotageComponent.knownname"/>
+              <set_value name="$IncidentText" exact="{974201,204}.[$SabotageStation.knownname,$IncidentSector.knownname,$SabotageAffectedText,if $IncidentKind == 'shields' then 10 else 5,$SabotageAttackText]"/>
             </do_if>
           </do_if>
         </do_for_each>
         <do_if value="$IncidentSuccess and $IncidentKind != 'destroy'">
           <set_value name="$SabotageClock.$Next" exact="player.age / 1s + 5400"/>
           <set_value name="$U.$NextSabotage" exact="player.age / 1s + 5400"/>
-          <include_actions ref="md.CE_UnrestNotifications.Popup"/>
+          <set_value name="$BroadcastKey" exact="'ce_news_sabotage'"/>
+          <set_value name="$BroadcastCaption" exact="{974201,294}.[$SabotageStation.knownname]"/>
+          <include_actions ref="md.CE_UnrestNotifications.Broadcast"/>
         </do_if>
       </actions>
     </library>
@@ -150,7 +154,9 @@
             <do_if value="not $Module.exists or $Module.iswreck">
               <set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Destroy" exact="player.age / 1s + 14400"/>
               <set_value name="$R.$Unrest.$NextDestruction" exact="player.age / 1s + 14400"/>
-              <include_actions ref="md.CE_UnrestNotifications.Popup"/>
+              <set_value name="$BroadcastKey" exact="'ce_news_sabotage'"/>
+              <set_value name="$BroadcastCaption" exact="{974201,295}.[$IncidentSector.knownname]"/>
+              <include_actions ref="md.CE_UnrestNotifications.Broadcast"/>
             </do_if>
             <do_else>
               <do_if value="md.CE_Sabotage.State.$Stations.{$Station}.$Next == $ReservedNext"><set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Next" exact="$PreviousStationNext"/></do_if>

@@ -8,6 +8,7 @@
         <set_value name="$RaidGroup.$Phase" exact="'departing'"/>
         <set_value name="$RaidGroup.$Deadline" exact="player.age + 10min"/>
         <set_value name="$RaidGroup.$Announced" exact="false"/>
+        <set_value name="$RaidGroup.$CombatStarted" exact="false"/>
         <set_value name="$RaidGroup.$Moves" exact="table[]"/>
         <set_value name="$RaidGroup.$NextDiagnostic" exact="player.age + 2min"/>
         <set_value name="$RaidGroup.$RegroupUntil" exact="0s"/>
@@ -38,6 +39,7 @@
         <set_value name="$RaidGroup.$ReservedCapital" exact="player.age / 1s + 14400"/>
         <do_if value="$RaidGroup.$Tier == 3"><set_value name="$U.$NextCapital" exact="$RaidGroup.$ReservedCapital"/></do_if>
         <set_value name="$RaidReason" exact="'departure accepted'"/><include_actions ref="md.CE_RaidBehaviour.Log"/>
+        <include_actions ref="md.CE_RaidBehaviour.Announce"/>
       </actions>
     </library>
     <library name="Rally">
@@ -86,10 +88,18 @@
         </do_for_each>
         <set_value name="$RaidGroup.$Phase" exact="'raiding'"/>
         <set_value name="$RaidGroup.$RegroupUntil" exact="0s"/>
-        <do_if value="not $RaidGroup.$Announced">
-          <!-- Guard and lifetime commit precede notification; save/load never repeats it. -->
-          <set_value name="$RaidGroup.$Announced" exact="true"/>
+        <do_if value="not $RaidGroup.$CombatStarted">
+          <set_value name="$RaidGroup.$CombatStarted" exact="true"/>
           <set_value name="$RaidGroup.$End" exact="player.age + 45min"/>
+        </do_if>
+        <set_value name="$RaidReason" exact="'piracy started'"/><include_actions ref="md.CE_RaidBehaviour.Log"/>
+      </actions>
+    </library>
+    <library name="Announce">
+      <actions>
+        <do_if value="not $RaidGroup.$Announced">
+          <!-- News reports mobilisation, not successful departure or active combat. -->
+          <set_value name="$RaidGroup.$Announced" exact="true"/>
           <set_value name="$IncidentObject" exact="$RaidGroup.$Hub"/><set_value name="$IncidentSector" exact="$RaidGroup.$Sector"/>
           <set_value name="$IncidentPriority" exact="3"/>
           <set_value name="$RaidTierText" exact="if $RaidGroup.$Tier == 1 then {974201,241} else if $RaidGroup.$Tier == 2 then {974201,242} else {974201,243}"/>
@@ -101,13 +111,17 @@
           </do_for_each>
           <set_value name="$RaidCompositionText" exact="{974201,247}.[$RaidM,$RaidS,$RaidL]"/>
           <set_value name="$IncidentText" exact="{974201,203}.[$IncidentSector.knownname,$RaidGroup.$Hub.knownname,$RaidTierText,$RaidGroup.$Ships.count,$RaidCompositionText]"/>
-          <include_actions ref="md.CE_UnrestNotifications.Popup"/>
+          <set_value name="$BroadcastKey" exact="'ce_news_raid'"/>
+          <set_value name="$BroadcastCaption" exact="{974201,293}.[$IncidentSector.knownname]"/>
+          <include_actions ref="md.CE_UnrestNotifications.Broadcast"/>
         </do_if>
-        <set_value name="$RaidReason" exact="'piracy started'"/><include_actions ref="md.CE_RaidBehaviour.Log"/>
       </actions>
     </library>
     <library name="Tick">
       <actions>
+        <!-- In old v2 saves Announced meant piracy had begun. Migrate once before
+             using it as the earlier mobilisation-warning guard. -->
+        <do_if value="not $RaidGroup.$CombatStarted?"><set_value name="$RaidGroup.$CombatStarted" exact="$RaidGroup.$Announced"/></do_if>
         <set_value name="$RaidReady" exact="true"/><set_value name="$RaidBoarding" exact="false"/>
         <set_value name="$RaidReplan" exact="false"/><set_value name="$RaidAnchor" exact="$RaidGroup.$Hub"/>
         <do_for_each name="$RaidShip" in="$RaidGroup.$Ships" counter="$RaidIndex" reverse="true">
@@ -135,7 +149,7 @@
         <do_if value="$RaidGroup.$Withdraw">
           <do_if value="$RaidGroup.$Phase != 'withdrawing'">
             <set_value name="$RaidGroup.$Phase" exact="'withdrawing'"/>
-            <do_if value="not $RaidGroup.$Announced">
+            <do_if value="not $RaidGroup.$CombatStarted">
               <do_if value="$RaidGroup.$Record.$Unrest.$NextRaid == $RaidGroup.$ReservedRaid"><set_value name="$RaidGroup.$Record.$Unrest.$NextRaid" exact="$RaidGroup.$PreviousRaid"/></do_if>
               <do_if value="$RaidGroup.$Tier == 3 and $RaidGroup.$Record.$Unrest.$NextCapital == $RaidGroup.$ReservedCapital"><set_value name="$RaidGroup.$Record.$Unrest.$NextCapital" exact="$RaidGroup.$PreviousCapital"/></do_if>
             </do_if>
@@ -144,6 +158,7 @@
           <include_actions ref="md.CE_RaidBehaviour.Withdraw"/>
         </do_if>
         <do_elseif value="not $RaidBoarding">
+          <do_if value="$RaidGroup.$Phase == 'departing'"><include_actions ref="md.CE_RaidBehaviour.Announce"/></do_if>
           <do_if value="$RaidReplan and player.age ge $RaidGroup.$NextReplan">
             <include_actions ref="md.CE_RaidBehaviour.Rally"/>
             <set_value name="$RaidGroup.$RegroupUntil" exact="player.age + 3min"/>

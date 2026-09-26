@@ -14,6 +14,7 @@ class UnrestFixture:
         self.u = self.r.Unrest
         self.messages=[]
         self.run.stubs['md.CE_UnrestNotifications.Popup']=lambda:self.messages.append(('popup',self.run.env['IncidentText']))
+        self.run.stubs['md.CE_UnrestNotifications.Broadcast']=lambda:self.messages.append(('popup',self.run.env['IncidentText']))
         self.run.native['show_notification']=lambda n:self.messages.append(('ticker',self.run.expr(n.get('text'))))
         self.run.native['write_to_logbook']=lambda n:self.messages.append(('log',self.run.expr(n.get('text'))))
 
@@ -34,4 +35,3 @@ class UnrestFixture:
     def score(self, score):
         self.u.Scores=List([float(score),0.0,0.0])
         self.run.library('md.CE_Unrest.Evaluate')
-
