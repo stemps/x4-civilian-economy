@@ -64,6 +64,8 @@
           </do_if>
           <set_value name="$UCriticalRemaining" exact="if $U.$CriticalSince gt 0 then [0.0f,$U.$CriticalSince + 3600 - player.age / 1s].max else -1.0f"/>
           <append_to_list name="$R.$Snapshot" exact="[$U.$Score,$U.$Stage,$U.$Direction,$UCriticalRemaining,$U.$Causes,$U.$Token]"/>
+          <include_actions ref="md.CE_DemandEvents.Snapshot"/>
+          <append_to_list name="$R.$Snapshot" exact="$DEPayload"/>
           <set_value name="$R.$SnapshotError" exact="false"/>
         </do_if>
         <do_else>
@@ -72,7 +74,7 @@
           </do_if>
           <set_value name="$R.$SnapshotError" exact="true"/>
           <do_if value="$R.$Snapshot?">
-            <set_value name="$R.$Snapshot" exact="[$R.$Snapshot.{1},$R.$Snapshot.{2},$R.$Snapshot.{3},$R.$Snapshot.{4},$R.$Snapshot.{5},$R.$Snapshot.{6},$R.$Snapshot.{7},$R.$Snapshot.{8},$R.$Snapshot.{9},$R.$Snapshot.{10},@$R.$Snapshot.{11},@$R.$Snapshot.{12},@$R.$Snapshot.{13},@$R.$ProfileError,true,@$R.$Snapshot.{16},@$R.$PopulationOverride,@$R.$DebugFallback,false]"/>
+            <set_value name="$R.$Snapshot" exact="[$R.$Snapshot.{1},$R.$Snapshot.{2},$R.$Snapshot.{3},$R.$Snapshot.{4},$R.$Snapshot.{5},$R.$Snapshot.{6},$R.$Snapshot.{7},$R.$Snapshot.{8},$R.$Snapshot.{9},$R.$Snapshot.{10},@$R.$Snapshot.{11},@$R.$Snapshot.{12},@$R.$Snapshot.{13},@$R.$ProfileError,true,@$R.$Snapshot.{16},@$R.$PopulationOverride,@$R.$DebugFallback,false,@$R.$Snapshot.{20},@$R.$Snapshot.{21}]"/>
           </do_if>
         </do_else>
       </actions>

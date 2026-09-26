@@ -31,6 +31,7 @@
                 <set_value name="$R.$WatchingHub" exact="$R.$Hub"/>
               </do_if>
               <include_actions ref="UpdateHub"/>
+              <include_actions ref="md.CE_DemandEvents.Tick"/>
               <include_actions ref="md.CE_DebugAdvance.Tick"/>
               <include_actions ref="md.CE_DebugCreate.Tick"/>
               <include_actions ref="PublishDiagnostics"/>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_EventNotifications" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <library name="Start">
+      <actions>
+        <set_value name="$DETitle" exact="readtext.{974201}.{320 + $R.$DemandEvent.$ID}"/>
+        <set_value name="$DEText" exact="if $R.$DemandEvent.$Percent gt 0 then {974201,333}.[$R.$DemandEvent.$Sector.knownname,$DETitle,$R.$DemandEvent.$Names,$R.$DemandEvent.$Percent] else {974201,334}.[$R.$DemandEvent.$Sector.knownname,$DETitle,$R.$DemandEvent.$Names,-$R.$DemandEvent.$Percent]"/>
+        <include_actions ref="md.CE_EventNotifications.Show"/>
+      </actions>
+    </library>
+    <library name="End">
+      <actions>
+        <set_value name="$DETitle" exact="readtext.{974201}.{320 + $R.$DemandEvent.$ID}"/>
+        <set_value name="$DEText" exact="{974201,335}.[$R.$DemandEvent.$Sector.knownname,$DETitle]"/>
+        <include_actions ref="md.CE_EventNotifications.Show"/>
+      </actions>
+    </library>
+    <library name="Show">
+      <actions>
+        <show_notification text="$DEText" timeout="8s"/>
+        <write_to_logbook category="general" title="{974201,332}" text="$DEText" object="$R.$DemandEvent.$Sector" interaction="showonmap"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

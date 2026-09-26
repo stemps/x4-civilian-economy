@@ -127,6 +127,28 @@ local function buildActions()
             end
         end
     end
+    if s and s.demandEvent then
+        actionSection = section .. '_events'
+        menu.insertInteractionGroup(section, actionSection, text(338))
+        local token = s.demandEvent.token
+        local function eligible(eventID)
+            local fresh = statusFor(id)
+            local e = fresh and fresh.demandEvent
+            if not fresh or fresh.stale or not e or e.token ~= token then return false end
+            if eventID == 0 then return e.id > 0 end
+            if not fresh.active or fresh.profileError then return false end
+            for _, candidate in ipairs(e.eligible) do if candidate == eventID then return true end end
+            return false
+        end
+        for index=0,11 do
+            local eventID = index
+            action(eventID == 0 and text(340) or text(339, text(320 + eventID)),
+                function() return eligible(eventID) end,
+                function()
+                    AddUITriggeredEvent('CEEventTesting', string.format('%d:%d', eventID, token), ConvertStringToLuaID(tostring(id)))
+                end, text(eventID == 0 and 342 or (eligible(eventID) and 341 or 343)))
+        end
+    end
     if s and s.unrest and s.unrest.token then
         actionSection = section .. '_unrest'
         menu.insertInteractionGroup(section, actionSection, text(303))

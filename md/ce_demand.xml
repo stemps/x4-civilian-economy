@@ -79,6 +79,9 @@
             <do_all exact="$R.$Level - $Definition.{2}">
               <set_value name="$Rate" exact="$Rate * 1.25f"/>
             </do_all>
+            <do_if value="$R.$DemandEvent? and $R.$DemandEvent.$ID gt 0 and $R.$DemandEvent.$Wares.indexof.{$Ware}">
+              <set_value name="$Rate" exact="$Rate * (100 + $R.$DemandEvent.$Percent) / 100.0f"/>
+            </do_if>
             <do_if value="not ($Rate ge 0 and $Rate le 1000000000000.0f)">
               <set_value name="$CandidateValid" exact="false"/>
             </do_if>

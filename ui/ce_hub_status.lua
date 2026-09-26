@@ -100,6 +100,14 @@ local function decode(id, s)
     result.testUpgrade = yes(s[10])
     result.populationOverride, result.debugFallback = number(s[17]), yes(s[18])
     result.debugInitial = yes(s[19]) and not yes(s[15])
+    if type(s[21]) == 'table' then
+        local e = s[21]
+        local id, percent, remaining, token = number(e[1]), tonumber(e[2]), number(e[3]), number(e[6])
+        if id and id <= 11 and id == math.floor(id) and percent and percent >= -50 and percent <= 100 and percent == math.floor(percent)
+            and remaining and type(e[4]) == 'string' and type(e[5]) == 'table' and token and token == math.floor(token) then
+            result.demandEvent = {id=id, percent=percent, remaining=remaining, names=e[4], eligible=e[5], token=token}
+        end
+    end
     if type(s[20]) == 'table' then
         local u = s[20]
         result.unrest = {score=number(u[1]) or 0, stage=number(u[2]) or 0,
@@ -284,6 +292,17 @@ function M.signature(s)
     if not s then return '' end
     local parts = {tostring(s.id), s.available and 'ready' or 'missing', tostring(s.level), tostring(s.target), tostring(s.stale), tostring(s.profileError), tostring(s.pausedOffers)}
     if s.unrest then parts[#parts + 1] = tostring(s.unrest.stage) .. ':' .. table.concat(s.unrest.causes, ',') end
+    parts[#parts + 1] = tostring(s.demandEvent and s.demandEvent.id or 0)
     for _, w in ipairs(s.wares) do parts[#parts + 1] = w.key .. ':' .. M.wareCode(w) end
     return table.concat(parts, '\n')
+end
+
+function M.eventText(s)
+    local e = s and s.demandEvent
+    if not e or e.id == 0 then return '' end
+    return M.text(336, M.text(320 + e.id), string.format('%+d', e.percent), M.time(e.remaining, true))
+end
+function M.eventHint(s)
+    local e = s and s.demandEvent
+    return e and M.text(337, e.names) or ''
 end

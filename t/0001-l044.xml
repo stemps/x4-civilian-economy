@@ -194,5 +194,28 @@
     <t id="307">Empty this ware's civilian reserves.</t>
     <t id="308">Add 1 hour of level progress</t>
     <t id="309">Add one hour of supplied time, capped at the current level's growth requirement.</t>
+    <t id="321">Lost Harvest</t>
+    <t id="322">Bumper Harvest</t>
+    <t id="323">Drought</t>
+    <t id="324">Festival</t>
+    <t id="325">Tech Boom</t>
+    <t id="326">Epidemic</t>
+    <t id="327">Energy Crisis</t>
+    <t id="328">Industrial Boom</t>
+    <t id="329">Industrial Slowdown</t>
+    <t id="330">Smuggling Crackdown</t>
+    <t id="331">Liberal Drug Policies</t>
+    <t id="332">Civilian Economy Events</t>
+    <t id="333">%1: %2. Demand for %3 increases by %4% for 2 game hours.</t>
+    <t id="334">%1: %2. Demand for %3 decreases by %4% for 2 game hours.</t>
+    <t id="335">%1: %2 has ended. Civilian demand has returned to normal.</t>
+    <t id="336">%s: demand %s%%; %s remaining</t>
+    <t id="337">Affected goods: %s</t>
+    <t id="338">Events</t>
+    <t id="339">Trigger %s</t>
+    <t id="340">End current event</t>
+    <t id="341">Start this event for 2 game hours, replacing any current event. Uses a random strength and only currently consumed goods.</t>
+    <t id="342">Restore normal demand immediately and begin the normal 3-6 game-hour waiting period.</t>
+    <t id="343">Requires an operational civilian hub with applicable unlocked goods and a current status snapshot.</t>
   </page>
 </language>

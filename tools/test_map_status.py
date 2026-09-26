@@ -310,3 +310,34 @@ local t=draw();assert(value(t.rows[5][1]):find('Critical',1,true))
 status[20][3]=-1;now=now+1
 assert(CEHubStatus.unrest(CEHubStatus.getFresh(42)):find('recovering',1,true))
 ''')
+
+deferred.execute('''
+status[9]=snapshot(42,40)[9]
+status[21]={8,75,7200,string.rep('Long material name, ',12),{1,2,8,9},7};now=now+1
+for _,height in ipairs({720,1080,1440}) do
+ Helper.viewHeight=height
+ local t=draw()
+ assert(#t.rows==47 and value(t.rows[7][5])=='Buying')
+ assert(value(t.rows[6][1]):find('Industrial Boom',1,true))
+ assert(value(t.rows[6][1]):find('+75%',1,true))
+ assert(t.rows[6][1].properties.wordwrap)
+ assert(t.rows[6][1].properties.mouseOverText():find('Long material name',1,true))
+ assert(value(t.rows[5][1]):find('Critical',1,true))
+ for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=7)) end
+ assert(t:getVisibleHeight()==height*0.4)
+end
+status[21][2]=-50;status[21][1]=9;now=now+1
+assert(CEHubStatus.eventText(CEHubStatus.getFresh(42)):find('-50%',1,true))
+status[15]=true;now=now+1
+local t=draw();assert(value(t.rows[6][1]):find('Industrial Slowdown',1,true))
+assert(value(t.rows[5][1])~='')
+status[15]=false
+menu.selectedShipsTable=21;liveTopRow=35;menu.onUpdate();t=draw();assert(t.topRow==35)
+status[21]={0,0,0,'',{},8};now=now+1
+menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
+t=draw();assert(#t.rows==46 and value(t.rows[6][5])=='Buying')
+status[21]={99,50,100,'bad',{},9};now=now+1
+assert(not CEHubStatus.getFresh(42).demandEvent)
+status[21]=nil;now=now+1;assert(draw().columns==5)
+''')
+print('Demand events: optional snapshots, summary row, warnings, long text and scrolling passed')

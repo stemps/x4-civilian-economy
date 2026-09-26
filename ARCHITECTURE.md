@@ -1,5 +1,53 @@
 # Runtime architecture
 
+## Sector demand events
+
+`CE_DemandEvents` owns eleven stable event IDs, applicable ware baskets, selection
+and lifecycle. `CE_EventNotifications` owns start/end tickers and General logbook
+entries. `CE_DebugEvents` accepts token-guarded hub requests from the Events group
+in the existing debug interaction menu. Event mechanics never change faction laws,
+police behaviour or native production.
+
+Each registry record lazily gains `DemandEvent`: ID, signed integer percentage,
+expiry, next eligible start, affected ware list, names, sector and command token.
+It belongs to the sector and survives hub replacement. New records and old saves
+wait 3-6 game hours before the first event. The minute controller selects uniformly
+from applicable events for operational ownerless hubs, with one active event per
+sector, a two-hour duration and a further 3-6-hour gap. Unavailable baskets do not
+create queued catch-up events. Timers continue while the hub is unavailable.
+
+Candidates use committed active positive-rate wares and racial categories. Water,
+medicine and energy are excluded from staple foods; festivals use imported foods
+and drugs. Industrial events use refined metals, silicon wafers, advanced
+composites, metallic microlattice and silicon carbide. Tech Boom uses microchips,
+advanced electronics and computronic substrate. Missing and locked goods stay out.
+The selected ware list is frozen for the event, so later level unlocks do not join
+it. Increased demand rolls +25-100%; reductions roll -25-50%, once per event.
+
+`CE_Demand.PrepareRates` composes the event multiplier with baseline definition,
+level, population and settings scaling. `CE_Reserves.Accrue` splits updates at an
+expired event's deadline using `AccrueInterval`; unrest receives the same endpoint
+through its interval entry points. Expiry recomputes normal rates and restores the
+accrual boundary after rate commit rebases the clock, then consumes the remaining
+interval normally. Inventory, offers and in-flight deals retain their identities.
+Non-operational clock rebases cannot cause backward accrual. Notification delivery
+can wait until the next minute tick, but consumption does not extend the event.
+
+Snapshot v3 slot 21 is optional:
+`[eventID, signedPercent, remainingSeconds, wareNames, eligibleIDs, commandToken]`.
+ID zero means no active event. The UI decoder tolerates absent or invalid event
+data. Stale snapshots retain the previous event for display but cannot authorize
+debug commands. The map inserts one fixed event row above the ware heading only
+while an event is active, retaining its single-table layout and scroll bounds.
+Debug commands use `CEEventTesting` with `eventID:token` and hub identity; ID zero
+ends the current event. MD rechecks debug mode, ownership, identity and applicability.
+Triggering replaces any current event using ordinary end/start notifications;
+ending early begins the normal waiting period. Timing gates alone are bypassed.
+
+Regression coverage executes the shipped MD actions and Lua event menu/panel code.
+Native ticker display, map layout and save serialization still need in-game
+acceptance. Installing these MD changes requires a full game restart.
+
 ## Release tooling
 
 The release workflow mirrors Supply Chain View. `just release` requires clean
@@ -598,7 +646,8 @@ rows above the ware heading. Ware rows cannot inherit the summary's wrapped heig
 The three visual ware columns still use a bar anchor plus name/time text cells.
 Do not add tables here without updating and testing the native callback contract.
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
-The summary and ware-heading rows (1-6) are fixed; all ware rows scroll.
+The summary and ware-heading rows (1-6, or 1-7 with an active demand event) are
+fixed; all ware rows scroll.
 `maxVisibleHeight` caps the single table at 40% of the screen height and
 `getVisibleHeight()` determines its bottom-aligned position. Short lists use only
 the height they need. `reserveScrollBar=true` leaves room in the variable-width

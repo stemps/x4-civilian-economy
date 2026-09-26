@@ -1506,3 +1506,26 @@ implemented or runtime-tested CE rewards:
   /reload alone only exposes the UI and cannot activate the backend.
 - VALIDATED: just schema also passes all nine MD scripts, merged AI validation
   and content checks; git diff --check passes.
+
+## 2026-09-27 - temporary sector demand events
+
+- IMPLEMENTED: eleven events modify only a sector hub's existing consumption.
+  Events last 7200 game seconds, with independent 10800-21600-second gaps, including
+  the first event after initialization. Positive effects roll +25-100%; bumper
+  harvest, industrial slowdown and smuggling crackdown roll -25-50%.
+- Event state lives on the sector registry record, not the hub object. Its affected
+  ware list is frozen at start and survives replacement and save/load. Event
+  multipliers always compose with frozen base definitions, never previous rates.
+- Expiry must split both reserves and unrest at the same historical endpoint.
+  Rate commit rebases `Last` to current game time, so the expiry wrapper restores
+  the boundary before consuming the normal-rate tail. Merely clearing the event
+  on the minute tick would overcharge deliveries crossing the deadline.
+- Snapshot v3 optional slot 21 carries event display, applicability and a separate
+  command token. The map keeps one table, adding a fixed event row conditionally.
+  Debug triggers replace the existing event and preserve normal notifications;
+  early ending schedules the ordinary gap. No laws or policing are changed.
+- Automated action/Lua tests cover arithmetic and UI contracts. Native rendering,
+  ticker timing and save serialization remain in-game acceptance checks.
+- VALIDATED: `just schema` and `just lua` pass. The shipped-action expiry case
+  consumes 450 units across two hours at 200/hour plus half an hour at the normal
+  100/hour; a subsequent delivery adds only its actually transferred stock.

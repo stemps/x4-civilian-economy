@@ -27,8 +27,13 @@
     <!-- Called BEFORE reserve consumption, at every consumption boundary. Times are seconds. -->
     <library name="Accrue">
       <actions>
-        <include_actions ref="md.CE_Unrest.Ensure"/>
         <set_value name="$UNow" exact="player.age / 1s"/>
+        <include_actions ref="md.CE_Unrest.AccrueInterval"/>
+      </actions>
+    </library>
+    <library name="AccrueInterval">
+      <actions>
+        <include_actions ref="md.CE_Unrest.Ensure"/>
         <set_value name="$UHasDemand" exact="false"/>
         <do_for_each name="$UCheck" in="$R.$Wares.keys.list"><do_if value="@$R.$Wares.{$UCheck}.$Active and $R.$Wares.{$UCheck}.$Rate gt 0"><set_value name="$UHasDemand" exact="true"/></do_if></do_for_each>
         <do_if value="$R.$Level ge 5 and $R.$Operational and not $R.$PauseOffers and $UHasDemand">
@@ -62,7 +67,7 @@
             <set_value name="$URecovered" exact="[0.0f,$U.$Scores.{$Ui} - 2.0f * $URates.{$Ui} * ($UElapsed - $UMissing.{$Ui}) / 3600.0f].max"/>
             <set_value name="$U.$Scores.{$Ui}" exact="[$UCaps.{$Ui},$URecovered + $URates.{$Ui} * $UMissing.{$Ui} / 3600.0f].min"/>
           </do_all>
-          <include_actions ref="md.CE_Unrest.Evaluate"/>
+          <include_actions ref="md.CE_Unrest.EvaluateInterval"/>
           <set_value name="$U.$Direction" exact="if $U.$Score gt $UOld then 1 else if $U.$Score lt $UOld then -1 else 0"/>
         </do_if>
         <do_else><set_value name="$U.$Direction" exact="0"/></do_else>
@@ -97,6 +102,12 @@
     </library>
     <library name="Evaluate">
       <actions>
+        <set_value name="$UNow" exact="player.age / 1s"/>
+        <include_actions ref="md.CE_Unrest.EvaluateInterval"/>
+      </actions>
+    </library>
+    <library name="EvaluateInterval">
+      <actions>
         <set_value name="$U.$Score" exact="[100.0f,$U.$Scores.{1} + $U.$Scores.{2} + $U.$Scores.{3}].min"/>
         <set_value name="$UThresholds" exact="[25,60,80,95]"/>
         <set_value name="$UStage" exact="0"/>
@@ -106,7 +117,7 @@
         <set_value name="$U.$Stage" exact="$UStage"/>
         <do_if value="$U.$Score ge 95">
           <do_if value="$U.$CriticalSince == 0">
-            <set_value name="$U.$CriticalSince" exact="player.age / 1s"/>
+            <set_value name="$U.$CriticalSince" exact="$UNow"/>
             <set_value name="$IncidentText" exact="{974201,207}.[$R.$Hub.sector.knownname]"/>
             <set_value name="$IncidentObject" exact="$R.$Hub"/>
             <set_value name="$IncidentSector" exact="$R.$Hub.sector"/>

@@ -36,6 +36,8 @@ end
 
 local function createPanel(menu, frame, s)
     local data = menu.selectedShipsTableData
+    local eventRow = s.demandEvent and s.demandEvent.id > 0 and 1 or 0
+    local fixedRows = 6 + eventRow
     local width = math.min(Helper.scaleX(1100), Helper.viewWidth - 2 *
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
     local border = frame:addFrameBorder('selectedships', {offset=Helper.standardContainerOffset})
@@ -55,12 +57,12 @@ local function createPanel(menu, frame, s)
     local rows={}
     local function tableRow(index)
         while #rows<index do
-            rows[#rows+1]=t:addRow(nil,{fixed=#rows<6,borderBelow=false})
+            rows[#rows+1]=t:addRow(nil,{fixed=#rows<fixedRows,borderBelow=false})
         end
         return rows[index]
     end
     local function row(index)
-        local result=tableRow(index+5)
+        local result=tableRow(index+fixedRows-1)
         result[1]:setBackgroundColSpan(5)
         return result
     end
@@ -71,7 +73,7 @@ local function createPanel(menu, frame, s)
     local blue = {r=12,g=85,b=140,a=100,glow=0}
     local background = Color['rowgroup_background_default']
     return {table=t, data=data, current=current, tableRow=tableRow, row=row, summaryLine=summaryLine,
-        green=green, blue=blue, background=background}
+        green=green, blue=blue, background=background, eventRow=eventRow, fixedRows=fixedRows}
 end
 
 local function drawSummary(panel, s)
@@ -109,6 +111,10 @@ local function drawSummary(panel, s)
         end)
     elseif s.unrest then
         summaryLine(4,function() return M.unrest(current()) end)
+    end
+    if panel.eventRow == 1 then
+        tableRow(6)[1]:setColSpan(5):createText(function() return M.eventText(current()) end,
+            {wordwrap=true, mouseOverText=function() return M.eventHint(current()) end})
     end
 end
 
@@ -166,7 +172,7 @@ local function draw(menu, frame, s)
         panel.row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),
             {wordwrap=true,cellBGColor=panel.background})
     end
-    panel.table:setTopRow(math.min(topRow, math.max(7, #order+6)))
+    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(topRow, math.max(panel.fixedRows+1, #order+panel.fixedRows))))
     panel.table.properties.y=Helper.viewHeight-panel.table:getVisibleHeight()-Helper.borderSize
         -menu.borderOffset-Helper.standardContainerOffset
 end
