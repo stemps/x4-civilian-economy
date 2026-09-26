@@ -195,6 +195,11 @@ class Runner:
             if not isinstance(tag,str): continue
             if tag=='set_value':
                 val=self.expr(n.get('exact','1'))
+                if n.get('min') is not None:
+                    low,high=self.expr(n.get('min')),self.expr(n.get('max'))
+                    assert low <= high
+                    # Deterministic sample; individual tests can exercise both bounds.
+                    val=low+(high-low)*getattr(self,'random_fraction',0.5)
                 if n.get('operation')=='add': val=self.expr(n.get('name'))+val
                 self.set(n.get('name'),val)
             elif tag=='do_if':

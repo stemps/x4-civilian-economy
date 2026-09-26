@@ -185,5 +185,14 @@
     <t id="298">Turret sabotage</t>
     <t id="299">Shield sabotage</t>
     <t id="300">%1 on module %2</t>
+    <t id="301">Station / construction</t>
+    <t id="302">Wares</t>
+    <t id="303">Unrest manipulation</t>
+    <t id="304">Add random stock</t>
+    <t id="305">Reduce stock to zero</t>
+    <t id="306">Set civilian reserves to a random amount between the current balance and capacity.</t>
+    <t id="307">Empty this ware's civilian reserves.</t>
+    <t id="308">Add 1 hour of level progress</t>
+    <t id="309">Add one hour of supplied time, capped at the current level's growth requirement.</t>
   </page>
 </language>

@@ -168,8 +168,9 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_placement.xml` | Current-plot-first layout retries, bounded safe enlargement and empty-shell relocation; internal cue state and retry diagnostics. |
 | `md/ce_construction.xml` | Racial component selection, asynchronous native layout generation, validation, queue recovery and module readiness. |
 | `ui/ce_population.lua` | Native accessible-population reader; no economic state. |
-| `ui/ce_debug_tools.lua` | Optional testing menu, target-level shortcuts, guarded native force-completion and scoped ownerless interaction fallback. |
-| `md/ce_debug_advance.xml` | Validated debug target requests, saved per-hub completion permissions and native-build completion dispatch. |
+| `ui/ce_debug_tools.lua` | Optional testing menu with top-level diagnostics and station/construction, ware and unrest subgroups; guarded native force-completion and scoped ownerless interaction fallback. |
+| `md/ce_debug_wares.xml` | Token-guarded virtual reserve randomization/emptying for active positive-rate wares; settles consumption and refreshes offers and snapshots. |
+| `md/ce_debug_advance.xml` | Validated debug target requests, saved per-hub completion permissions, native-build completion dispatch and token-guarded one-hour growth progress increments. |
 | `md/ce_debug_create.xml` | Sector-targeted debug creation, fixed population/profile selection, and identity-scoped initial-build completion permission. |
 | `ui/ce_hub_status.lua` | Read-only cached hub snapshots, metric formatting and explanatory text for the map. |
 | `ui/ce_map_status.lua` | Civilian-only map selection table, height-limited native scrolling and native reserve/growth bars. |
@@ -442,6 +443,12 @@ locates the clicked hub in `$ce_hubs`, selects its `$ce_hub_statuses` snapshot,
 and sends target-specific commands. Registration retries on population requests
 if UI Extensions loads later. Its scoped `prepareActions` fallback keeps the
 menu open only for a registered hub with prepared custom entries.
+Diagnostics remain at the root. `insertInteractionGroup` recreates station,
+wares and unrest subgroups during each preparation, plus a subgroup for each
+positive-rate ware. Stock commands mutate virtual reserves after accruing elapsed
+consumption, then refresh offers and diagnostics without changing delivery/payment
+totals. Progress commands add 3600 supplied seconds up to the current requirement.
+Both command families consume the snapshot's existing unrest token before mutation.
 
 The map adapter wraps `MapMenu.createSelectedShips`, `onUpdate` and `cleanup`,
 preserving the previous functions. A single known registered hub gets one

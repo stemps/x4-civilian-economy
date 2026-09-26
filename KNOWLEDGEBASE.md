@@ -1,5 +1,24 @@
 # Mod-local Knowledgebase
 
+## 2026-09-27 - nested-debug-controls
+
+- READ: installed UI Extensions documents `insertInteractionGroup(parentId,
+  groupId, text)` inside `prepareSections_on_end`; repeat group insertion on every
+  menu opening because the action tables are rebuilt. Only the root uses
+  `Add_Custom_Actions_Group` at registration.
+- IMPLEMENTED: diagnostics stay at the debug root. Construction/level, wares and
+  unrest controls occupy nested groups, with one subgroup per positive-rate ware.
+  Random stock sets virtual reserves between the accrued current balance and the
+  two-hour target; zero empties them. Neither action records delivery or payment.
+- IMPLEMENTED: ware and one-hour growth-progress commands share the existing
+  MD-owned unrest token to reject stale/replayed requests. Consumption is settled
+  before mutation; progress is capped at the current requirement. In-game menu
+  navigation and command behavior still require verification.
+- TESTED: `just lua` and `just schema` passed, including 218 controller tests,
+  random-reserve bounds, selected-ware isolation, replay rejection, progress caps,
+  subgroup placement and native schema checks. The test runtime samples random
+  ranges deterministically; it does not simulate the engine's random distribution.
+
 ## 2026-09-26 - broadcast-interaction-and-station-conversation-research
 
 - READ: CE_UnrestNotifications.Broadcast explicitly supplies the cutscene

@@ -28,7 +28,8 @@ package.loaded.ffi={C=C,cdef=function() end}
 menu={componentSlot={component=42},Add_Custom_Actions_Group=function() end,
  prepareActions=function() menu.actions={actions_ce_debug={}};entries=menu.actions.actions_ce_debug;callback();return nativeMenuResult end,
  registerCallback=function(_,fn) callback=fn end,
- insertInteractionContent=function(_,e) entries[#entries+1]=e end,
+ insertInteractionGroup=function(parent,id,label) groups[id]={parent=parent,text=label} end,
+ insertInteractionContent=function(section,e) e.section=section;entries[#entries+1]=e end,
  onCloseElement=function() closes=closes+1 end}
 Helper={getMenu=function() return menu end}
 GetNPCBlackboard=function(id,key)
@@ -51,9 +52,10 @@ DebugError=function() end
 events={}
 RegisterEvent=function(name, fn) events[name]=fn end
 AddUITriggeredEvent=function(screen,command,id)
- assert(((screen=="CELevelTesting" or screen=="CEUnrestTesting") and id==42) or (screen=="CESectorTesting" and id==80));commands[#commands+1]=command
+ assert(((screen=="CELevelTesting" or screen=="CEUnrestTesting" or screen=="CEWareTesting" or screen=="CEProgressTesting") and id==42) or (screen=="CESectorTesting" and id==80));commands[#commands+1]=command
 end
-function open() entries={};callback() end
+groups={}
+function open() entries={};groups={};callback() end
 function action(id)
  for _,e in ipairs(entries) do if e.text==translations[id] then return e end end
  error("missing action "..id)
@@ -80,7 +82,7 @@ marked=false;assert(menu.prepareActions()==false)
 marked=true;nativeMenuResult=true;assert(menu.prepareActions()==true)
 marked=false;open();assert(#entries==0)
 marked=true;valid=false;open();assert(#entries==0)
-valid=true;open();assert(#entries==16)
+valid=true;open();assert(#entries==17)
 assert(entries[4].text == "Food Rations")
 assert(entries[4].mouseOverText:find("Consumption:",1,true))
 assert(entries[4].mouseOverText:find("500.5",1,true))
@@ -105,7 +107,7 @@ status[4]=0;status[7]=0;open();assert(not action(40).active and action(41))
 status[4]=1;status[8]=1;open();assert(action(40).active)
 status[2]=nil;open();assert(not action(40).active)
 status[2]=1
-status[1]=99;open();assert(#entries==13 and not action(40).active and not action(41).active)
+status[1]=99;open();assert(#entries==14 and not action(40).active and not action(41).active)
 menu.componentSlot.component=43;open();assert(action(40).active)
 assert(entries[1].text:find("Level 5",1,true))
 menu.componentSlot.component=77;open();assert(#entries==0)
@@ -192,7 +194,30 @@ open();local disabled=action(217);debugEnabled=false;disabled.script();assert(#c
 debugEnabled=true;status[15]=true;open();assert(not action(217).active)
 status[15]=false
 ''')
-print('LuaJIT diagnostics, debug incidents, stale-token guards and build completion passed')
+lua.execute('''
+status[2]=1;status[3]=0;status[4]=true;status[5]=60;status[6]=120
+open()
+assert(groups.actions_ce_debug_station.parent=='actions_ce_debug')
+assert(groups.actions_ce_debug_wares.parent=='actions_ce_debug')
+assert(groups.actions_ce_debug_unrest.parent=='actions_ce_debug')
+assert(groups.actions_ce_debug_ware_foodrations.parent=='actions_ce_debug_wares')
+assert(entries[1].section=='actions_ce_debug' and entries[4].section=='actions_ce_debug')
+assert(action(11).section=='actions_ce_debug_station' and action(308).section=='actions_ce_debug_station')
+assert(action(41).section=='actions_ce_debug_wares' and action(211).section=='actions_ce_debug_unrest')
+assert(action(304).section=='actions_ce_debug_ware_foodrations')
+local count=#commands;local add=action(304);add.script();add.script()
+assert(#commands==count+1 and commands[#commands]=='random:foodrations:8')
+open();action(305).script();assert(commands[#commands]=='zero:foodrations:8')
+open();action(308).script();assert(commands[#commands]=='hour:8')
+open();local zero=action(305);count=#commands;status[20][6]=9;zero.script();assert(#commands==count)
+open();add=action(304);status[9][1][9]=0;add.script();assert(#commands==count)
+open();assert(not groups.actions_ce_debug_ware_foodrations)
+status[9][1][9]=2000;status[15]=true;open();assert(not action(308).active)
+status[15]=false;status[5]=120;open();assert(not action(308).active)
+status[5]=60;open();local progressAction=action(308);status[3]=2
+progressAction.script();assert(#commands==count)
+''')
+print('LuaJIT diagnostics, nested debug actions, stale-token guards and build completion passed')
 lua.execute('''
 pauseEvents, nativePauses = {}, {}
 productionMenu={buttonPauseProductionModules=function(modules,pause)

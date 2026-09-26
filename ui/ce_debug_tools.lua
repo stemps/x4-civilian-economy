@@ -69,9 +69,12 @@ local function buildActions()
     else
         row(text(68))
     end
+    local actionSection = section .. '_station'
+    menu.insertInteractionGroup(section, actionSection, text(301))
+    menu.insertInteractionGroup(section, section .. '_wares', text(302))
     local function action(label, allowed, run, hint)
         local used = false
-        menu.insertInteractionContent(section, {text=label, active=not not allowed(), mouseOverText=hint or (label == text(11) and text(12) or label), script=function()
+        menu.insertInteractionContent(actionSection, {text=label, active=not not allowed(), mouseOverText=hint or (label == text(11) and text(12) or label), script=function()
             if used or not debugEnabled() or not allowed() then return end
             used = true
             run()
@@ -85,17 +88,48 @@ local function buildActions()
     action(text(40), function() return canQueue(id) end, function()
         AddUITriggeredEvent('CELevelTesting', 'queue_upgrade', ConvertStringToLuaID(tostring(id)))
     end)
+    local progressToken = s and s.unrest and s.unrest.token
+    action(text(308), function()
+        local fresh = statusFor(id)
+        return fresh and not fresh.stale and fresh.active and fresh.level < 10 and fresh.target == 0
+            and fresh.growth < fresh.required and progressToken and fresh.unrest and fresh.unrest.token == progressToken
+    end, function()
+        AddUITriggeredEvent('CEProgressTesting', 'hour:' .. string.format('%d', progressToken), ConvertStringToLuaID(tostring(id)))
+    end, text(309))
     for level=2,10 do
         local target = level
         action(text(124, target), function() return canAdvance(id, target) end, function()
             AddUITriggeredEvent('CELevelTesting', 'advance_level_' .. target, ConvertStringToLuaID(tostring(id)))
         end, text(125))
     end
+    actionSection = section .. '_wares'
     action(text(s and s.pausedOffers and 42 or 41), function() return statusFor(id) ~= nil end, function()
         AddUITriggeredEvent('CELevelTesting', 'pause_offers', ConvertStringToLuaID(tostring(id)))
     end)
+    if s and not s.stale and s.unrest and s.unrest.token then
+        local token = s.unrest.token
+        for _, w in ipairs(s.wares) do
+            if w.rate > 0 then
+                local key = w.key
+                actionSection = section .. '_ware_' .. key
+                menu.insertInteractionGroup(section .. '_wares', actionSection, w.name)
+                for _, mode in ipairs({'random', 'zero'}) do
+                    local command = mode .. ':' .. key .. ':' .. string.format('%d', token)
+                    action(text(mode == 'random' and 304 or 305), function()
+                        local fresh = statusFor(id)
+                        local ware = M.find(fresh, key)
+                        return fresh and not fresh.stale and fresh.unrest and fresh.unrest.token == token
+                            and ware and ware.rate > 0
+                    end, function()
+                        AddUITriggeredEvent('CEWareTesting', command, ConvertStringToLuaID(tostring(id)))
+                    end, text(mode == 'random' and 306 or 307))
+                end
+            end
+        end
+    end
     if s and s.unrest and s.unrest.token then
-        row(text(210))
+        actionSection = section .. '_unrest'
+        menu.insertInteractionGroup(section, actionSection, text(303))
         local token = s.unrest.token
         local commands = {'stage_1','stage_2','stage_3','stage_4','clear','warning',
             'raid_1','raid_2','raid_3','production','turrets','cargo','shields','destroy','cooldowns'}
@@ -114,7 +148,7 @@ local function register()
     if registered then return true end
     local menu = Helper and Helper.getMenu and Helper.getMenu('InteractMenu')
     if not menu or type(menu.Add_Custom_Actions_Group) ~= 'function' or type(menu.registerCallback) ~= 'function'
-        or type(menu.insertInteractionContent) ~= 'function' then return false end
+        or type(menu.insertInteractionContent) ~= 'function' or type(menu.insertInteractionGroup) ~= 'function' then return false end
     menu.Add_Custom_Actions_Group(section, text(10))
     menu.registerCallback('prepareSections_on_end', buildActions, 'civilian_economy')
     -- Native preparation returns false when a construction placeholder has no

@@ -40,5 +40,29 @@
         </do_if>
       </actions>
     </library>
+    <cue name="ProgressRequest" instantiate="true" namespace="this">
+      <conditions><event_ui_triggered screen="'CEProgressTesting'"/></conditions>
+      <actions>
+        <include_actions ref="md.CE_Settings.Ensure"/>
+        <do_if value="md.CE_Settings.State.$Debug and md.CE_OwnerlessHub.Init.$Registry?">
+          <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+          <do_for_each name="$Sector" in="$Registry.keys.list">
+            <set_value name="$R" exact="$Registry.{$Sector}"/>
+            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and event.param3 == $R.$Hub">
+              <include_actions ref="md.CE_Unrest.Ensure"/>
+              <set_value name="$ExpectedCommand" exact="'hour:%1'.[$U.$Token]"/>
+              <do_if value="$R.$Operational and $R.$Level lt 10 and $R.$Target == 0 and event.param2 == $ExpectedCommand">
+                <set_value name="$U.$Token" operation="add"/>
+                <include_actions ref="md.CE_Reserves.Accrue"/>
+                <set_value name="$R.$GrowthSeconds" exact="[$R.$GrowthSeconds,[$RequiredGrowthSeconds,$R.$GrowthSeconds + 3600.0f].min].max"/>
+                <include_actions ref="md.CE_Reserves.Qualify"/>
+                <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+                <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+              </do_if>
+            </do_if>
+          </do_for_each>
+        </do_if>
+      </actions>
+    </cue>
   </cues>
 </mdscript>
