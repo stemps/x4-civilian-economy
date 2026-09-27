@@ -38,9 +38,10 @@ class StartupHarness(unittest.TestCase):
                         find_sector=lambda n:r.set(n.get('name'),List([self.sector])),
                         raise_lua_event=lambda n:None,
                         create_construction_sequence=lambda n:None,
+                        apply_construction_sequence=self.materialize,
                         signal_objects=lambda n:self.events.append(('operational',r.expr(n.get('param2')))),
                         create_trade_offer=self.offer, update_trade=lambda n:None,
-                        cancel_cue=lambda n:self.events.append(('cancel',r.expr(n.get('cue')))))
+                        cancel_cue=lambda n:self.events.append(('cancel',r.env.get('this') if n.get('cue')=='parent' else r.expr(n.get('cue')))))
 
     def log(self, n):
         # Evaluate retry log arguments as well as checking their labels. Other logs
@@ -97,6 +98,16 @@ class StartupHarness(unittest.TestCase):
                                      builds=Table(queued=List(),inprogress=List()),
                                      buildmodule=Component(exists=True,constructionvessel=NIL))
 
+    def materialize(self, n):
+        hub=self.run.expr(n.get('station')); plan=self.run.expr(n.get('sequence'))
+        if hub.buildstorage.exists:
+            self.assertEqual(hub.buildstorage.builds.queued.count + hub.buildstorage.builds.inprogress.count,0)
+        self.assertFalse(hub.constructionsequence)
+        hub.constructionsequence=plan
+        hub.planmodule=Table({entry.id:Component(exists=True,isoperational=True) for entry in plan})
+        hub.isoperational=True
+        self.events.append(('materialize',hub))
+
     def add_build(self, n):
         r=self.run; hub=r.expr(n.get('buildobject'))
         self.events.append(('queue',hub))
@@ -123,7 +134,7 @@ class StartupHarness(unittest.TestCase):
         r=self.run; caller=r.env
         self.assertEqual(n.get('cue'),'md.CE_Construction.Generate')
         captured=dict(caller)
-        captured.update(event=Table(param=r.expr(n.get('param'))),this='layout-'+str(len(self.pending)))
+        captured.update(event=Table(param=r.expr(n.get('param'))),this=Component(exists=True, name='layout-'+str(len(self.pending))))
         try:
             r.env=captured
             r.actions(r.construction.xpath('//cue[@name="Generate"]/actions')[0])
@@ -167,10 +178,17 @@ class StartupHarness(unittest.TestCase):
         r.library('ReconcileSector')
         return r.env['Registry'][sector]
 
-    def complete(self, index=0, success=True, result=None):
+    def complete(self, index=0, success=True, result=None, all_stages=True):
         r=self.run; caller=r.env; context=self.pending[index]
-        if result is None: result=sequence(context['RequiredMacros'])
         try:
-            r.env=context; context['event']=Table(param=result,param2=success)
-            r.actions(r.construction.xpath('//cue[@name="Completed"]/actions')[0])
+            r.env=context
+            for _ in range(31):
+                before=(context.get('BuildLevel'),context.get('StageAttempt'))
+                native_result=sequence(context['RequiredMacros']) if result is None else result
+                context['event']=Table(param=native_result,param2=success)
+                r.actions(r.construction.xpath('//cue[@name="Completed"]/actions')[0])
+                if not all_stages or not context.get('PlanAhead') or context.get('PlanningFinished'):
+                    break
+                if before==(context.get('BuildLevel'),context.get('StageAttempt')): break
+            else: raise AssertionError('Forward planning exceeded its bounded callback count')
         finally:r.env=caller

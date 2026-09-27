@@ -114,6 +114,7 @@
     <cue name="Lifecycle" instantiate="true" checkinterval="5s">
       <conditions><check_value value="true"/></conditions>
       <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy">
         <include_actions ref="md.CE_Raids.Ensure"/>
         <do_for_each name="$RaidKey" in="md.CE_Raids.State.$Groups.keys.list">
           <set_value name="$RaidGroup" exact="md.CE_Raids.State.$Groups.{$RaidKey}"/>
@@ -152,6 +153,8 @@
           <do_if value="$RaidGroup.$Ships.count == 0"><remove_value name="md.CE_Raids.State.$Groups.{$RaidKey}"/></do_if>
           </do_else>
         </do_for_each>
+
+        </do_if>
       </actions>
     </cue>
   </cues>

@@ -23,6 +23,8 @@ class Ware(str):
     def name(self): return str(self)
 
 def definitions(run):
+    run.env.setdefault('InitialPopulationPass',NIL)
+    run.env.setdefault('faction',Table(civilian='civilian',ownerless='ownerless'))
     recipes=E.parse(str(REF/'libraries/wares.xml'))
     types=Table({w.get('id'):Ware(w.get('id')) for w in recipes.xpath('/wares/ware[price]')})
     for node in recipes.xpath('/wares/ware[price]'):

@@ -119,7 +119,7 @@ class UnrestTests(UnrestFixture, unittest.TestCase):
     def test_destruction_and_raid_cleanup_are_scoped(self):
         sabotage=self.run.scripts['CE_Sabotage']
         self.assertEqual(sabotage.xpath('//destroy_object/@object'),['$Module'])
-        confirm=sabotage.xpath('//cue[@name="Confirm"]/actions/do_if')[0]
+        confirm=sabotage.xpath('//cue[@name="Confirm"]/actions//do_if[contains(@value,"$Module.iswreck")]')[0]
         self.assertIn('$Module.iswreck',confirm.get('value'))
         self.assertTrue(confirm.xpath('.//include_actions[@ref="md.CE_UnrestNotifications.Broadcast"]'))
         raids=self.run.scripts['CE_Raids']

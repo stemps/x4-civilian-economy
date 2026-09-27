@@ -231,5 +231,17 @@
     <t id="342">Zakończ wybrane wydarzenia i przywróć popyt na ich towary. Pozostałe wydarzenia pozostają aktywne. Bez czasu oczekiwania.</t>
     <t id="343">Wymaga działającego centrum cywilnego, odpowiednich odblokowanych towarów i aktualnych danych. Aktywne wydarzenie nie może wpływać na te same towary.</t>
     <t id="344">Zakończ %s</t>
+    <t id="345">Planowanie układu stacji</t>
+    <t id="346">Błąd układu; oczekiwanie na próbę</t>
+    <t id="347">Oczekiwanie na ponowienie budowy</t>
+    <t id="348">Budowa w silniku gry jeszcze się nie rozpoczęła. Do jej ukończenia potrzebny jest prawidłowy układ.</t>
+    <t id="361">Zresetuj wszystkie centra CE</t>
+    <t id="362">Niszczy wszystkie centra CE i usuwa postęp, wydarzenia, niepokoje, populacje testowe oraz aktywne rajdy CE. Ustawienia i finanse gracza pozostają. Otwórz menu ponownie w ciągu 30 sekund, aby potwierdzić.</t>
+    <t id="363">Potwierdź reset centrów CE</t>
+    <t id="364">Usuwanie obiektów CE: %d/%d</t>
+    <t id="365">Reset czeka na odlot gości lub gracza, usunięcie obiektów albo dane o populacji. Nie powstaną duplikaty centrów.</t>
+    <t id="366">Reset CE zakończony. Nowe centra poziomu 1 pojawią się w pełni zbudowane po zakończeniu planowania.</t>
+    <t id="367">Inicjalizacja nowych centrów CE</t>
+    <t id="368">Reset oczekuje</t>
   </page>
 </language>

@@ -56,7 +56,7 @@
         </do_if>
         <do_if value="$DebugFailure gt 0">
           <debug_text text="'[CE] TEST create rejected: sector=%s hub=%s reason=%s'.[$Sector,@$R.$Hub,$DebugFailure]"/>
-          <write_to_logbook category="general" title="{974201,1}" text="{974201,$DebugFailure}"/>
+          <write_to_logbook category="general" title="{974201,1}" text="'{974201,%1}'.[$DebugFailure]"/>
         </do_if>
         <include_actions ref="md.CE_OwnerlessHub.PublishAllDiagnostics"/>
       </actions>

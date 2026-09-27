@@ -231,5 +231,17 @@
     <t id="342">Encerrar os eventos selecionados e restaurar a demanda por suas mercadorias. Os outros eventos continuam ativos. Sem tempo de espera.</t>
     <t id="343">Requer um centro civil operacional, mercadorias adequadas desbloqueadas e dados atuais. Nenhum evento ativo pode afetar as mesmas mercadorias.</t>
     <t id="344">Encerrar %s</t>
+    <t id="345">Planejando estrutura da estação</t>
+    <t id="346">Falha no projeto; aguardando</t>
+    <t id="347">Aguardando nova tentativa de obra</t>
+    <t id="348">A construção nativa ainda não começou. É necessário um projeto válido antes de concluir a construção.</t>
+    <t id="361">Reiniciar todos os centros CE</t>
+    <t id="362">Destrói todos os centros CE e apaga progresso, eventos, distúrbios, populações de teste e ataques ativos do CE. Configurações e dinheiro do jogador são mantidos. Reabra este menu em até 30 segundos para confirmar.</t>
+    <t id="363">Confirmar reinício dos centros CE</t>
+    <t id="364">Removendo objetos CE: %d/%d</t>
+    <t id="365">Aguardando a saída de visitantes ou do jogador, a remoção dos objetos ou dados populacionais. Não serão criados centros duplicados.</t>
+    <t id="366">Reinício CE concluído. Os novos centros de nível 1 aparecerão totalmente construídos após o planejamento.</t>
+    <t id="367">Inicializando novos centros CE</t>
+    <t id="368">Reinício aguardando</t>
   </page>
 </language>

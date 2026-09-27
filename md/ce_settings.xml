@@ -71,7 +71,7 @@
           <do_if value="$SettingCurrent != $SettingValue">
             <set_value name="$EconomicChange" exact="$SettingKey == '$DemandMultiplier' or $SettingKey == '$TimeMultiplier'"/>
             <!-- Settle elapsed consumption using OLD rates and timing before the setting changes. -->
-            <do_if value="$EconomicChange and md.CE_OwnerlessHub.Init.$Registry?">
+            <do_if value="not @md.CE_DebugReset.State.$Busy and $EconomicChange and md.CE_OwnerlessHub.Init.$Registry?">
               <do_for_each name="$SettingsSector" in="md.CE_OwnerlessHub.Init.$Registry.keys.list">
                 <set_value name="$R" exact="md.CE_OwnerlessHub.Init.$Registry.{$SettingsSector}"/>
                 <include_actions ref="md.CE_Reserves.Accrue"/>
@@ -82,7 +82,7 @@
             <do_elseif value="$SettingKey == '$TimeMultiplier'"><set_value name="md.CE_Settings.State.$TimeMultiplier" exact="$SettingValue"/></do_elseif>
             <do_elseif value="$SettingKey == '$TaxNotifications'"><set_value name="md.CE_Settings.State.$TaxNotifications" exact="$SettingValue"/></do_elseif>
             <do_elseif value="$SettingKey == '$TaxPercent'"><set_value name="md.CE_Settings.State.$TaxPercent" exact="$SettingValue"/></do_elseif>
-            <do_if value="$EconomicChange and md.CE_OwnerlessHub.Init.$Registry?">
+            <do_if value="not @md.CE_DebugReset.State.$Busy and $EconomicChange and md.CE_OwnerlessHub.Init.$Registry?">
               <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
               <do_for_each name="$SettingsSector" in="$Registry.keys.list">
                 <set_value name="$R" exact="$Registry.{$SettingsSector}"/>

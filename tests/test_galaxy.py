@@ -181,7 +181,7 @@ class GalaxyTests(unittest.TestCase):
         watch=self.run.tree.xpath('//cue[@name="WatchSectorHub"]')[0]
         self.assertEqual(watch.get('namespace'),'this')
         self.assertEqual(watch.xpath('./actions/set_value[@name="$R"]/@exact'),['event.param.{2}'])
-        self.assertIn('$Registry.keys.list',self.run.tree.xpath('//cue[@name="TestingCommand"]/actions/do_for_each/@in'))
+        self.assertIn('$Registry.keys.list',self.run.tree.xpath('//cue[@name="TestingCommand"]/actions//do_for_each/@in'))
     def test_deliveries_are_isolated_and_completion_guard_is_consumed(self):
         ra=self.reconcile(self.sector(),8524100000)
         rb=self.reconcile(self.sector(),8524100000)

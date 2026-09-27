@@ -100,6 +100,7 @@ local function decode(id, s)
     result.testUpgrade = yes(s[10])
     result.populationOverride, result.debugFallback = number(s[17]), yes(s[18])
     result.debugInitial = yes(s[19]) and not yes(s[15])
+    result.layoutPhase = s[22]
     if type(s[21]) == 'table' then
         local payload, events, seen = s[21], {}, {}
         local modern = payload[1] == 2 and type(payload[2]) == 'table'
@@ -247,10 +248,16 @@ function M.unrest(s)
     if u.critical >= 0 then value = value .. '\n' .. M.text(253, math.ceil(u.critical / 60)) end
     return value
 end
+function M.layoutState(s)
+    local labels = {planning=345, layout_retry=346, build_retry=347}
+    local label = s and labels[s.layoutPhase]
+    return label and M.text(label) or nil
+end
 function M.state(s)
     local facts = M.classify(s)
     if not facts.available then return M.text(68) end
     if facts.warning then return M.text(facts.warning == 'stale' and 88 or 89) end
+    if M.layoutState(s) then return M.layoutState(s) end
     if s.active then
         if facts.pending then return M.text(99,s.target) end
         if facts.maximum then return M.text(100) end
@@ -271,6 +278,7 @@ end
 function M.progress(s)
     local facts = M.classify(s)
     if not facts.available then return M.text(68) end
+    if M.layoutState(s) then return M.layoutState(s) end
     if facts.pending then return M.text(105) end
     if facts.maximum then return M.text(100) end
     return M.text(106,s.level+1,M.time(s.growth),M.time(s.required))
@@ -278,6 +286,7 @@ end
 function M.action(s)
     local facts = M.classify(s)
     if not facts.available then return M.text(68) end
+    if M.layoutState(s) then return M.layoutState(s) end
     if facts.pending then return M.text(105) end
     if not s.active then return M.state(s) end
     if facts.maximum then return M.text(114) end
@@ -303,6 +312,7 @@ end
 function M.signature(s)
     if not s then return '' end
     local parts = {tostring(s.id), s.available and 'ready' or 'missing', tostring(s.level), tostring(s.target), tostring(s.stale), tostring(s.profileError), tostring(s.pausedOffers)}
+    parts[#parts + 1] = tostring(s.layoutPhase)
     if s.unrest then parts[#parts + 1] = tostring(s.unrest.stage) .. ':' .. table.concat(s.unrest.causes, ',') end
     parts[#parts + 1] = M.eventSignature(s)
     for _, w in ipairs(s.wares) do parts[#parts + 1] = w.key .. ':' .. M.wareCode(w) end

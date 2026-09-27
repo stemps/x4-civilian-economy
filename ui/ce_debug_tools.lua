@@ -13,7 +13,7 @@ local M = CEHubStatus
 local text, isHub, statusFor = M.text, M.isHub, M.getFresh
 local function debugEnabled()
     local value = GetNPCBlackboard(ConvertStringToLuaID(tostring(C.GetPlayerID())), '$ce_debug_enabled')
-    return value == true or value == 1
+    return (value == true or value == 1) and not CEDebugReset.busy()
 end
 local function canCreate(id)
     return id and C.IsValidComponent(id) and C.IsComponentClass(id, 'sector') and M.canCreateInSector(id)
@@ -30,11 +30,14 @@ local function canAdvance(id, level)
     return s and s.active and s.target == 0 and level > s.level and level <= 10
 end
 local function buildActions()
-    if not debugEnabled() then return end
+    local debug = GetNPCBlackboard(ConvertStringToLuaID(tostring(C.GetPlayerID())), '$ce_debug_enabled')
+    if debug ~= true and debug ~= 1 then return end
     local menu = Helper.getMenu('InteractMenu')
     local raw = menu and menu.componentSlot and menu.componentSlot.component
     if not raw then return end
     local id = M.id(raw)
+    CEDebugReset.add(menu, section, id)
+    if CEDebugReset.busy() then return end
     if canCreate(id) then
         local used = false
         menu.insertInteractionContent(section, {text=text(138), active=true, mouseOverText=text(139), script=function()
@@ -55,13 +58,14 @@ local function buildActions()
         if s.profileError then row(text(89)) end
         row(text(32, s.level, s.target))
         row(text(s.active and 34 or 35))
-        if s.target > 0 then row(text(99, s.target), text(105))
+        if M.layoutState(s) then row(M.layoutState(s), text(348))
+        elseif s.target > 0 then row(text(99, s.target), text(105))
         elseif s.level == 10 then row(text(100))
         else row(text(113, s.growth/60, s.required/60)) end
         if s.population then row(text(44), text(45, s.population)) end
         if s.populationOverride then row(text(140)) end
         if s.debugFallback then row(text(141)) end
-        if not s.plotReady then row(text(36), text(43)) end
+        if not s.plotReady and not M.layoutState(s) then row(text(36), text(43)) end
         if s.testUpgrade then row(text(37)) end
         for _, w in ipairs(s.wares) do
             row(w.name, M.wareHint(s, w))
@@ -84,7 +88,7 @@ local function buildActions()
     action(text(11), function() return canFinish(id) end, function()
         DebugError('[CE] TEST: force completion on ' .. tostring(id))
         C.ForceBuildCompletion(id)
-    end)
+    end, M.layoutState(s) and text(348) or text(12))
     action(text(40), function() return canQueue(id) end, function()
         AddUITriggeredEvent('CELevelTesting', 'queue_upgrade', ConvertStringToLuaID(tostring(id)))
     end)
@@ -187,7 +191,7 @@ local function register()
             if result then return result end
             local raw = menu.componentSlot and menu.componentSlot.component
             local entries = menu.actions and menu.actions[section]
-            if debugEnabled() and raw and (isHub(M.id(raw)) or canCreate(M.id(raw))) and type(entries) == 'table' and #entries > 0 then
+            if (debugEnabled() or CEDebugReset.busy()) and raw and CEDebugReset.eligible(M.id(raw)) and type(entries) == 'table' and #entries > 0 then
                 DebugError('[CE] Displaying prepared civilian testing section')
                 return true
             end
@@ -206,7 +210,7 @@ RegisterEvent('CEPopulationRequest', function() if not registered then register(
 RegisterEvent('CEAdvanceBuildReady', function(_, raw)
     local id = M.id(raw)
     local s = id and statusFor(id)
-    if s and s.testUpgrade and s.target > s.level and canFinish(id) then
+    if not CEDebugReset.busy() and s and s.testUpgrade and s.target > s.level and canFinish(id) then
         DebugError('[CE] TEST: automatically completing target level ' .. s.target .. ' on ' .. tostring(id))
         C.ForceBuildCompletion(id)
         AddUITriggeredEvent('CELevelTesting', 'advance_complete', ConvertStringToLuaID(tostring(id)))
@@ -217,7 +221,7 @@ end)
 RegisterEvent('CEInitialBuildReady', function(_, raw)
     local id = M.id(raw)
     local s = id and statusFor(id)
-    if s and s.debugInitial and not s.stale and s.target == 0
+    if not CEDebugReset.busy() and s and s.debugInitial and not s.stale and s.target == 0
         and GetComponentData(id, 'owner') == 'civilian' and canFinish(id) then
         DebugError('[CE] TEST: automatically completing initial build on ' .. tostring(id))
         C.ForceBuildCompletion(id)

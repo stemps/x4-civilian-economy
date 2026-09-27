@@ -8,6 +8,11 @@ class PlotRetryTests(StartupHarness):
     def state(self,record):
         return self.run.env['md'].CE_Placement.State.Sites[record.Hub]
 
+    def exhaust_plot_attempts(self):
+        for _ in range(3):
+            self.complete(index=len(self.pending)-1,success=False)
+            self.retry()
+
     def test_initial_layout_uses_default_plot_without_enlargement(self):
         self.safe_plot=False
         record=self.start()
@@ -21,16 +26,24 @@ class PlotRetryTests(StartupHarness):
         self.assertEqual(self.moves,[])
 
     def test_failure_waits_then_grows_exactly_checked_increment(self):
-        record=self.start(); self.complete(success=False)
-        self.assertEqual(self.state(record).NextTry,400)
-        self.assertFalse(record.PlotReady)
-        self.start(); self.assertEqual(len(self.pending),1)
+        record=self.start()
+        self.assertEqual(self.pending[-1]['LayoutBias'],1.0)
+        for bias in (0.5,2.0):
+            self.complete(index=len(self.pending)-1,success=False)
+            self.assertEqual(self.state(record).NextTry,self.run.env['player'].age+1)
+            self.assertFalse(record.PlotReady)
+            count=len(self.pending);self.start();self.assertEqual(len(self.pending),count)
+            self.retry()
+            self.assertEqual(self.pending[-1]['LayoutBias'],bias)
+            self.assertEqual(self.plot_calls,[])
+        self.complete(index=2,success=False)
+        self.assertEqual(self.state(record).NextTry,self.run.env['player'].age+300)
         self.retry()
-        self.assertEqual(len(self.pending),2)
         self.assertEqual(self.plot_calls,[dict(negx=2000,posx=2000,negy=2000,posy=2000,negz=2000,posz=2000)])
         self.assertEqual(list(record.Hub.buildplot.max.values()),[7000]*3)
         self.assertEqual(self.moves,[])
-        self.complete(index=1)
+        self.assertEqual(self.pending[-1]['LayoutBias'],1.0)
+        self.complete(index=3)
         self.assertEqual(self.state(record).Failures,0)
         self.assertTrue(record.PlotReady)
 
@@ -38,14 +51,14 @@ class PlotRetryTests(StartupHarness):
         self.safe_plot=False
         record=self.start(); hub=record.Hub
         for i in range(5):
-            self.complete(index=i,success=False); self.retry()
+            self.exhaust_plot_attempts()
         self.assertEqual(self.moves,[hub]*3)
         self.assertIs(record.Hub,hub)
         self.assertEqual(self.state(record).Moves,3)
         self.assertEqual(list(hub.buildplot.max.values()),[5000]*3)
         self.assertFalse(hub.buildstorage.exists)
         self.assertEqual(len(self.hubs),1)
-        self.complete(index=5)
+        self.complete(index=len(self.pending)-1)
         self.assertTrue(record.Build.exists)
 
     def test_relocation_guards_cover_every_nonempty_state(self):
@@ -73,20 +86,20 @@ class PlotRetryTests(StartupHarness):
         record=self.start(); hub=record.Hub
         hub.buildplot.max=Table(x=15000,y=17000,z=7000)
         hub.buildplot.center=Table(x=4000,y=-2000,z=1000)
-        self.complete(success=False); self.retry()
+        self.exhaust_plot_attempts()
         self.assertEqual(self.plot_calls[0],dict(negx=1000,posx=1000,negy=0,posy=0,negz=2000,posz=2000))
         self.assertEqual(list(hub.buildplot.max.values()),[16000,17000,9000])
         self.assertEqual(list(hub.buildplot.center.values()),[4000,-2000,1000])
 
     def test_size_cap_skips_enlargement_and_attempts_empty_placement(self):
         record=self.start(); record.Hub.buildplot.max=Table(x=16000,y=16000,z=16000)
-        self.complete(success=False); self.retry()
+        self.exhaust_plot_attempts()
         self.assertEqual(self.plot_calls,[])
         self.assertEqual(self.moves,[record.Hub])
 
     def test_failed_extension_action_detects_no_change(self):
         self.run.native['extend_build_plot']=lambda n:None
-        record=self.start(); self.complete(success=False); self.retry()
+        record=self.start(); self.exhaust_plot_attempts()
         self.assertEqual(self.moves,[record.Hub])
         self.assertTrue(any('extension_no_change' in args for _,args in self.logs))
 
@@ -97,7 +110,7 @@ class PlotRetryTests(StartupHarness):
         self.retry(); self.fail_build=True; self.complete(index=1)
         self.retry()
         self.assertEqual(self.plot_calls,[]); self.assertEqual(self.moves,[])
-        self.fail_build=False; self.complete(index=2)
+        self.fail_build=False; self.retry()
         self.assertTrue(record.Build.exists)
 
     def test_established_hub_keeps_operating_and_preserves_base_when_blocked(self):
@@ -107,6 +120,7 @@ class PlotRetryTests(StartupHarness):
         hub.isoperational=True; hub.buildstorage.builds.inprogress.clear()
         self.run.env.update(R=record,Hub=hub); self.run.library('UpdateHub')
         base=record.CompletedSequence
+        record.LayoutPlans=NIL;record.LayoutPlanHub=NIL
         record.Target=2; self.run.library('QueueExpansion')
         self.safe_plot=False; self.complete(index=1,success=False)
         self.retry(); self.run.library('UpdateHub')
@@ -136,7 +150,7 @@ class PlotRetryTests(StartupHarness):
 
     def test_logs_identify_retry_reason_hub_sector_attempt_and_result(self):
         self.safe_plot=False
-        record=self.start(); self.complete(success=False); self.retry(); self.complete(index=1)
+        record=self.start(); self.exhaust_plot_attempts(); self.complete(index=len(self.pending)-1)
         kinds=[template.split(':')[0] for template,_ in self.logs]
         for kind in ('Layout attempt','Layout retry scheduled','Plot retry','Placement retry','Layout retry resolved'):
             self.assertIn('[CE] '+kind,kinds)
@@ -153,7 +167,7 @@ class PlotRetryTests(StartupHarness):
     def test_noop_warp_is_logged_as_no_change_and_consumes_bounded_attempt(self):
         self.safe_plot=False
         self.run.native['warp']=lambda n:None
-        record=self.start(); self.complete(success=False); self.retry()
+        record=self.start(); self.exhaust_plot_attempts()
         self.assertEqual(self.state(record).Moves,1)
         self.assertTrue(any('relocation_no_change' in args for _,args in self.logs))
 
@@ -177,3 +191,21 @@ class PlotRetryTests(StartupHarness):
         sites=self.run.env['md'].CE_Placement.State.Sites
         self.assertNotIn(first.Hub,sites)
         self.assertIn(second.Hub,sites)
+
+    def test_old_saved_resize_gets_same_plot_attempts_before_enlargement(self):
+        record=self.start();self.complete(success=False)
+        site=self.state(record)
+        del site['SamePlotFailures'];site.Resize=True
+        self.retry()
+        self.assertEqual(self.plot_calls,[])
+        self.assertEqual(site.SamePlotFailures,0)
+        self.assertFalse(site.Resize)
+
+    def test_unstageable_candidates_do_not_enlarge_plot(self):
+        record=self.start()
+        for _ in range(3):
+            self.complete(index=len(self.pending)-1,result=sequence([self.components['storage']]))
+            self.retry()
+        self.assertEqual(self.plot_calls,[])
+        self.assertEqual(self.moves,[])
+        self.assertFalse(record.Build.exists)

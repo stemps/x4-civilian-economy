@@ -1,5 +1,37 @@
 # Mod-local Knowledgebase
 
+## Station planning and reset
+
+- MEASURED (2026-09-27): forward planning passed 600/600 fresh 10 km cubic
+  sites, 100 each Argon, Split, Boron, Paranid, Terran and Teladi. All 6,000
+  native requests succeeded without retries. This validates plans, not actual
+  construction or ship docking, and is not a guarantee for every random seed.
+- Native removal from a construction sequence can also remove descendants.
+  Backward pruning lost required modules; build cumulative plans forward instead.
+  Validate exact module baskets, allowed connectors and retained entry IDs/macros.
+  Store all ten plans before constructing a fresh hub; retry extensions on the
+  same base and discard incomplete candidates.
+- Pier discovery must include both base and add categories. A base-only filter
+  excluded single-approach piers. Approach exclusion volumes, not visible module
+  size alone, constrain placement. Selection does not fix pier orientations.
+- Native constructionsequence may be null; check before reading count.
+  Check cue.exists before cancellation. Repeating native callback listeners
+  inherit their parent namespace so each result advances the same planner.
+- Full debug reset clears CE records and cached profiles, removes only tracked
+  CE-owned objects, and reinitializes from current population/ownership. Settings
+  and player finances survive. Removal is asynchronous: retain identities until
+  gone, protect docked visitors, and never recreate hubs during cleanup.
+- Native finalisestations.xml constructs finished modules with
+  apply_construction_sequence. CE uses this only for exact first-generation hubs
+  authorized during first initialization or debug reset, after all ten plans
+  validate. Permission survives planning retries but is consumed on application
+  or hub loss. Replacements/upgrades and pre-existing saves use normal builds.
+- MEASURED (2026-09-28): native station creation can immediately create empty
+  build storage. Initial completion must allow idle storage while excluding active
+  build tasks. Unfinished docking bays can lack `.docked`; treat that as no visitors.
+- Native TextDB dynamic IDs require a constructed reference string; drop_cargo
+  amounts output requires the wares output attribute too.
+
 ## 2026-09-27 - hacking-surveillance-broadcast
 
 - IMPLEMENTED: CE_Sabotage.Apply selects ce_news_hacking for successful production,
@@ -799,6 +831,9 @@ Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 
 ### Using the testing menu
 
+Force finish requires an actual native build task. Pending planning or retry
+state alone cannot enable it.
+
 With **kuertee UI Extensions**, right-click the
 hub and open **Custom Actions → Civilian Economy — Testing**.
 
@@ -1403,86 +1438,24 @@ implemented or runtime-tested CE rewards:
   just validate passed 108 action tests and reference checks. Deployed MD hashes
   match the validated worktree. Native gameplay acceptance remains pending.
 
-## 2026-09-22 - native-startup-acceptance-and-plot-blocks
+## Native plot and startup contracts
 
-- MEASURED, last save_017 load after the startup repair: 33 hub sites created;
-  the same 29 hub IDs reached layout acceptance, build start, full requested
-  build-storage funding and builder assignment. No CE runtime errors or repaired
-  profile/money/sequence warnings occurred. One localisation lookup advisory remains.
-- Four other created sites stopped at ReserveGrowthPlot: the native safety check
-  refused enlargement from 5 km half-size to the required 6/4/16 km envelope.
-  They never requested layouts. Six separate invalid-components rejections had
-  hub=null (three unknown races, three Xenon); these are not the four empty sites.
-- Native construction queueing/funding/assignment is now observed, but completed
-  modules, deliveries, expansion and save/load acceptance are still unverified.
-- Current plot-failure messages omit hub/sector identifiers. Consecutive creation
-  messages associate the four failures with sites, but the log does not identify
-  their sectors; the user's Argon Prime observation is not independently mapped.
-
-## 2026-09-22 - current-plot-first-retries
-
-- IMPLEMENTED: a new hub tries native generation in its existing plot, without
-  pre-reserving the static fixture's future-level envelope. Build storage is
-  created after layout validation, then normal construction/funding/builder
-  selection runs. Native construction still supplies all initial modules.
-- Native generation failure permits a checked increment of up to 2 km on each
-  plot face, capped at 16 km half-size per axis. Equal increments preserve center;
-  existing larger plots never shrink. These bounds are tuning choices, not a
-  measured claim that every racial level-ten layout fits.
-- Failed or capped enlargement can reposition only the same completely empty,
-  uninitialized shell, at most three times. A native sequence, accepted/completed
-  plan, storage, build, pending callback or operational hub prevents relocation.
-  Safe-position placement avoids other plots and requests clearance for the plot
-  plus one growth increment. No station destruction or forced overlap is used.
-- LOCAL SOURCE: common.xsd documents incremental extension, safepos.radius as
-  required clearance (not search range), and warp sector-relative placement.
-  Vanilla x4ep1_mentor_subscription.xml warps the HQ; its nearby storage/CV TODO
-  reinforces the stricter CE requirement that relocated shells have no storage.
-  Bounded _scan discovery parsed 550 base+DLC MD/AI XML files, zero unreadable.
-- Internal CE_Placement.State cue data tracks attempts/failures/next eligibility/
-  resize intent/placement count by hub identity. Hub loss removes its entry.
-  Public record fields, profile adapters and snapshot v3 are unchanged; no
-  migration or older-save repair was added.
-- Retry logs include hub ID, sector ID/name, level/token, attempt count, reason,
-  earliest retry time, plot half-size/center, enlargement and placement outcomes.
-  Failed native warp movement is distinguished from an actual coordinate change.
-  Five-minute cooldown is enforced; the next reconciliation can make the actual
-  wait nearly ten minutes. Malformed layouts/build failures do not enlarge plots.
-- MOCKED: current-plot success even with enlargement denied; bounded growth/moves,
-  rejected/no-op native actions, preservation of off-center/oversized plots,
-  established operation and base IDs, duplicate/stale callbacks, retained retry
-  state across reload and a save-state stand-in, per-site cleanup and log fields.
-  Real save/load, native relocation, materials delivery and completed dock/storage/
-  pier remain in-game acceptance gates. Test only the final load of each debug log.
-- Full restart and a disposable new game/pre-mod save are required for acceptance.
-- VALIDATED: just schema passed 118 action tests, eight MD schemas and merged
-  build-storage AI validation; all three just lua suites and git diff --check
-  passed. These checks do not establish native construction acceptance.
-
-## 2026-09-22 - native-current-plot-startup-and-state-cue
-
-- MEASURED: latest save_017 load begins at debug.txt line 2556. Captured through
-  line 3792 / game time 235648.20: the same 33 created hub IDs attempted and
-  accepted layouts, started builds, had balance equal wanted build funding, and
-  received builders. All 33 initial attempts used 5000m half-sizes on each axis.
-  No generation failure, enlargement or relocation retry occurred. This proves
-  the initial layouts fit the original 10x10x10 km plots for this cohort.
-- Argon Prime hub 0x1b4405, sector 0x75b8c, accepted three entries on attempt one;
-  native task 0x8ebc started and builder 0x80d8c was assigned at gate distance 1.
-  There were no completed-level operational messages in this capture. Materials,
-  completed modules, expansion, relocation and save/load remain acceptance gates.
-- Six separate invalid_components diagnostics had hub=null (three unknown race,
-  three Xenon missing pier/connectors). These are not failures of the 33 sites.
-- FOUND/FIXED: the new State cue used check_value=false without checkinterval or
-  onfail. Native parsing rejected it with 'event condition required'; XSD passed
-  it. Replace its condition with event_cue_signalled: dormant event-driven storage,
-  no polling or data reset. Add a CE-wide condition-mode regression that rejects
-  the original cue and checks all shipped cue conditions. Native parse after this
-  correction still needs a full restart; /reload is insufficient.
-- A pre-existing localized-name expression advisory remains in ce_ownerless_hub.
-  Last-load triage and contextual inspection found no further CE runtime errors.
-- VALIDATED: 119 action tests, eight MD schemas, merged build-storage AI schema,
-  all three Lua suites and git diff --check pass after the cue correction.
+- Fresh hubs use the existing plot and prepare all ten cumulative plans before
+  applying level 1 directly for initial seeding, or creating build storage for
+  normal replacement/upgrade construction.
+- Only native generation failure permits safe plot enlargement, at most 2 km
+  per face per attempt and 16 km half-size per axis. Preserve the center and
+  never shrink existing plots. Try three candidates before enlargement/backoff;
+  malformed plans or build-task failures do not establish insufficient space.
+- At most three relocations are allowed, only for a completely empty, uninitialized
+  shell without storage, accepted plans, build tasks or a pending callback.
+  Native safepos.radius is required clearance, not a search radius. Established
+  stations never relocate. These are bounds, not universal fit guarantees.
+- Saved retry state belongs to CE_Placement.State.Sites, keyed by hub identity;
+  loss/reset clears it. A dormant state cue needs event_cue_signalled, because
+  an actions-less condition-less cue is completed and cannot safely own state.
+- Initial operational readiness follows native module completion, funding and
+  builder assignment. A clean schema check does not establish in-game readiness.
 
 ## 2026-09-22 - map-pagination-selectable-row-crash
 

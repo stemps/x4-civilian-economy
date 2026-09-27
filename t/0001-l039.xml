@@ -231,5 +231,17 @@
     <t id="342">Termina gli eventi selezionati e ripristina la domanda delle loro merci. Gli altri eventi restano attivi. Nessun tempo di attesa.</t>
     <t id="343">Richiede un centro civile operativo, merci adatte sbloccate e dati aggiornati. Nessun evento attivo deve influenzare le stesse merci.</t>
     <t id="344">Termina %s</t>
+    <t id="345">Progettazione della stazione</t>
+    <t id="346">Progetto fallito; nuovo tentativo</t>
+    <t id="347">Nuovo tentativo di costruzione</t>
+    <t id="348">La costruzione nativa non è iniziata. Serve un progetto valido prima di poter completare la costruzione.</t>
+    <t id="361">Reimposta tutti i centri CE</t>
+    <t id="362">Distrugge tutti i centri CE e azzera progressi, eventi, disordini, popolazioni di prova e incursioni attive CE. Impostazioni e finanze del giocatore restano invariate. Riapri il menu entro 30 secondi per confermare.</t>
+    <t id="363">Conferma ripristino centri CE</t>
+    <t id="364">Rimozione oggetti CE: %d/%d</t>
+    <t id="365">In attesa della partenza di visitatori o giocatore, della rimozione degli oggetti o dei dati demografici. Non saranno creati centri duplicati.</t>
+    <t id="366">Ripristino CE completato. I nuovi centri di livello 1 appariranno già costruiti al termine della pianificazione.</t>
+    <t id="367">Inizializzazione centri CE</t>
+    <t id="368">Ripristino in attesa</t>
   </page>
 </language>

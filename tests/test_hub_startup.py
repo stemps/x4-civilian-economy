@@ -8,25 +8,19 @@ class HubStartupTests(StartupHarness):
     def test_fresh_init_to_operational_with_real_startup_libraries(self):
         r=self.run; builder=self.builder()
         r.actions(r.tree.xpath('//cue[@name="Init"]/actions')[0])
+        r.env['md'].CE_OwnerlessHub.Init.Registry=r.env['Registry']
         self.assertIn(self.sector,r.env['SectorProfiles'])
         r.env['player'].entity.ce_population_response=List([r.env['PopulationRequest'],List([List([self.sector,100000000])])])
         r.actions(r.tree.xpath('//cue[@name="PopulationReceived"]/actions')[0])
         record=r.env['Registry'][self.sector]; hub=record.Hub
         self.assertFalse(record.Operational); self.assertIs(hub.constructionsequence,NIL)
         self.complete()
-        self.assertIs(hub.buildstorage.buildmodule.constructionvessel,builder)
-        stages=[kind for kind,_ in self.events]
-        self.assertLess(stages.index('queue'),stages.index('process'))
-        storage_fund=next(i for i,(kind,obj) in enumerate(self.events) if kind=='fund' and obj is hub.buildstorage)
-        self.assertLess(stages.index('process'),storage_fund)
-        self.assertLess(storage_fund,stages.index('assign'))
-        self.assertTrue(hub.buildstorage.tradenpc.exists)
+        self.assertFalse(hub.buildstorage.exists)
+        self.assertEqual(sum(kind=='materialize' for kind,_ in self.events),1)
+        self.assertFalse(any(kind in ('queue','process','assign','order') for kind,_ in self.events))
+        self.assertEqual(record.LayoutPlans.count,10)
+        self.assertIs(hub.constructionsequence,record.LayoutPlans[1])
         self.assertEqual(hub.owner,'civilian')
-        self.assertEqual(hub.buildstorage.tradenpc.owner,'civilian')
-        hub.constructionsequence=record.TargetSequence
-        hub.planmodule=Table({entry.id:Component(exists=True,isoperational=True) for entry in record.TargetSequence})
-        hub.isoperational=True; r.env.update(R=record,Hub=hub)
-        r.library('UpdateHub')
         self.assertTrue(record.Operational); self.assertIs(record.TargetSequence,NIL)
         self.assertEqual(hub.tradenpc.owner,'civilian')
         self.assertTrue(all(w.Offer.exists for w in record.Wares.values() if w.Rate>0))

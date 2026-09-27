@@ -151,8 +151,21 @@ class ContentTests(unittest.TestCase):
         self.assertFalse(t.xpath('//cue[@name="Start" or @name="WatchLevelHub"]'))
         self.assertTrue(Runner().construction.xpath('//library[@name="Queue"]//do_if[contains(@value,"builds.queued.count")]'))
         self.assertFalse(any(tree.xpath('//set_faction_relation|//remove_trade_offer') for tree in Runner().scripts.values()))
-        # Destruction is confined to explicit sabotage and tracked raid cleanup.
+        # Destruction is confined to explicit sabotage, tracked raid cleanup,
+        # and the exact temporary shell created by the opt-in layout test.
         for name, tree in Runner().scripts.items():
+            if name == 'CE_LayoutTest':
+                destroy = tree.xpath('//destroy_object')
+                self.assertEqual(len(destroy), 1)
+                self.assertEqual(destroy[0].get('object'), '$Run.$Probe')
+                self.assertEqual(destroy[0].xpath('ancestor::library/@name'), ['Cleanup'])
+                self.assertFalse(tree.xpath('//create_station'))
+                continue
+            if name == 'CE_DebugReset':
+                destroy = tree.xpath('//destroy_object')
+                self.assertEqual([n.get('object') for n in destroy], ['$ResetObject'])
+                self.assertEqual(destroy[0].xpath('ancestor::library/@name'), ['Pump'])
+                continue
             if name not in ('CE_Sabotage', 'CE_Raids', 'CE_RaidBehaviour'):
                 self.assertFalse(tree.xpath('//destroy_object'), name)
         # Scripted rewards are restricted to the guarded completed-delivery tax.

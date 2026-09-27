@@ -93,7 +93,7 @@ class RefreshSafetyTests(unittest.TestCase):
         deal=Object(buyer=self.r.Hub,transferredamount=25,unitprice=1200)
         self.r.Transfers[deal]=Ware('water')
         # Only explicitly captured state and engine globals exist in this scope.
-        self.run.env={key:self.run.env[key] for key in ('player','md','Registry','null','true','false')}
+        self.run.env={key:self.run.env[key] for key in ('player','md','faction','Registry','null','true','false')}
         self.run.env.update(R=self.r,Hub=self.r.Hub,event=Table(param=deal))
         self.run.stubs['UpdateOffers']=lambda:None
         self.run.library('RecordDelivery')

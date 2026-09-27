@@ -231,5 +231,17 @@
     <t id="342">Terminer les événements sélectionnés et rétablir la demande de leurs marchandises. Les autres événements restent actifs. Aucun délai imposé.</t>
     <t id="343">Nécessite un centre civil opérationnel, des marchandises adaptées débloquées et des données à jour. Aucun événement actif ne doit affecter les mêmes marchandises.</t>
     <t id="344">Terminer %s</t>
+    <t id="345">Plan de station en préparation</t>
+    <t id="346">Plan échoué ; nouvel essai prévu</t>
+    <t id="347">Nouvel essai de construction prévu</t>
+    <t id="348">La construction native n’a pas commencé. Un plan valide est nécessaire avant de pouvoir terminer la construction.</t>
+    <t id="361">Réinitialiser les hubs CE</t>
+    <t id="362">Détruit tous les hubs CE et efface progression, événements, troubles, populations de test et raids actifs CE. Paramètres et finances du joueur conservés. Rouvrez ce menu sous 30 secondes pour confirmer.</t>
+    <t id="363">Confirmer le reset des hubs CE</t>
+    <t id="364">Suppression des objets CE : %d/%d</t>
+    <t id="365">En attente du départ des visiteurs ou du joueur, de la suppression des objets ou des données de population. Aucun hub en double ne sera créé.</t>
+    <t id="366">Réinitialisation CE terminée. Les nouveaux hubs de niveau 1 apparaissent entièrement construits une fois la planification terminée.</t>
+    <t id="367">Initialisation des hubs CE</t>
+    <t id="368">Réinitialisation en attente</t>
   </page>
 </language>

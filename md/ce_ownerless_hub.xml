@@ -7,6 +7,7 @@
       </conditions>
       <actions>
         <set_value name="$Registry" exact="table[]"/>
+        <set_value name="$InitialPopulationPass" exact="true"/>
         <set_value name="$SectorProfiles" exact="table[]"/>
         <set_value name="$RaceProfiles" exact="table[]"/>
         <set_value name="$Sector" exact="null"/>
@@ -21,6 +22,7 @@
             <check_value value="true"/>
           </conditions>
           <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy">
             <do_if value="player.age ge $NextReconcile">
               <include_actions ref="Reconcile"/>
             </do_if>
@@ -38,18 +40,21 @@
             </do_for_each>
             <include_actions ref="md.CE_Unrest.Schedule"/>
             <include_actions ref="PublishAllDiagnostics"/>
-          </actions>
+
+        </do_if>
+      </actions>
         </cue>
         <cue name="Reload" instantiate="true">
           <conditions>
             <event_game_loaded/>
           </conditions>
           <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy">
             <include_actions ref="Reconcile"/>
             <do_for_each name="$Sector" in="$Registry.keys.list">
               <set_value name="$R" exact="$Registry.{$Sector}"/>
               <do_if value="@$R.$LayoutPending">
-                <do_if value="@$R.$LayoutCue">
+                <do_if value="@$R.$LayoutCue.exists">
                   <cancel_cue cue="$R.$LayoutCue"/>
                 </do_if>
                 <set_value name="$R.$LayoutPending" exact="false"/>
@@ -59,13 +64,16 @@
               <include_actions ref="PublishDiagnostics"/>
             </do_for_each>
             <include_actions ref="PublishAllDiagnostics"/>
-          </actions>
+
+        </do_if>
+      </actions>
         </cue>
         <cue name="LostHub" instantiate="true">
           <conditions>
             <event_object_destroyed group="$Hubs"/>
           </conditions>
           <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy">
             <do_for_each name="$Sector" in="$Registry.keys.list">
               <set_value name="$R" exact="$Registry.{$Sector}"/>
               <do_if value="event.object == $R.$Hub">
@@ -73,17 +81,23 @@
               </do_if>
             </do_for_each>
             <include_actions ref="PublishAllDiagnostics"/>
-          </actions>
+
+        </do_if>
+      </actions>
         </cue>
         <cue name="SectorTestingCommand" instantiate="true">
           <conditions><event_ui_triggered screen="'CESectorTesting'" control="'create_hub_5b'"/></conditions>
-          <actions><include_actions ref="md.CE_DebugCreate.Request"/></actions>
+          <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy"><include_actions ref="md.CE_DebugCreate.Request"/>
+        </do_if>
+      </actions>
         </cue>
         <cue name="TestingCommand" instantiate="true">
           <conditions>
             <event_ui_triggered screen="'CELevelTesting'"/>
           </conditions>
           <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy">
             <do_for_each name="$Sector" in="$Registry.keys.list">
               <set_value name="$R" exact="$Registry.{$Sector}"/>
               <do_if value="event.param3 == $R.$Hub and $R.$Hub.exists">
@@ -110,7 +124,9 @@
               </do_if>
             </do_for_each>
             <include_actions ref="PublishAllDiagnostics"/>
-          </actions>
+
+        </do_if>
+      </actions>
         </cue>
         <cue name="WatchSectorHub" instantiate="true" namespace="this">
           <conditions>
@@ -132,12 +148,15 @@
                 <check_value value="not $R.$Transfers.{event.param2}?"/>
               </conditions>
               <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy">
                 <set_value name="this.$Deal" exact="event.param2"/>
                 <set_value name="this.$Buyer" exact="event.param2.buyer"/>
                 <set_value name="this.$Seller" exact="event.param2.seller"/>
                 <set_value name="$R.$Transfers.{event.param2}" exact="event.param.ware"/>
                 <debug_text text="'[CE] Delivery started: deal=%s ware=%s quantity=%s'.[this.$Deal, event.param.ware, this.$Deal.amount]"/>
-              </actions>
+
+        </do_if>
+      </actions>
               <cues>
                 <cue name="SectorDeliveryFinished">
                   <conditions>
@@ -147,8 +166,11 @@
                     <check_value value="event.param.buyer == $R.$Hub and $R.$Transfers.{event.param}?"/>
                   </conditions>
                   <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy">
                     <include_actions ref="RecordDelivery"/>
-                  </actions>
+
+        </do_if>
+      </actions>
                 </cue>
               </cues>
             </cue>
@@ -162,13 +184,17 @@
             </cue>
           </cues>
         </cue>
+        <cue name="ResetRebuild" instantiate="true">
+          <conditions><event_cue_signalled/></conditions>
+          <actions><do_if value="@md.CE_DebugReset.State.$Busy and md.CE_DebugReset.State.$Phase == 'initializing'"><set_value name="$InitialPopulationPass" exact="true"/><include_actions ref="Reconcile"/></do_if></actions>
+        </cue>
         <cue name="PopulationReceived" instantiate="true">
           <conditions>
             <event_ui_triggered screen="'CEPopulation'" control="'ready'"/>
           </conditions>
           <actions>
             <set_value name="$Response" exact="@player.entity.$ce_population_response"/>
-            <do_if value="$Response and $Response.{1} == $PopulationRequest and @$PopulationApplied != $PopulationRequest">
+            <do_if value="(not @md.CE_DebugReset.State.$Busy or @md.CE_DebugReset.State.$Phase == 'initializing') and $Response and $Response.{1} == $PopulationRequest and @$PopulationApplied != $PopulationRequest">
               <set_value name="$PopulationApplied" exact="$PopulationRequest"/>
               <do_for_each name="$PopulationRow" in="$Response.{2}">
                 <set_value name="$Sector" exact="$PopulationRow.{1}"/>
@@ -183,6 +209,8 @@
                 </do_if>
               </do_for_each>
               <include_actions ref="PublishAllDiagnostics"/>
+              <set_value name="$InitialPopulationPass" exact="false"/>
+              <include_actions ref="md.CE_DebugReset.Finish"/>
             </do_if>
           </actions>
         </cue>
@@ -190,6 +218,7 @@
     </cue>
     <library name="Reconcile">
       <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy or @md.CE_DebugReset.State.$Phase == 'initializing'">
         <do_for_each name="$MigrationSector" in="$Registry.keys.list">
           <set_value name="$R" exact="$Registry.{$MigrationSector}"/>
           <include_actions ref="MigrateHubOwnership"/>
@@ -203,6 +232,8 @@
         <set_value name="$PopulationRequest" exact="if $PopulationRequest? then $PopulationRequest + 1 else 1"/>
         <set_value name="player.entity.$ce_population_request" exact="[$PopulationRequest,$PopulationSectors]"/>
         <raise_lua_event name="'CEPopulationRequest'"/>
+
+        </do_if>
       </actions>
     </library>
     <!-- Registered legacy hubs only; retain their objects and all sector state. -->
@@ -228,15 +259,20 @@
     </library>
     <library name="ForgetHub">
       <actions>
+        <set_value name="$R.$InitialHub" exact="null"/>
+        <set_value name="$R.$InitialEligible" exact="false"/>
         <include_actions ref="md.CE_Placement.Forget"/>
         <include_actions ref="md.CE_DebugAdvance.Forget"/>
         <include_actions ref="md.CE_DebugCreate.Forget"/>
-        <do_if value="@$R.$LayoutCue">
+        <do_if value="@$R.$LayoutCue.exists">
           <cancel_cue cue="$R.$LayoutCue"/>
         </do_if>
         <set_value name="$R.$LayoutPending" exact="false"/>
         <set_value name="$R.$CompletedSequence" exact="null"/>
         <set_value name="$R.$TargetSequence" exact="null"/>
+        <set_value name="$R.$LayoutPlans" exact="null"/>
+        <set_value name="$R.$LayoutPlanHub" exact="null"/>
+        <set_value name="$R.$ConstructionFailure" exact="null"/>
         <!-- AccrueAll synchronizes before consuming the old reserves. -->
         <include_actions ref="AccrueAll"/>
         <set_value name="$R.$Hub" exact="null"/>
@@ -418,6 +454,7 @@
         <do_if value="not $Registry.{$Sector}?">
           <set_value name="$Registry.{$Sector}" exact="table[$Hub=null,$Level=1,$Target=0,$Build=null,$Operational=false,$Wares=table[],$Transfers=table[],$Generation=0,$GrowthSeconds=0.0f,$Last=player.age / 1s,$DisplayOrder=[],$PauseOffers=false,$TestUpgrade=false,$PlotReady=false,$InitializedHub=null,$Population=$Population,$Factor=$Population / 8524100000.0f]"/>
           <set_value name="$R" exact="$Registry.{$Sector}"/>
+          <set_value name="$R.$InitialEligible" exact="@$InitialPopulationPass"/>
         </do_if>
         <set_value name="$R" exact="$Registry.{$Sector}"/>
       </actions>
@@ -442,6 +479,8 @@
               <do_if value="$NewHub.exists">
                 <set_value name="$R.$Hub" exact="$NewHub"/>
                 <set_value name="$R.$Generation" operation="add"/>
+                <set_value name="$R.$InitialHub" exact="if @$R.$InitialEligible and $R.$Generation == 1 and $R.$Level == 1 then $NewHub else null"/>
+                <set_value name="$R.$InitialEligible" exact="false"/>
                 <set_value name="$R.$PlotReady" exact="false"/>
                 <include_actions ref="RebaseAccrual"/>
                 <debug_text text="'[CE] Construction site created: %s earned_level=%s generation=%s'.[$NewHub,$R.$Level,$R.$Generation]"/>

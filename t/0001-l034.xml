@@ -231,5 +231,17 @@
     <t id="342">Finalizar los eventos seleccionados y restablecer la demanda de sus mercancías. Los demás eventos siguen activos. Sin tiempo de espera.</t>
     <t id="343">Requiere un centro civil operativo, mercancías adecuadas desbloqueadas y datos actualizados. Ningún evento activo debe afectar a las mismas mercancías.</t>
     <t id="344">Finalizar %s</t>
+    <t id="345">Diseño de estación en preparación</t>
+    <t id="346">Fallo de diseño; reintento previsto</t>
+    <t id="347">Esperando reintentar construcción</t>
+    <t id="348">La construcción nativa no ha comenzado. Se necesita un diseño válido antes de poder completar la construcción.</t>
+    <t id="361">Reiniciar todos los centros CE</t>
+    <t id="362">Destruye todos los centros CE y borra progreso, eventos, disturbios, población de prueba e incursiones activas de CE. Conserva ajustes y dinero del jugador. Reabre este menú en 30 segundos para confirmar.</t>
+    <t id="363">Confirmar reinicio de centros CE</t>
+    <t id="364">Eliminando objetos CE: %d/%d</t>
+    <t id="365">Esperando la salida de visitantes o del jugador, la eliminación de objetos o los datos de población. No se crearán centros duplicados.</t>
+    <t id="366">Reinicio CE completo. Los nuevos centros de nivel 1 aparecerán totalmente construidos cuando termine la planificación.</t>
+    <t id="367">Inicializando centros CE</t>
+    <t id="368">Reinicio en espera</t>
   </page>
 </language>

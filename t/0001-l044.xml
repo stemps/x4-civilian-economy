@@ -218,5 +218,17 @@
     <t id="342">End the selected events and restore demand for their goods. Other events remain active. No cooldown is applied.</t>
     <t id="343">Requires an operational civilian hub, applicable unlocked goods and a current status snapshot. An active event must not affect any of the same goods.</t>
     <t id="344">End %s</t>
+    <t id="345">Planning station layout</t>
+    <t id="346">Layout failed; retry pending</t>
+    <t id="347">Construction retry pending</t>
+    <t id="348">Native construction has not started. A valid layout is needed before construction can be completed.</t>
+    <t id="361">Reset all CE hubs</t>
+    <t id="362">Destroys all CE hubs and clears CE progress, events, unrest, debug populations and active raids. Settings and player finances stay unchanged. Reopen this menu within 30 seconds to confirm.</t>
+    <t id="363">Confirm reset of all CE hubs</t>
+    <t id="364">Removing CE objects: %d/%d</t>
+    <t id="365">Reset is waiting for visitors or the player to leave, object removal, or population data. No duplicate hubs will be created.</t>
+    <t id="366">CE reset complete. New level-1 hubs appear fully built once planning finishes.</t>
+    <t id="367">Initializing fresh CE hubs</t>
+    <t id="368">Reset waiting</t>
   </page>
 </language>

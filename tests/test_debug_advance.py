@@ -5,6 +5,8 @@ from support_startup import StartupHarness
 class DebugAdvanceTests(StartupHarness):
     def operational(self):
         record=self.start();self.complete();self.finish_modules(record)
+        # Exercise upgrades of existing saves without precomputed level layouts.
+        record.LayoutPlans=NIL;record.LayoutPlanHub=NIL
         return record
 
     def finish_modules(self, record):

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_DebugReset" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="State" namespace="this"><conditions><event_cue_signalled/></conditions></cue>
+    <cue name="Init"><actions><include_actions ref="md.CE_DebugReset.Publish"/></actions></cue>
+    <cue name="Command" instantiate="true" namespace="this">
+      <conditions><event_ui_triggered screen="'CEResetTesting'"/></conditions>
+      <actions><include_actions ref="md.CE_DebugReset.Request"/></actions>
+    </cue>
+    <library name="Publish">
+      <actions>
+        <do_if value="not md.CE_DebugReset.State.$Token?">
+          <set_value name="md.CE_DebugReset.State.$Token" exact="1"/>
+          <set_value name="md.CE_DebugReset.State.$Busy" exact="false"/>
+          <set_value name="md.CE_DebugReset.State.$Phase" exact="'idle'"/>
+          <set_value name="md.CE_DebugReset.State.$Pending" exact="[]"/>
+          <set_value name="md.CE_DebugReset.State.$Total" exact="0"/>
+          <set_value name="md.CE_DebugReset.State.$Blocked" exact="false"/>
+        </do_if>
+        <set_value name="player.entity.$ce_reset" exact="[md.CE_DebugReset.State.$Token,md.CE_DebugReset.State.$Busy,md.CE_DebugReset.State.$Phase,md.CE_DebugReset.State.$Pending.count,md.CE_DebugReset.State.$Total,md.CE_DebugReset.State.$Blocked]"/>
+      </actions>
+    </library>
+    <library name="Request">
+      <actions>
+        <include_actions ref="md.CE_DebugReset.Publish"/>
+        <include_actions ref="md.CE_Settings.Ensure"/>
+        <set_value name="$ResetArm" exact="'arm:%1'.[md.CE_DebugReset.State.$Token]"/>
+        <set_value name="$ResetConfirm" exact="'confirm:%1'.[md.CE_DebugReset.State.$Token]"/>
+        <set_value name="$ResetContext" exact="event.param3.exists and event.param3.isclass.sector"/>
+        <do_if value="md.CE_OwnerlessHub.Init.$Registry?">
+          <do_for_each name="$ResetSector" in="md.CE_OwnerlessHub.Init.$Registry.keys.list">
+            <do_if value="md.CE_OwnerlessHub.Init.$Registry.{$ResetSector}.$Hub.exists and event.param3 == md.CE_OwnerlessHub.Init.$Registry.{$ResetSector}.$Hub"><set_value name="$ResetContext" exact="true"/></do_if>
+          </do_for_each>
+        </do_if>
+        <do_if value="$ResetContext and md.CE_Settings.State.$Debug and not md.CE_DebugReset.State.$Busy and md.CE_OwnerlessHub.Init.$Registry?">
+          <do_if value="event.param2 == $ResetArm">
+            <set_value name="md.CE_DebugReset.State.$Token" operation="add"/>
+            <set_value name="md.CE_DebugReset.State.$Phase" exact="'confirm'"/>
+            <set_value name="md.CE_DebugReset.State.$ConfirmUntil" exact="player.age + 30s"/>
+          </do_if>
+          <do_elseif value="event.param2 == $ResetConfirm and md.CE_DebugReset.State.$Phase == 'confirm' and player.age lt md.CE_DebugReset.State.$ConfirmUntil">
+            <include_actions ref="md.CE_DebugReset.Begin"/>
+          </do_elseif>
+        </do_if>
+        <include_actions ref="md.CE_DebugReset.Publish"/>
+      </actions>
+    </library>
+    <library name="Begin">
+      <actions>
+        <set_value name="md.CE_DebugReset.State.$Busy" exact="true"/>
+        <set_value name="md.CE_DebugReset.State.$Phase" exact="'removing'"/>
+        <set_value name="md.CE_DebugReset.State.$Token" operation="add"/>
+        <set_value name="md.CE_DebugReset.State.$Pending" exact="[]"/>
+        <set_value name="md.CE_DebugReset.State.$Blocked" exact="false"/>
+        <set_value name="md.CE_DebugReset.State.$Deadline" exact="player.age + 30s"/>
+        <!-- Invalidate native population responses before detaching old records. -->
+        <set_value name="md.CE_OwnerlessHub.Init.$PopulationRequest" exact="if md.CE_OwnerlessHub.Init.$PopulationRequest? then md.CE_OwnerlessHub.Init.$PopulationRequest + 1 else 1"/>
+        <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+        <do_for_each name="$ResetSector" in="$Registry.keys.list">
+          <set_value name="$R" exact="$Registry.{$ResetSector}"/>
+          <set_value name="$R.$LayoutPending" exact="false"/>
+          <do_if value="@$R.$LayoutCue.exists"><cancel_cue cue="$R.$LayoutCue"/></do_if>
+          <set_value name="$R.$LayoutCue" exact="null"/>
+          <set_value name="$R.$PauseOffers" exact="true"/>
+          <clear_table table="$R.$Transfers"/>
+          <do_for_each name="$ResetWare" in="$R.$Wares.keys.list">
+            <do_if value="$R.$Wares.{$ResetWare}.$Offer.exists"><update_trade trade="$R.$Wares.{$ResetWare}.$Offer" amount="0" desiredamount="0"/></do_if>
+          </do_for_each>
+          <set_value name="$ResetHub" exact="$R.$Hub"/>
+          <do_if value="$ResetHub.exists and ($ResetHub.owner == faction.civilian or $ResetHub.owner == faction.ownerless) and (not $ResetHub.buildstorage.exists or $ResetHub.buildstorage.owner == faction.civilian or $ResetHub.buildstorage.owner == faction.ownerless)">
+            <do_if value="$ResetHub.buildstorage.exists and ($ResetHub.buildstorage.owner == faction.civilian or $ResetHub.buildstorage.owner == faction.ownerless)">
+              <set_value name="$ResetBuilds" exact="$ResetHub.buildstorage.builds.queued.clone"/>
+              <append_list_elements name="$ResetBuilds" other="$ResetHub.buildstorage.builds.inprogress"/>
+              <do_for_each name="$ResetBuild" in="$ResetBuilds"><remove_build object="$ResetHub.buildstorage" build="$ResetBuild"/></do_for_each>
+              <do_if value="$ResetHub.buildstorage.buildmodule.constructionvessel.exists"><disengage_construction_vessel object="$ResetHub.buildstorage.buildmodule"/></do_if>
+              <append_to_list name="md.CE_DebugReset.State.$Pending" exact="table[$Object=$ResetHub.buildstorage,$Owner=$ResetHub.buildstorage.owner,$Sent=false]"/>
+            </do_if>
+            <append_to_list name="md.CE_DebugReset.State.$Pending" exact="table[$Object=$ResetHub,$Owner=$ResetHub.owner,$Sent=false]"/>
+          </do_if>
+          <!-- Captured listeners retain this table; detach it before rebuilding. -->
+          <set_value name="$R.$Hub" exact="null"/>
+        </do_for_each>
+        <include_actions ref="md.CE_Raids.Ensure"/>
+        <do_for_each name="$ResetGroupKey" in="md.CE_Raids.State.$Groups.keys.list">
+          <set_value name="$ResetGroup" exact="md.CE_Raids.State.$Groups.{$ResetGroupKey}"/>
+          <do_for_each name="$RaidShip" in="$ResetGroup.$Ships">
+            <do_if value="$RaidShip.exists">
+              <do_if value="$RaidShip.pilot"><include_actions ref="md.CE_RaidBehaviour.Release"/></do_if>
+              <do_if value="$RaidShip.trueowner == faction.ce_unrest">
+                <do_for_each name="$ResetOrder" in="$RaidShip.orders"><cancel_order order="$ResetOrder"/></do_for_each>
+                <do_if value="$RaidShip.pilot"><create_order object="$RaidShip" id="'Wait'" default="true"><param name="holdfire" value="true"/></create_order></do_if>
+                <append_to_list name="md.CE_DebugReset.State.$Pending" exact="table[$Object=$RaidShip,$Owner=faction.ce_unrest,$Sent=false]"/>
+              </do_if>
+            </do_if>
+          </do_for_each>
+        </do_for_each>
+        <clear_table table="md.CE_Raids.State.$Groups"/>
+        <set_value name="md.CE_Raids.State.$NextGroupId" exact="0"/>
+        <include_actions ref="md.CE_Sabotage.Ensure"/>
+        <do_for_each name="$ResetModule" in="md.CE_Sabotage.State.$Pauses.keys.list">
+          <do_if value="$ResetModule.exists and not $ResetModule.iswreck and $ResetModule.ispausedmanually"><set_production_paused object="$ResetModule" paused="false"/></do_if>
+        </do_for_each>
+        <clear_table table="md.CE_Sabotage.State.$Pauses"/>
+        <clear_table table="md.CE_Sabotage.State.$Stations"/>
+        <set_value name="md.CE_Unrest.State.$Cursor" exact="0"/>
+        <set_value name="md.CE_Placement.State.$Sites" exact="table[]"/>
+        <set_value name="md.CE_DebugAdvance.State.$Targets" exact="table[]"/>
+        <clear_table table="$Registry"/>
+        <clear_table table="md.CE_OwnerlessHub.Init.$SectorProfiles"/>
+        <clear_table table="md.CE_OwnerlessHub.Init.$RaceProfiles"/>
+        <clear_group group="md.CE_OwnerlessHub.Init.$Hubs"/>
+        <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+        <set_value name="md.CE_DebugReset.State.$Total" exact="md.CE_DebugReset.State.$Pending.count"/>
+        <debug_text text="'[CE] Reset started: objects=%s'.[md.CE_DebugReset.State.$Total]"/>
+        <include_actions ref="md.CE_DebugReset.Pump"/>
+      </actions>
+    </library>
+    <cue name="Tick" instantiate="true" checkinterval="1s">
+      <conditions><check_value value="true"/></conditions>
+      <actions>
+        <do_if value="@md.CE_DebugReset.State.$Busy"><include_actions ref="md.CE_DebugReset.Pump"/></do_if>
+        <do_elseif value="@md.CE_DebugReset.State.$Phase == 'confirm' and player.age ge md.CE_DebugReset.State.$ConfirmUntil">
+          <set_value name="md.CE_DebugReset.State.$Phase" exact="'idle'"/>
+          <set_value name="md.CE_DebugReset.State.$Token" operation="add"/>
+          <include_actions ref="md.CE_DebugReset.Publish"/>
+        </do_elseif>
+      </actions>
+    </cue>
+    <library name="Pump">
+      <actions>
+        <do_if value="md.CE_DebugReset.State.$Phase == 'removing'">
+          <do_for_each name="$ResetItem" in="md.CE_DebugReset.State.$Pending" counter="$ResetIndex" reverse="true">
+            <set_value name="$ResetObject" exact="$ResetItem.$Object"/>
+            <do_if value="not $ResetObject.exists or ($ResetObject.isclass.ship and $ResetObject.trueowner != $ResetItem.$Owner) or (not $ResetObject.isclass.ship and $ResetObject.owner != $ResetItem.$Owner)">
+              <remove_value name="md.CE_DebugReset.State.$Pending.{$ResetIndex}"/>
+            </do_if>
+            <do_elseif value="not $ResetItem.$Sent">
+              <include_actions ref="md.CE_DebugReset.CheckVisitors"/>
+              <do_if value="not $ResetOccupied and not player.entity.hascontext.{$ResetObject}">
+                <destroy_object object="$ResetObject" explosion="false"/>
+                <set_value name="$ResetItem.$Sent" exact="true"/>
+              </do_if>
+            </do_elseif>
+          </do_for_each>
+          <do_if value="md.CE_DebugReset.State.$Pending.count == 0">
+            <set_value name="md.CE_DebugReset.State.$Phase" exact="'initializing'"/>
+            <set_value name="md.CE_DebugReset.State.$Blocked" exact="false"/>
+            <set_value name="md.CE_DebugReset.State.$Deadline" exact="player.age + 30s"/>
+            <signal_cue_instantly cue="md.CE_OwnerlessHub.ResetRebuild"/>
+          </do_if>
+        </do_if>
+        <do_if value="md.CE_DebugReset.State.$Busy and player.age ge md.CE_DebugReset.State.$Deadline and not md.CE_DebugReset.State.$Blocked">
+          <set_value name="md.CE_DebugReset.State.$Blocked" exact="true"/>
+          <show_notification text="{974201,365}"/>
+          <debug_text text="'[CE] Reset waiting: phase=%s remaining=%s'.[md.CE_DebugReset.State.$Phase,md.CE_DebugReset.State.$Pending.count]"/>
+        </do_if>
+        <include_actions ref="md.CE_DebugReset.Publish"/>
+      </actions>
+    </library>
+    <library name="CheckVisitors">
+      <actions>
+        <!-- Native boarding.xml enumerates both surface and internal dock occupants this way. -->
+        <set_value name="$ResetOccupied" exact="false"/>
+        <find_dockingbay name="$ResetDocks" object="$ResetObject" multiple="true" checkoperational="false"/>
+        <do_for_each name="$ResetDock" in="$ResetDocks">
+          <do_for_each name="$ResetVisitor" in="if @$ResetDock.docked then $ResetDock.docked else []">
+            <do_if value="$ResetVisitor.exists and not $ResetVisitor.isunit"><set_value name="$ResetOccupied" exact="true"/></do_if>
+          </do_for_each>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="Finish">
+      <actions>
+        <do_if value="@md.CE_DebugReset.State.$Busy and md.CE_DebugReset.State.$Phase == 'initializing'">
+          <set_value name="md.CE_DebugReset.State.$Busy" exact="false"/>
+          <set_value name="md.CE_DebugReset.State.$Phase" exact="'complete'"/>
+          <set_value name="md.CE_DebugReset.State.$Blocked" exact="false"/>
+          <set_value name="md.CE_DebugReset.State.$Token" operation="add"/>
+          <show_notification text="{974201,366}"/>
+          <debug_text text="'[CE] Reset complete: fresh_records=%s; initial hubs materialize after planning'.[md.CE_OwnerlessHub.Init.$Registry.keys.count]"/>
+          <include_actions ref="md.CE_DebugReset.Publish"/>
+        </do_if>
+      </actions>
+    </library>
+    <cue name="Reload" instantiate="true">
+      <conditions><event_game_loaded/></conditions>
+      <actions>
+        <include_actions ref="md.CE_DebugReset.Publish"/>
+        <do_if value="md.CE_DebugReset.State.$Busy">
+          <do_if value="md.CE_DebugReset.State.$Phase == 'initializing'"><signal_cue_instantly cue="md.CE_OwnerlessHub.ResetRebuild"/></do_if>
+          <do_else><include_actions ref="md.CE_DebugReset.Pump"/></do_else>
+        </do_if>
+      </actions>
+    </cue>
+  </cues>
+</mdscript>

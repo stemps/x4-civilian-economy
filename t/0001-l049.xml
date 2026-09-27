@@ -231,5 +231,17 @@
     <t id="342">Die ausgewählten Ereignisse beenden und die Nachfrage nach ihren Waren normalisieren. Andere Ereignisse bleiben aktiv. Keine Wartezeit.</t>
     <t id="343">Erfordert ein betriebsbereites ziviles Zentrum, passende freigeschaltete Waren und aktuelle Statusdaten. Kein aktives Ereignis darf dieselben Waren beeinflussen.</t>
     <t id="344">%s beenden</t>
+    <t id="345">Stationslayout wird geplant</t>
+    <t id="346">Layoutfehler; neuer Versuch folgt</t>
+    <t id="347">Erneuter Bauversuch ausstehend</t>
+    <t id="348">Der eigentliche Bau hat noch nicht begonnen. Zum Fertigstellen wird zunächst ein gültiges Layout benötigt.</t>
+    <t id="361">Alle CE-Zentren zurücksetzen</t>
+    <t id="362">Zerstört alle CE-Zentren und löscht CE-Fortschritt, Ereignisse, Unruhen, Testbevölkerung und aktive Überfälle. Einstellungen und Spielergeld bleiben erhalten. Dieses Menü innerhalb von 30 Sekunden erneut öffnen, um zu bestätigen.</t>
+    <t id="363">Reset aller CE-Zentren bestätigen</t>
+    <t id="364">CE-Objekte entfernen: %d/%d</t>
+    <t id="365">Der Reset wartet auf die Abreise von Besuchern oder Spieler, die Objektentfernung oder Bevölkerungsdaten. Es entstehen keine doppelten Zentren.</t>
+    <t id="366">CE-Reset abgeschlossen. Neue Zentren der Stufe 1 erscheinen nach Abschluss der Planung vollständig gebaut.</t>
+    <t id="367">Neue CE-Zentren initialisieren</t>
+    <t id="368">Reset wartet</t>
   </page>
 </language>

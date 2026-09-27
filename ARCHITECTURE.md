@@ -282,6 +282,8 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
 | `md/ce_placement.xml` | Current-plot-first layout retries, bounded safe enlargement and empty-shell relocation; internal cue state and retry diagnostics. |
 | `md/ce_construction.xml` | Racial component selection, asynchronous native layout generation, validation, queue recovery and module readiness. |
+| `md/ce_layout_plan.xml` | Prepare and validate cumulative levels 1-10 before initial construction. |
+| `md/ce_debug_reset.xml` | Confirmed global CE reset, protected removal and fresh initialization. |
 | `ui/ce_population.lua` | Native accessible-population reader; no economic state. |
 | `ui/ce_debug_tools.lua` | Optional testing menu with top-level diagnostics and station/construction, ware and unrest subgroups; guarded native force-completion and scoped civilian interaction fallback. |
 | `md/ce_debug_wares.xml` | Token-guarded virtual reserve randomization/emptying for active positive-rate wares; settles consumption and refreshes offers and snapshots. |
@@ -487,9 +489,9 @@ replacements. No fallback to Argon components is allowed.
 
 A new hub is an empty station shell. Its first layout uses its existing plot;
 build storage is created only after layout acceptance. There is no up-front
-reservation for level ten. `CE_Placement` applies a five-minute cooldown after a
-failed attempt; the next five-minute reconciliation performs the retry (so the
-actual delay can be nearly ten minutes).
+reservation for level ten. Fresh hubs prepare all ten cumulative plans before
+materialization or construction. The first two failed candidates retry on the next controller tick;
+subsequent failure uses the five-minute reconciliation backoff.
 Only a native generation failure permits safe incremental plot enlargement (up to
 2 km per side per attempt, capped at 16 km half-size on each axis). The center is
 preserved and existing larger plots never shrink. Invalid module baskets and build
@@ -767,6 +769,70 @@ delegate to `CE_TransactionLog`; receipt cancellation stays in the original
 child cue. Account extraction likewise keeps caller namespaces, action order,
 funding policy and manager ownership unchanged. These refactorings introduce
 no saved-state migration or fixes to the ownership/raid review findings.
+
+## Planned station growth
+
+`CE_Construction.Generate` plans all ten levels before building an empty hub.
+`CE_LayoutPlan.Begin`, `Request`, `Receive` and `Finish` implement the forward
+planner. Level 1 starts from no base; each accepted sequence becomes the fixed base for the next level. Only the missing
+functional modules are requested. Every result must have the exact functional
+basket, allowed connectors and all previous base entry IDs/macros unchanged.
+No pruning is used. Invalid or failed extensions retry the same base up to
+three times with cyclic direction biases 1.0, 0.5 and 2.0. Exhaustion discards
+the entire candidate without creating build storage or a build task.
+
+The caller retains the asynchronous event listener for all levels and retries.
+
+Only a complete set is saved as `$R.$LayoutPlans`, tied to `$R.$LayoutPlanHub`.
+First-initialization and debug-reset records receive a one-shot `InitialEligible`
+flag during the initial population pass. The first successfully created shell
+binds it to `InitialHub`; retries/save loads retain that exact identity. After all
+ten plans validate, `CE_Construction.Initialize` applies only level 1 directly,
+using vanilla `apply_construction_sequence`, then runs ordinary readiness, manager,
+funding and offer setup. No build task or builder is needed; empty build storage
+created by the engine is allowed, but queued/in-progress builds block this path. Hub
+loss clears permission, and existing saved records are never retroactively marked.
+Later discoveries, replacements and upgrades use the normal build/funding path. Upgrades reuse the chosen geometry; debug
+jumps select the corresponding cumulative sequence. Plans survive task failure
+and save/load, and `ForgetHub` clears them. Existing built hubs without saved
+plans continue generating additions against their completed sequence.
+
+`CE_Placement` tries direction biases 1.0, 0.5 and 2.0 within the same plot.
+The first two exhausted candidate plans permit a retry on the next controller
+tick (earliest one second later). After the third, the five-minute backoff applies;
+only native generation failure permits the existing bounded plot enlargement.
+Validation failures do not establish that the plot needs enlargement. Old
+saved retry state initializes the new counter and clears premature enlargement.
+Disconnected-module fallback remains disabled.
+
+Diagnostics append an optional construction phase at snapshot position 22:
+`planning`, `layout_retry`, `build_retry`, or an empty string. The shared Lua
+adapter uses it for status/progress text and rebuild signatures; older snapshots
+keep their existing presentation. This field never authorizes force completion.
+The 600-site native planning run passed; physical construction and docking
+still require in-game acceptance. Mocked sequences test only the contracts.
+
+Pier discovery queries `[pier,module]`, including both base and add categories,
+before choosing minimum capital-dock capacity. The old base-only query excluded
+single-approach add piers in several races. It does not impose fixed orientations
+or reserve manually positioned corridors. Saved sector construction profiles
+remain immutable; a fresh initialization or explicit reset resolves new choices.
+
+## Full debug reset
+
+`CE_DebugReset` owns a persistent removal queue and confirmation token. Its Lua
+adapter exposes a two-step action on sectors and hubs. MD validates debug mode,
+context and token. Reset freezes controller ticks and debug mutations, invalidates
+population responses and native layout callbacks, then detaches old records.
+Only registered CE-owned hubs/build storage and tracked CE raid ships are removed.
+Captured objects survive; docked visitors and the player block destruction.
+
+Cleanup survives save/load and waits for actual object removal. Then the existing
+population/reconciliation path creates fresh level-1 records using current sector
+profiles. A matching population response completes reset; initial hubs appear
+fully built after their plans validate. Replacements and upgrades build normally. Settings and historical financial/logbook records are preserved.
+`CE_LayoutTest` is only a compatibility cleanup tombstone for saved experimental
+workers/probes. It cannot generate plans or start batches.
 
 ## Debug advance to a chosen level
 

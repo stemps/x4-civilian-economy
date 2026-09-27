@@ -35,6 +35,7 @@ Helper={getMenu=function() return menu end}
 GetNPCBlackboard=function(id,key)
  assert(type(id)=='number' and id==1, 'GetNPCBlackboard requires a converted Lua component ID')
  if key=="$ce_debug_enabled" then return debugEnabled end
+ if key=="$ce_reset" then return resetState end
  if key=="$ce_hubs" then return marked and {42, 43} or {} end
  if key=="$ce_hub_sectors" then return occupied end
  if key=="$ce_hub_statuses" then return {status, {43, 5, 0, true, 0, 21600, false, true, {}, false, nil, nil, 3}} end
@@ -52,7 +53,7 @@ DebugError=function() end
 events={}
 RegisterEvent=function(name, fn) events[name]=fn end
 AddUITriggeredEvent=function(screen,command,id)
- assert(((screen=="CELevelTesting" or screen=="CEUnrestTesting" or screen=="CEWareTesting" or screen=="CEProgressTesting" or screen=="CEEventTesting") and id==42) or (screen=="CESectorTesting" and id==80));commands[#commands+1]=command
+ assert(((screen=="CELevelTesting" or screen=="CEUnrestTesting" or screen=="CEWareTesting" or screen=="CEProgressTesting" or screen=="CEEventTesting") and id==42) or (screen=="CESectorTesting" and id==80) or (screen=='CEResetTesting' and (id==42 or id==80)));commands[#commands+1]=command
 end
 groups={}
 function open() entries={};groups={};callback() end
@@ -62,6 +63,7 @@ function action(id)
 end
 ''')
 lua.execute((root/'ui/ce_hub_status.lua').read_text(encoding='utf-8-sig'))
+lua.execute((root/'ui/ce_debug_reset.lua').read_text(encoding='utf-8-sig'))
 source=(root/'ui/ce_debug_tools.lua').read_text(encoding='utf-8-sig')
 lua.execute('assert(loadstring(...))',source)
 lua.execute(source)
@@ -245,7 +247,42 @@ old.script();assert(#commands==count);debugEnabled=true
 status[21]={1,50,7200,'Food',{1,2},13};open();assert(not groups.actions_ce_debug_events)
 status[21]=nil
 ''')
-print('LuaJIT diagnostics, debug events, nested actions, stale-token guards and build completion passed')
+lua.execute('''
+-- Layout planning is presentation only; it never grants force-finish permission.
+status[2]=5;status[3]=10;status[4]=true;status[8]=false;status[15]=false
+progress=-1;waiting=false;status[22]='layout_retry'
+open();assert(action(346) and not action(11).active)
+assert(action(11).mouseOverText==translations[348])
+local s=CEHubStatus.getFresh(42)
+assert(CEHubStatus.state(s)==translations[346])
+assert(CEHubStatus.progress(s)==translations[346])
+assert(CEHubStatus.action(s)==translations[346])
+local sig=CEHubStatus.signature(s)
+status[22]='planning';s=CEHubStatus.getFresh(42)
+assert(CEHubStatus.state(s)==translations[345] and CEHubStatus.signature(s)~=sig)
+status[22]='build_retry';assert(CEHubStatus.state(CEHubStatus.getFresh(42))==translations[347])
+status[15]=true;assert(CEHubStatus.state(CEHubStatus.getFresh(42))==translations[88])
+status[15]=false;status[22]=nil
+assert(CEHubStatus.state(CEHubStatus.getFresh(42))==string.format(translations[99],10))
+''')
+lua.execute('''
+resetState={1,false,'idle',0,0,false};debugEnabled=true
+menu.componentSlot.component=80;occupied={80};nativeMenuResult=false
+assert(menu.prepareActions()==true)
+local count=#commands;local start=action(361)
+start.script();start.script();assert(#commands==count+1 and commands[#commands]=='arm:1')
+open();start=action(361);resetState[1]=2;start.script();assert(#commands==count+1)
+resetState={2,false,'confirm',0,0,false};open()
+local confirm=action(363);confirm.script();assert(commands[#commands]=='confirm:2')
+open();confirm=action(363);count=#commands;debugEnabled=false;confirm.script();assert(#commands==count)
+debugEnabled=true;menu.componentSlot.component=42;open();local old=action(11)
+resetState={3,true,'removing',4,10,true};open();assert(#entries==2 and action(368))
+local before=calls;old.script();assert(calls==before)
+resetState[3]='initializing';open();assert(action(367))
+debugEnabled=false;open();assert(#entries==0)
+resetState=nil;debugEnabled=true
+''')
+print('LuaJIT diagnostics, reset controls, debug events, nested actions, stale-token guards and build completion passed')
 lua.execute('''
 pauseEvents, nativePauses = {}, {}
 productionMenu={buttonPauseProductionModules=function(modules,pause)

@@ -32,7 +32,9 @@
               <set_value name="$BestScore" exact="$Score"/>
             </do_if>
           </do_for_each>
-          <get_module_definition race="$ProfileRace" tags="[tag.pier,tag.base,tag.module]" multiple="true" macro="$Choices"/>
+          <!-- Single-approach piers are often tagged add, not base. Filtering
+               for base excluded the smallest piers before capacity scoring. -->
+          <get_module_definition race="$ProfileRace" tags="[tag.pier,tag.module]" multiple="true" macro="$Choices"/>
           <set_value name="$BestScore" exact="1000000000000L"/>
           <do_for_each name="$Choice" in="$Choices">
             <set_value name="$Score" exact="$Choice.numpierdocks"/>
@@ -118,6 +120,7 @@
           <debug_text text="'[CE] Construction blocked: hub=%s stage=%s race=%s dock=%s storage=%s pier=%s connectors=%s'.[$R.$Hub,$ConstructionFailure,$R.$ProfileRace,$R.$Construction.$Dock,$R.$Construction.$Storage,$R.$Construction.$Pier,$R.$Construction.$Connectors]"/>
         </do_if>
         <set_value name="$R.$ConstructionError" exact="true"/>
+        <set_value name="$R.$ConstructionFailure" exact="$ConstructionFailure"/>
       </actions>
     </library>
     <cue name="Generate" instantiate="true" namespace="this">
@@ -127,8 +130,12 @@
         <set_value name="$Station" exact="event.param.{2}"/>
         <set_value name="$Token" exact="event.param.{3}"/>
         <set_value name="$BuildLevel" exact="event.param.{4}"/>
+        <set_value name="$RequestedLevel" exact="$BuildLevel"/>
+        <set_value name="$PlansRejected" exact="false"/>
         <set_value name="$R.$LayoutCue" exact="this"/>
         <set_value name="$Base" exact="@$R.$CompletedSequence"/>
+        <set_value name="$PlanAhead" exact="not $Base and (not $Station.constructionsequence or $Station.constructionsequence.count == 0) and not (@$R.$LayoutPlanHub == $Station and @$R.$LayoutPlans.count == 10)"/>
+        <do_if value="$PlanAhead"><set_value name="$BuildLevel" exact="1"/></do_if>
         <include_actions ref="md.CE_Construction.Requirements"/>
         <set_value name="$NewMacros" exact="$RequiredMacros.clone"/>
         <do_if value="$Base">
@@ -138,17 +145,36 @@
           </do_all>
         </do_if>
         <debug_text text="'[CE] Layout requested: hub=%s level=%s token=%s'.[$Station,$BuildLevel,$Token]"/>
-        <create_construction_sequence station="$Station" macros="$NewMacros" connectors="$R.$Construction.$Connectors" base="$Base" timeout="10s" failsafe="false"/>
+        <do_if value="@$R.$LayoutPlanHub == $Station and @$R.$LayoutPlans.count == 10">
+          <set_value name="$Sequence" exact="$R.$LayoutPlans.{$BuildLevel}"/>
+          <include_actions ref="md.CE_Construction.Accept"/>
+          <set_value name="$R.$LayoutCue" exact="null"/>
+          <cancel_cue cue="this"/>
+        </do_if>
+        <do_else>
+          <include_actions ref="md.CE_Placement.GetState"/>
+          <set_value name="$LayoutBias" exact="if @$Placement.$SamePlotFailures == 1 then 0.5f else if @$Placement.$SamePlotFailures == 2 then 2.0f else 1.0f"/>
+          <debug_text text="'[CE] Layout strategy: hub=%s level=%s plan_ahead=%s bias=%s'.[$Station,$BuildLevel,$PlanAhead,$LayoutBias]"/>
+          <do_if value="$PlanAhead"><include_actions ref="md.CE_LayoutPlan.Begin"/></do_if>
+          <do_else><include_actions ref="md.CE_Construction.GenerateNative"/></do_else>
+        </do_else>
       </actions>
       <cues>
-        <cue name="Completed">
+        <cue name="Completed" instantiate="true">
           <conditions>
             <event_object_construction_sequence_created object="$Station"/>
           </conditions>
           <actions>
-            <do_if value="$R.$Hub == $Station and $Station.exists and not $Station.iswreck and $Station.owner == faction.civilian and $R.$LayoutToken == $Token and $R.$LayoutPending">
+            <do_if value="(not @md.CE_DebugReset.State.$Busy or @md.CE_DebugReset.State.$Phase == 'initializing') and $R.$Hub == $Station and $Station.exists and not $Station.iswreck and $Station.owner == faction.civilian and $R.$LayoutToken == $Token and $R.$LayoutPending">
               <set_value name="$Sequence" exact="if event.param2 then event.param else null"/>
-              <include_actions ref="md.CE_Construction.Accept"/>
+              <do_if value="$PlanAhead">
+                <include_actions ref="md.CE_LayoutPlan.Receive"/>
+              </do_if>
+              <do_if value="not $PlanAhead or @$PlanningFinished">
+                <include_actions ref="md.CE_Construction.Accept"/>
+                <set_value name="$R.$LayoutCue" exact="null"/>
+                <cancel_cue cue="parent"/>
+              </do_if>
             </do_if>
           </actions>
         </cue>
@@ -158,18 +184,29 @@
         </cue>
       </cues>
     </cue>
-    <library name="Accept">
+    <library name="GenerateNative">
+      <actions>
+        <!-- Common native request for initial planning and established-hub extensions. -->
+        <create_construction_sequence station="$Station" macros="$NewMacros" connectors="$R.$Construction.$Connectors" base="$Base" constructionbias="$LayoutBias" timeout="10s" failsafe="false"/>
+      </actions>
+    </library>
+    <library name="ValidateSequence">
       <actions>
         <!-- Validate the entire result before handing it to native construction. -->
         <set_value name="$ConstructionFailure" exact="if $Sequence then 'invalid_module_basket' else 'generation_failed'"/>
         <set_value name="$ValidSequence" exact="$Sequence != null"/>
         <set_value name="$Remaining" exact="$RequiredMacros.clone"/>
+        <set_value name="$UnexpectedMacros" exact="[]"/>
+        <set_value name="$ChangedBaseIDs" exact="[]"/>
         <do_if value="$Sequence">
           <do_all exact="$Sequence.count" counter="$i">
             <set_value name="$EntryMacro" exact="$Sequence.{$i}.macro"/>
             <set_value name="$Index" exact="$Remaining.indexof.{$EntryMacro}"/>
             <do_if value="$Index gt 0"><remove_value name="$Remaining.{$Index}"/></do_if>
-            <do_elseif value="$R.$Construction.$Connectors.indexof.{$EntryMacro} == 0"><set_value name="$ValidSequence" exact="false"/></do_elseif>
+            <do_elseif value="$R.$Construction.$Connectors.indexof.{$EntryMacro} == 0">
+              <set_value name="$ValidSequence" exact="false"/>
+              <append_to_list name="$UnexpectedMacros" exact="$EntryMacro"/>
+            </do_elseif>
           </do_all>
           <do_if value="$Base">
             <do_all exact="$Base.count" counter="$i">
@@ -177,30 +214,63 @@
               <do_if value="not $Sequence.{$EntryID}.exists or $Sequence.{$EntryID}.macro != $Base.{$i}.macro">
                 <set_value name="$ValidSequence" exact="false"/>
                 <set_value name="$ConstructionFailure" exact="'base_entry_changed'"/>
+                <append_to_list name="$ChangedBaseIDs" exact="$EntryID"/>
               </do_if>
             </do_all>
           </do_if>
         </do_if>
         <do_if value="$Remaining.count gt 0"><set_value name="$ValidSequence" exact="false"/></do_if>
+      </actions>
+    </library>
+    <library name="Accept">
+      <actions>
+        <include_actions ref="md.CE_Construction.ValidateSequence"/>
+        <do_if value="@$PlanAhead and @$PlansRejected"><set_value name="$ConstructionFailure" exact="$PlanFailureKind"/></do_if>
         <set_value name="$R.$LayoutPending" exact="false"/>
         <do_if value="$ValidSequence">
           <debug_text text="'[CE] Layout accepted: hub=%s level=%s entries=%s'.[$Station,$BuildLevel,$Sequence.count]"/>
-          <do_if value="not $Station.buildstorage.exists"><create_build_storage station="$Station"/></do_if>
-          <do_if value="$Station.buildstorage.exists and $Station.buildstorage.builds.queued.count + $Station.buildstorage.builds.inprogress.count == 0 and not $R.$Build.exists">
-            <add_build_to_expand_station result="$R.$Build" object="$Station.buildstorage" buildobject="$Station" constructionplan="$Sequence"><stage exact="0"/></add_build_to_expand_station>
-            <do_if value="$R.$Build.exists"><set_value name="$R.$TargetSequence" exact="$Sequence"/></do_if>
-            <include_actions ref="md.CE_Construction.StartBuild"/>
+          <!-- X4 may create empty build storage together with the station shell. -->
+          <do_if value="@$R.$InitialHub == $Station and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0 and $BuildLevel == 1 and not @$R.$CompletedSequence and not $R.$Build.exists and (not $Station.buildstorage.exists or $Station.buildstorage.builds.queued.count + $Station.buildstorage.builds.inprogress.count == 0) and (not $Station.constructionsequence or $Station.constructionsequence.count == 0)">
+            <include_actions ref="md.CE_Construction.Initialize"/>
           </do_if>
           <do_else>
-            <set_value name="$ConstructionFailure" exact="'build_storage_unavailable_or_busy'"/>
-            <include_actions ref="md.CE_Construction.ReportFailure"/>
-            <include_actions ref="md.CE_Placement.Failed"/>
+            <set_value name="$R.$InitialHub" exact="null"/>
+            <do_if value="not $Station.buildstorage.exists"><create_build_storage station="$Station"/></do_if>
+            <do_if value="$Station.buildstorage.exists and $Station.buildstorage.builds.queued.count + $Station.buildstorage.builds.inprogress.count == 0 and not $R.$Build.exists">
+              <add_build_to_expand_station result="$R.$Build" object="$Station.buildstorage" buildobject="$Station" constructionplan="$Sequence"><stage exact="0"/></add_build_to_expand_station>
+              <do_if value="$R.$Build.exists"><set_value name="$R.$TargetSequence" exact="$Sequence"/></do_if>
+              <include_actions ref="md.CE_Construction.StartBuild"/>
+            </do_if>
+            <do_else>
+              <set_value name="$ConstructionFailure" exact="'build_storage_unavailable_or_busy'"/>
+              <include_actions ref="md.CE_Construction.ReportFailure"/>
+              <include_actions ref="md.CE_Placement.Failed"/>
+            </do_else>
           </do_else>
         </do_if>
         <do_else>
           <include_actions ref="md.CE_Construction.ReportFailure"/>
           <include_actions ref="md.CE_Placement.Failed"/>
         </do_else>
+      </actions>
+    </library>
+    <library name="Initialize">
+      <actions>
+        <!-- Vanilla finalisestations.xml applies a finished sequence directly.
+             Consume this exact object's one-shot permission before native mutation. -->
+        <set_value name="$R.$InitialHub" exact="null"/>
+        <set_value name="$R.$TargetSequence" exact="$Sequence"/>
+        <apply_construction_sequence station="$Station" sequence="$Sequence"/>
+        <set_value name="$R.$ConstructionError" exact="false"/>
+        <set_value name="$R.$ConstructionFailure" exact="null"/>
+        <include_actions ref="md.CE_Placement.Succeeded"/>
+        <set_value name="$Hub" exact="$Station"/>
+        <set_value name="$Sector" exact="$Station.sector"/>
+        <include_actions ref="md.CE_OwnerlessHub.UpdateHub"/>
+        <include_actions ref="md.CE_OwnerlessHub.PublishDiagnostics"/>
+        <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+        <include_actions ref="md.CE_OwnerlessHub.PublishAllDiagnostics"/>
+        <debug_text text="'[CE] Initial hub materialized: hub=%s level=1 ready=%s; no construction task'.[$Station,$R.$Operational]"/>
       </actions>
     </library>
     <library name="StartBuild">
@@ -210,6 +280,7 @@
         <set_value name="$Sector" exact="$Hub.sector"/>
         <do_if value="$R.$Build.exists">
           <set_value name="$R.$ConstructionError" exact="false"/>
+          <set_value name="$R.$ConstructionFailure" exact="null"/>
           <include_actions ref="md.CE_Placement.Succeeded"/>
           <process_build build="$R.$Build" object="$Hub.buildstorage" buildmodule="$Hub.buildstorage.buildmodule"/>
           <include_actions ref="md.CE_Notifications.UpgradeStarted"/>

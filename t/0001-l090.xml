@@ -231,5 +231,17 @@
     <t id="342">Seçili olayları bitir ve etkiledikleri malların talebini normale döndür. Diğer olaylar sürer. Bekleme süresi uygulanmaz.</t>
     <t id="343">Çalışan bir sivil merkez, uygun kilidi açılmış mallar ve güncel durum bilgisi gerektirir. Aynı malları etkileyen etkin bir olay bulunmamalıdır.</t>
     <t id="344">%s olayını bitir</t>
+    <t id="345">İstasyon yerleşimi planlanıyor</t>
+    <t id="346">Yerleşim hatası; tekrar bekleniyor</t>
+    <t id="347">İnşaat yeniden denenecek</t>
+    <t id="348">Asıl inşaat henüz başlamadı. İnşaatın tamamlanabilmesi için geçerli bir yerleşim gerekiyor.</t>
+    <t id="361">Tüm CE merkezlerini sıfırla</t>
+    <t id="362">Tüm CE merkezlerini yok eder; CE ilerlemesini, olayları, huzursuzluğu, test nüfuslarını ve etkin baskınları temizler. Ayarlar ve oyuncunun parası korunur. Onaylamak için bu menüyü 30 saniye içinde yeniden açın.</t>
+    <t id="363">CE merkezlerini sıfırlamayı onayla</t>
+    <t id="364">CE nesneleri kaldırılıyor: %d/%d</t>
+    <t id="365">Sıfırlama; ziyaretçilerin veya oyuncunun ayrılmasını, nesnelerin kaldırılmasını ya da nüfus verilerini bekliyor. Yinelenen merkezler oluşturulmaz.</t>
+    <t id="366">CE sıfırlaması tamamlandı. Planlama bitince yeni seviye 1 merkezler tamamen inşa edilmiş olarak görünür.</t>
+    <t id="367">Yeni CE merkezleri başlatılıyor</t>
+    <t id="368">Sıfırlama bekliyor</t>
   </page>
 </language>

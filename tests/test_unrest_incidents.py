@@ -73,6 +73,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.station.cargo=Table({ware:SimpleNamespace(count=10000),'list':List([ware])})
         requested=[]
         def drop(n):
+            self.assertIsNotNone(n.get('wares'), 'Native amounts output requires wares output')
             requested.append(self.run.expr(n.get('exact')))
             self.run.set(n.get('amounts'),List([37]))
         self.run.native['drop_cargo']=drop

@@ -11,6 +11,11 @@
           <set_value name="md.CE_Placement.State.$Sites.{$Hub}" exact="table[$Attempts=0,$Failures=0,$NextTry=0s,$Resize=false,$Moves=0]"/>
         </do_if>
         <set_value name="$Placement" exact="md.CE_Placement.State.$Sites.{$Hub}"/>
+        <do_if value="not $Placement.$SamePlotFailures?">
+          <set_value name="$Placement.$SamePlotFailures" exact="0"/>
+          <!-- Old saves may have scheduled enlargement after only one failure. -->
+          <set_value name="$Placement.$Resize" exact="false"/>
+        </do_if>
       </actions>
     </library>
     <library name="Forget">
@@ -48,8 +53,19 @@
         <include_actions ref="md.CE_Placement.GetState"/>
         <set_value name="$Placement.$Failures" operation="add"/>
         <set_value name="$Placement.$NextTry" exact="player.age + 5min"/>
-        <set_value name="$Placement.$Resize" exact="$ConstructionFailure == 'generation_failed'"/>
-        <do_if value="$Placement.$Resize"><set_value name="$R.$PlotReady" exact="false"/></do_if>
+        <set_value name="$Placement.$Resize" exact="false"/>
+        <do_if value="$ConstructionFailure == 'generation_failed' or $ConstructionFailure == 'staged_layout_invalid'">
+          <set_value name="$Placement.$SamePlotFailures" operation="add"/>
+          <do_if value="$Placement.$SamePlotFailures lt 3">
+            <!-- Try the next direction on the next controller tick, without growth. -->
+            <set_value name="$Placement.$NextTry" exact="player.age + 1s"/>
+          </do_if>
+          <do_else>
+            <set_value name="$Placement.$SamePlotFailures" exact="0"/>
+            <set_value name="$Placement.$Resize" exact="$ConstructionFailure == 'generation_failed'"/>
+          </do_else>
+          <set_value name="$R.$PlotReady" exact="false"/>
+        </do_if>
         <debug_text text="'[CE] Layout retry scheduled: hub=%s sector=%s sector_name=%s level=%s token=%s attempt=%s failures=%s reason=%s enlarge=%s retry_at=%s half_size=%s center=%s'.[$Hub,$Hub.sector,$Hub.sector.knownname,$R.$LayoutLevel,$R.$LayoutToken,$Placement.$Attempts,$Placement.$Failures,$ConstructionFailure,$Placement.$Resize,$Placement.$NextTry,$Hub.buildplot.max,$Hub.buildplot.center]"/>
       </actions>
     </library>
@@ -60,6 +76,7 @@
         <set_value name="$Placement.$Failures" exact="0"/>
         <set_value name="$Placement.$NextTry" exact="0s"/>
         <set_value name="$Placement.$Resize" exact="false"/>
+        <set_value name="$Placement.$SamePlotFailures" exact="0"/>
         <set_value name="$R.$PlotReady" exact="true"/>
       </actions>
     </library>

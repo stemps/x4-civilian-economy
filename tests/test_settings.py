@@ -8,6 +8,7 @@ from support_sales_tax import SalesTaxFixture
 class SettingsTests(SalesTaxFixture, unittest.TestCase):
     def setUp(self):
         self.run = Runner()
+        self.run.env['faction'] = Table(civilian='civilian',ownerless='ownerless')
         self.run.env['player'].entity = Table()
         self.state = self.run.env['md'].CE_Settings.State
 

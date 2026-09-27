@@ -5,7 +5,7 @@
       <conditions><event_ui_triggered screen="'CEUnrestTesting'"/></conditions>
       <actions>
         <include_actions ref="md.CE_Settings.Ensure"/>
-        <do_if value="md.CE_Settings.State.$Debug and md.CE_OwnerlessHub.Init.$Registry?">
+        <do_if value="not @md.CE_DebugReset.State.$Busy and md.CE_Settings.State.$Debug and md.CE_OwnerlessHub.Init.$Registry?">
           <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
           <do_for_each name="$Sector" in="$Registry.keys.list">
             <set_value name="$R" exact="$Registry.{$Sector}"/>

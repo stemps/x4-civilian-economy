@@ -77,7 +77,7 @@
               <set_value name="$SabotageLimit" exact="(100000Cr)LF / ($SabotageWare.averageprice)LF"/>
               <set_value name="$SabotageAmount" exact="([$SabotageStation.cargo.{$SabotageWare}.count / 10.0f,$SabotageLimit].min)i"/>
               <do_if value="$SabotageAmount gt 0">
-                <drop_cargo object="$SabotageStation" ware="$SabotageWare" exact="$SabotageAmount" amounts="$SabotageDropped"/>
+                <drop_cargo object="$SabotageStation" ware="$SabotageWare" exact="$SabotageAmount" wares="$SabotageDroppedWares" amounts="$SabotageDropped"/>
                 <do_if value="$SabotageDropped.count gt 0 and $SabotageDropped.{1} gt 0">
                   <set_value name="$IncidentSuccess" exact="true"/>
                   <set_value name="$IncidentText" exact="{974201,205}.[$SabotageStation.knownname,$IncidentSector.knownname,$SabotageWare.name,$SabotageDropped.{1}]"/>
@@ -150,6 +150,7 @@
         <cue name="Confirm" checkinterval="1s">
           <conditions><check_value value="not $Module.exists or $Module.iswreck or player.age ge parent.time + 10s"/></conditions>
           <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy and $R.$Hub.exists and md.CE_Sabotage.State.$Stations.{$Station}?">
             <set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Pending" exact="false"/>
             <do_if value="not $Module.exists or $Module.iswreck">
               <set_value name="md.CE_Sabotage.State.$Stations.{$Station}.$Destroy" exact="player.age / 1s + 14400"/>
@@ -163,7 +164,9 @@
               <do_if value="$R.$Unrest.$NextSabotage == $ReservedNext"><set_value name="$R.$Unrest.$NextSabotage" exact="$PreviousHubNext"/></do_if>
               <set_value name="$IncidentFailure" exact="{974201,233}"/><include_actions ref="md.CE_UnrestNotifications.Failure"/>
             </do_else>
-          </actions>
+
+        </do_if>
+      </actions>
         </cue>
       </cues>
     </cue>

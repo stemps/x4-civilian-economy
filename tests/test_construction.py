@@ -14,7 +14,7 @@ class ConstructionTests(unittest.TestCase):
                              buildstorage=Table(exists=True, builds=Table(queued=List(), inprogress=List())))
         self.record = Table(Hub=self.hub, Construction=self.components, ProfileRace='terran',
                             Level=1, Target=0, Build=NIL, PlotReady=True)
-        r.env.update(R=self.record, Hub=self.hub, Station=self.hub, Base=NIL,
+        r.env.update(R=self.record, Hub=self.hub, Station=self.hub, Base=NIL, PlanAhead=False, PlansRejected=False,
                      faction=Table(ownerless='ownerless',civilian='civilian'),
                      tag=Table({s:s for s in ('dockarea','storage','pier','base','connection','module','dock_s','dock_m')}))
         self.calls = []
@@ -36,7 +36,12 @@ class ConstructionTests(unittest.TestCase):
             def query(n):
                 self.assertEqual(r.expr(n.get('race')).id, race)
                 self.assertIsNone(n.get('faction'))
-                r.set(n.get('macro'), groups[r.expr(n.get('tags'))[1]])
+                tags = r.expr(n.get('tags'))
+                # Native add-category single piers disappear under the old base filter.
+                choices = groups[tags[1]]
+                if tags[1] == 'pier' and 'base' in tags:
+                    choices = List([choices[1]])
+                r.set(n.get('macro'), choices)
             r.native['get_module_definition'] = query
             r.library('md.CE_Construction.Resolve')
             self.assertTrue(r.env['Construction'].Valid)
@@ -119,10 +124,15 @@ class ConstructionTests(unittest.TestCase):
 
     def test_generation_is_async_and_completion_checks_identity(self):
         r = self.run
+        class EmptySequence:
+            def __bool__(self): return False
+            @property
+            def count(self): raise AssertionError('Fresh shell has no construction sequence')
+        self.hub.constructionsequence = EmptySequence()
         r.env.update(event=Table(param=List([self.record,self.hub,1,2])),this='cue')
         r.native['create_construction_sequence'] = lambda n:self.calls.append((r.expr(n.get('macros')),n.find('immediate')))
         r.actions(r.construction.xpath('//cue[@name="Generate"]/actions')[0])
-        self.assertEqual(len(self.calls[0][0]), 4)
+        self.assertEqual(len(self.calls[0][0]), 3)
         self.assertIsNone(self.calls[0][1])
         guard = r.construction.xpath('//cue[@name="Completed"]/actions/do_if')[0]
         self.record.update(LayoutToken=2,LayoutPending=True)
@@ -152,14 +162,14 @@ class StartupProfileTests(unittest.TestCase):
         r=Runner(); definitions(r)
         sector=r.env['Sector']; r.library('CaptureSectorProfile')
         frozen=r.env['SectorProfiles'][sector]
-        record=Table(LayoutPending=True,LayoutCue='old-cue')
+        record=Table(LayoutPending=True,LayoutCue=Component(exists=True))
         r.env['Registry']=Table({sector:record})
         for name in ('Reconcile','RefreshProfile','RenameHub','PublishDiagnostics','PublishAllDiagnostics'):
             r.stubs[name]=lambda:None
         cancelled=[]
         r.native['cancel_cue']=lambda n:cancelled.append(r.expr(n.get('cue')))
         r.actions(r.tree.xpath('//cue[@name="Reload"]/actions')[0])
-        self.assertIn('old-cue',cancelled)
+        self.assertIn(record.LayoutCue,cancelled)
         self.assertFalse(record.LayoutPending)
         self.assertIs(r.env['SectorProfiles'][sector],frozen)
 
@@ -192,7 +202,7 @@ class TerranRecipeTests(unittest.TestCase):
         groups=E.parse(str(root/'modulegroups.xml'))
         wares=E.parse(str(root/'wares.xml'))
         allowed={'energycells','metallicmicrolattice','siliconcarbide','computronicsubstrate'}
-        for group in ('dockarea_ter','stor_ter','pier_base_ter','conn_ter'):
+        for group in ('dockarea_ter','stor_ter','pier_base_ter','pier_add_ter','conn_ter'):
             macros=groups.xpath('//group[@name=$name]//select/@macro',name=group)
             self.assertTrue(macros,group)
             for macro in macros:
