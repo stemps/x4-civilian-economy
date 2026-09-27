@@ -8,6 +8,15 @@ local topRow, selected, signature = 7, nil, nil
 local order = {}
 local eventSignature
 local tooltipMap
+local refreshHub, refreshAt
+local function requestRefresh(s)
+    if not s then refreshHub, refreshAt = nil, nil; return end
+    local key, now = tostring(s.id), getElapsedTime()
+    if refreshHub ~= key or not refreshAt or now >= refreshAt or now < refreshAt - 1 then
+        refreshHub, refreshAt = key, now + 1
+        AddUITriggeredEvent('CEHubStatus', 'refresh', ConvertStringToLuaID(key))
+    end
+end
 local function clearTooltip()
     if tooltipMap then SetMouseOverOverride(tooltipMap, nil); tooltipMap = nil end
 end
@@ -194,6 +203,7 @@ local function register()
     local nativeDraw, nativeUpdate, nativeCleanup = menu.createSelectedShips, menu.onUpdate, menu.cleanup
     menu.createSelectedShips = function(frame, ...)
         local s = selection(menu)
+        requestRefresh(s)
         if s then return draw(menu, frame, s) end
         topRow, selected, signature = 7, nil, nil
         eventSignature = nil
@@ -210,6 +220,7 @@ local function register()
         end
         local result = nativeUpdate(...)
         local s = selection(menu)
+        requestRefresh(s)
         if selected and (not s or signature ~= M.signature(s)) then menu.refreshMainFrame = true end
         if normalMode(menu) and menu.map and menu.holomap and menu.holomap ~= 0 then
             local x, y = GetRenderTargetMousePosition(menu.map)
@@ -223,6 +234,7 @@ local function register()
     end
     menu.cleanup = function(...)
         clearTooltip()
+        requestRefresh(nil)
         topRow, selected, signature = 7, nil, nil
         eventSignature = nil
         M.reset()

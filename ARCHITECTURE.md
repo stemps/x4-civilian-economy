@@ -578,6 +578,16 @@ and on cleanup, preserving special-mode tooltips. Native station popovers are
 untouched. Registration is idempotent, with the same
 load/population-request retry convention as testing UI.
 
+The selected-hub panel requests `CEHubStatus/refresh` immediately on opening or
+selection changes and at most once per second thereafter. Cleanup, invalid
+selections and special map modes clear the request throttle; hovering alone
+does not request updates. `CE_Diagnostics.RefreshSelectedHub` validates the live
+registered civilian hub and reset guard, republishes only that hub's diagnostics
+and the shared snapshot collection, then raises `CEHubStatusUpdated`. The Lua
+decoder invalidates its one-second cache while retaining last-valid fallback
+rows. This path does not accrue reserves/growth or update offers; the economic
+tick remains once per game minute.
+
 `ce_hub_status.lua` owns membership normalization and the shared positional-to-named
 snapshot decoder. Its `progressHint` formatter owns the status-only level tooltip:
 supplied time and one status, missing goods on separate lines, and compact

@@ -26,6 +26,8 @@ end
 function M.reset()
     expires, hubs, snapshots, lastValid = nil, {}, {}, {}
 end
+-- Publication notifications bypass the read throttle without losing fallback rows.
+RegisterEvent('CEHubStatusUpdated', function() expires = nil end)
 function M.validSnapshot(s)
     if type(s) ~= 'table' or type(s[9]) ~= 'table' then return false end
     if tonumber(s[13]) ~= 3 then return false end

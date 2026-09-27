@@ -52,6 +52,11 @@ GetTopRow=function(id) assert(id==21);if missingTable then return nil end;return
 DebugError=function() end
 callbacks={}
 RegisterEvent=function(event,fn) callbacks[event]=fn end
+refreshRequests={}
+AddUITriggeredEvent=function(screen,control,id)
+ assert(screen=='CEHubStatus' and control=='refresh')
+ refreshRequests[#refreshRequests+1]={id=id,time=now}
+end
 Register_OnLoad_Init=function(fn) loadCallback=fn end
 Color={text_normal={},rowgroup_background_default={},row_title_background={},row_background={},text_negative={},text_warning={},text_positive={},frame_background_semitransparent={},statusbar_value_default={},statusbar_marker_hidden={},icon_transparent={}}
 nativeDraws, nativeUpdates, nativeCleanups = 0, 0, 0
@@ -468,3 +473,35 @@ assert(not CEHubStatus.getFresh(42).demandEvents)
 status[21]={2,{}, {},12};now=now+1;t=draw();assert(#t.rows==46 and t.topRow==7)
 ''')
 print('Concurrent events: old/new decoding, ID ordering, individual timers, seven scrollable events and debug actions passed')
+lua.execute(r'''
+menu.cleanup();refreshRequests={};now=1000
+status,second=snapshot(42,14),snapshot(43,2);statuses={status,second}
+menu.mode=nil;menu.selectedcomponents={['42']=true};known=true;valid=true
+local t=draw()
+assert(#refreshRequests==1 and refreshRequests[1].id==42)
+menu.onUpdate();draw();assert(#refreshRequests==1)
+now=1000.99;menu.onUpdate();assert(#refreshRequests==1)
+now=1001;menu.onUpdate();assert(#refreshRequests==2)
+-- Cache contains the old row set until the MD publication notification arrives.
+local replacement=snapshot(42,14);replacement[9][1][2]=0;replacement[9][1][5]=15000
+replacement[9][1][3]=60000;statuses={replacement,second}
+assert(CEHubStatus.get(42).wares[1].incoming==200)
+callbacks.CEHubStatusUpdated('CEHubStatusUpdated',42)
+assert(CEHubStatus.get(42).wares[1].incoming==15000)
+assert(t.rows[7][1].properties.start()==0 and t.rows[7][1].properties.current()==25)
+replacement=snapshot(42,14);replacement[9][1][2]=0;replacement[9][1][5]=0
+statuses={replacement,second};callbacks.CEHubStatusUpdated('CEHubStatusUpdated',42)
+assert(t.rows[7][1].properties.current()==0)
+menu.selectedcomponents={['43']=true};menu.onUpdate()
+assert(#refreshRequests==3 and refreshRequests[3].id==43)
+menu.selectedcomponents={};now=1003;menu.onUpdate();assert(#refreshRequests==3)
+-- Hover alone never requests a snapshot.
+picked=42;menu.onUpdate();assert(#refreshRequests==3)
+menu.selectedcomponents={['43']=true};draw();assert(#refreshRequests==4)
+changeMode=true;now=1005;menu.onUpdate();assert(#refreshRequests==4)
+menu.mode=nil;draw();assert(#refreshRequests==5)
+menu.cleanup();draw();assert(#refreshRequests==6)
+valid=false;now=1007;menu.onUpdate();assert(#refreshRequests==6)
+valid=true;draw();assert(#refreshRequests==7)
+''')
+print('Selected hub refresh: immediate requests, throttling, lifecycle and reservation cache invalidation passed')

@@ -1700,3 +1700,24 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - The old mock checked geometry but omitted native row grouping. Passing those
   earlier checks did not establish native scrolling. In-game acceptance of the
   corrected renderer remains pending; /reloadui suffices.
+
+## 2026-09-28 - selected-hub-reservation-refresh
+
+- USER-OBSERVED: incoming cargo eventually showed its green segment after the
+  minute tick. The issue was stale publication, not the bar's colour or formula.
+- READ: native scriptproperties.xml defines trade.offeramount as available trade
+  amount plus reservations. Vanilla map status bars use start=current stock and
+  current=future stock. CE already follows both conventions.
+- The selected map panel now requests diagnostics immediately and once per
+  second through CEHubStatus/refresh. MD validates registry identity, civilian
+  ownership and reset state before publishing, then signals CEHubStatusUpdated
+  to invalidate the Lua cache without losing fallback data.
+- Presentation refresh must not call AccrueAll, UpdateHub or UpdateOffers. It
+  reads committed reserve/growth state and live offer reservations; economic
+  simulation remains on the minute tick. Hover alone triggers no refresh.
+- MOCKED: just lua covers the request lifecycle and publication cache bypass,
+  including a 15,000-unit reservation and cancellation. just validate passes
+  283 controller tests, including state preservation and rejected refreshes.
+- Full restart is required for the MD handler. Live timing and cancellation
+  acceptance still require in-game verification; mocked tests are not engine
+  timing measurements.

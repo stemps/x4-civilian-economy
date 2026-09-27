@@ -140,3 +140,43 @@ class RefreshSafetyTests(unittest.TestCase):
         self.assertIn(deal,self.r.Transfers)
         self.assertEqual(self.r.GrowthSeconds,1080)
         self.assertEqual(len(self.r.Snapshot[9]),2)
+
+    def request_status(self, target=None):
+        self.run.env['md'].CE_OwnerlessHub.Init['Registry']=self.run.env['Registry']
+        self.run.env['event']=Table(param3=self.r.Hub if target is None else target)
+        actions=self.run.scripts['CE_Diagnostics'].xpath('//cue[@name="RefreshSelectedHub"]/actions')[0]
+        self.run.actions(actions)
+
+    def test_selected_refresh_publishes_reservations_without_advancing_economy(self):
+        self.r.Hub['owner']='civilian'
+        self.r.Wares['water']['Offer']=Table(exists=True,amount=45000,offeramount=60000)
+        self.run.library('PublishDiagnostics')
+        self.run.env['player']['age']=180
+        before=self.protected()
+        last=self.r.Last
+        published=[]
+        def notification(node):
+            self.assertEqual(self.run.expr(node.get('name')),'CEHubStatusUpdated')
+            self.assertIs(self.run.expr(node.get('param')),self.r.Hub)
+            published.append(self.run.env['player'].entity.ce_hub_statuses[1][9][2][5])
+        self.run.native['raise_lua_event']=notification
+        self.request_status()
+        self.assertEqual(published,[15000])
+        self.assertEqual(self.protected(),before)
+        self.assertEqual(self.r.Last,last)
+        self.r.Wares['water'].Offer['amount']=60000
+        self.request_status()
+        self.assertEqual(published,[15000,0])
+
+    def test_selected_refresh_rejects_invalid_hubs_and_reset(self):
+        self.r.Hub['owner']='civilian'
+        self.run.native['raise_lua_event']=lambda node:self.fail('Unexpected publication')
+        self.request_status(Object(exists=True))
+        for field,value in [('exists',False),('iswreck',True),('owner','player')]:
+            old=self.r.Hub[field]
+            self.r.Hub[field]=value
+            self.request_status()
+            self.r.Hub[field]=old
+        self.run.env['md'].CE_DebugReset.State['Busy']=True
+        self.request_status()
+        self.assertIs(self.r.Snapshot,NIL)

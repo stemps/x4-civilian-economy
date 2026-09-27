@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mdscript name="CE_Diagnostics" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
   <cues>
+    <cue name="RefreshSelectedHub" instantiate="true" namespace="this">
+      <conditions><event_ui_triggered screen="'CEHubStatus'" control="'refresh'"/></conditions>
+      <actions>
+        <do_if value="not @md.CE_DebugReset.State.$Busy and md.CE_OwnerlessHub.Init.$Registry?">
+          <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+          <do_for_each name="$Sector" in="$Registry.keys.list">
+            <set_value name="$R" exact="$Registry.{$Sector}"/>
+            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and event.param3 == $R.$Hub">
+              <!-- Presentation only: do not accrue simulation time or rewrite offers. -->
+              <include_actions ref="PublishDiagnostics"/>
+              <include_actions ref="PublishAllDiagnostics"/>
+              <raise_lua_event name="'CEHubStatusUpdated'" param="$R.$Hub"/>
+              <break/>
+            </do_if>
+          </do_for_each>
+        </do_if>
+      </actions>
+    </cue>
     <!-- Synchronous libraries in the caller namespace. Controller entry points remain stable. -->
     <library name="PublishDiagnostics">
       <actions>
