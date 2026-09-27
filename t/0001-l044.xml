@@ -134,8 +134,8 @@
     <t id="155">Civilian sales tax - %1</t>
     <t id="156">Civilian hub delivery - %1</t>
     <t id="200">Civil unrest</t>
-    <t id="201">%1: unrest reduces civilian tax income by %2%. Effective tax rate: %3%.</t>
-    <t id="202">%1: civilian tax income restored. Effective tax rate: %2%.</t>
+    <t id="201">%1: unrest reduces civilian tax income by %2%%. Effective tax rate: %3%%.</t>
+    <t id="202">%1: civilian tax income restored. Effective tax rate: %2%%.</t>
     <t id="203">Pirate mobilisation detected in %1, departing from %2. %3 tier: %4 ships - %5.</t>
     <t id="204">%5 at %1 in %2: %3 disabled for %4 minutes.</t>
     <t id="205">Storage sabotage at %1 in %2: %4 units of %3 ejected.</t>
@@ -206,8 +206,8 @@
     <t id="330">Smuggling Crackdown</t>
     <t id="331">Liberal Drug Policies</t>
     <t id="332">Civilian Economy Events</t>
-    <t id="333">%1: %2. Demand for %3 increases by %4% for 2 game hours.</t>
-    <t id="334">%1: %2. Demand for %3 decreases by %4% for 2 game hours.</t>
+    <t id="333">%1: %2. Demand for %3 increases by %4%% for 2 game hours.</t>
+    <t id="334">%1: %2. Demand for %3 decreases by %4%% for 2 game hours.</t>
     <t id="335">%1: %2 has ended. Demand for %3 has returned to normal.</t>
     <t id="336">%s: demand %s%%; %s remaining</t>
     <t id="337">Affected goods: %s</t>

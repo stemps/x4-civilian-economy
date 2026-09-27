@@ -134,8 +134,8 @@
     <t id="155">Imposto sobre vendas civis - %1</t>
     <t id="156">Entrega ao centro civil - %1</t>
     <t id="200">Agitação civil</t>
-    <t id="201">%1: agitação reduz a receita fiscal civil em %2%. Alíquota efetiva: %3%.</t>
-    <t id="202">%1: receita fiscal civil restaurada. Alíquota efetiva: %2%.</t>
+    <t id="201">%1: agitação reduz a receita fiscal civil em %2%%. Alíquota efetiva: %3%%.</t>
+    <t id="202">%1: receita fiscal civil restaurada. Alíquota efetiva: %2%%.</t>
     <t id="203">Mobilização pirata em %1, partindo de %2. Categoria %3: %4 naves - %5.</t>
     <t id="204">%5 em %1, setor %2: %3 desativado por %4 minutos.</t>
     <t id="205">Sabotagem do armazém de %1 em %2: %4 unidades de %3 ejetadas.</t>
@@ -219,8 +219,8 @@
     <t id="330">Repressão ao contrabando</t>
     <t id="331">Políticas liberais de drogas</t>
     <t id="332">Eventos de Civilian Economy</t>
-    <t id="333">%1: %2. Demanda de %3 aumenta em %4% por 2 horas de jogo.</t>
-    <t id="334">%1: %2. Demanda de %3 diminui em %4% por 2 horas de jogo.</t>
+    <t id="333">%1: %2. Demanda de %3 aumenta em %4%% por 2 horas de jogo.</t>
+    <t id="334">%1: %2. Demanda de %3 diminui em %4%% por 2 horas de jogo.</t>
     <t id="335">%1: %2 terminou. A demanda por %3 voltou ao normal.</t>
     <t id="336">%s: demanda %s%%; restam %s</t>
     <t id="337">Mercadorias afetadas: %s</t>

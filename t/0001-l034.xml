@@ -134,8 +134,8 @@
     <t id="155">Impuesto sobre ventas civiles - %1</t>
     <t id="156">Entrega al centro civil - %1</t>
     <t id="200">Disturbios civiles</t>
-    <t id="201">%1: los disturbios reducen los impuestos civiles un %2%. Tipo efectivo: %3%.</t>
-    <t id="202">%1: impuestos civiles restablecidos. Tipo efectivo: %2%.</t>
+    <t id="201">%1: los disturbios reducen los impuestos civiles un %2%%. Tipo efectivo: %3%%.</t>
+    <t id="202">%1: impuestos civiles restablecidos. Tipo efectivo: %2%%.</t>
     <t id="203">Movilización pirata en %1, saliendo de %2. Categoría %3: %4 naves - %5.</t>
     <t id="204">%5 en %1, sector %2: %3 desactivado durante %4 minutos.</t>
     <t id="205">Sabotaje del almacén de %1 en %2: %4 unidades de %3 expulsadas.</t>
@@ -219,8 +219,8 @@
     <t id="330">Represión del contrabando</t>
     <t id="331">Políticas liberales de drogas</t>
     <t id="332">Eventos de Civilian Economy</t>
-    <t id="333">%1: %2. La demanda de %3 aumenta un %4% durante 2 horas de juego.</t>
-    <t id="334">%1: %2. La demanda de %3 disminuye un %4% durante 2 horas de juego.</t>
+    <t id="333">%1: %2. La demanda de %3 aumenta un %4%% durante 2 horas de juego.</t>
+    <t id="334">%1: %2. La demanda de %3 disminuye un %4%% durante 2 horas de juego.</t>
     <t id="335">%1: %2 ha terminado. La demanda de %3 ha vuelto a la normalidad.</t>
     <t id="336">%s: demanda %s%%; quedan %s</t>
     <t id="337">Mercancías afectadas: %s</t>

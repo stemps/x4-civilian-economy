@@ -2,4 +2,7 @@
 <diff>
   <!-- Only CE sites use our builder policy. Keep every other native build behavior. -->
   <replace sel="/aiscript/attention/actions/do_if[@value='not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel']/@value">not @player.entity.$ce_hubs.indexof.{this.object.base} and not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel</replace>
+  <!-- Instant initial CE hubs already have a manager before their first ordinary
+       construction job finishes. Do not signal native initialization twice. -->
+  <replace sel="/aiscript/interrupts/handler[conditions/event_object_built_station]/actions/do_if/@value">$baseowner and $baseowner != faction.ownerless and $baseowner != faction.player and not (@player.entity.$ce_hubs.indexof.{this.object.base} and this.object.base.tradenpc)</replace>
 </diff>

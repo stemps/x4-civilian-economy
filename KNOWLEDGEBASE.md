@@ -38,6 +38,12 @@
 - MEASURED (2026-09-28): native station creation can immediately create empty
   build storage. Initial completion must allow idle storage while excluding active
   build tasks. Unfinished docking bays can lack `.docked`; treat that as no visitors.
+- Native build storage can emit `event_object_built_station` on an instant hub's
+  first later upgrade. Skip duplicate native initialization only for registered CE
+  hubs with an existing trade NPC. MD helpers called across scripts must qualify
+  nested `include_actions` references; unqualified names resolve in the caller.
+- MD formatted notification text requires `%%` for a literal percent sign, including
+  after numbered placeholders (`%4%%`). Unformatted UI labels need no such escaping.
 - Native TextDB dynamic IDs require a constructed reference string; drop_cargo
   amounts output requires the wares output attribute too.
 

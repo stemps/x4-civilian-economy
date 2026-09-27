@@ -134,8 +134,8 @@
     <t id="155">Daň z civilního prodeje - %1</t>
     <t id="156">Dodávka civilnímu centru - %1</t>
     <t id="200">Civilní nepokoje</t>
-    <t id="201">%1: nepokoje snižují civilní daňové příjmy o %2%. Efektivní sazba: %3%.</t>
-    <t id="202">%1: civilní daňové příjmy obnoveny. Efektivní sazba: %2%.</t>
+    <t id="201">%1: nepokoje snižují civilní daňové příjmy o %2%%. Efektivní sazba: %3%%.</t>
+    <t id="202">%1: civilní daňové příjmy obnoveny. Efektivní sazba: %2%%.</t>
     <t id="203">Pirátská mobilizace v %1, odlet z %2. Kategorie %3: %4 lodí - %5.</t>
     <t id="204">%5 na %1 v %2: %3 vyřazeno na %4 minut.</t>
     <t id="205">Sabotáž skladu na %1 v %2: vyhozeno %4 jednotek zboží %3.</t>
@@ -219,8 +219,8 @@
     <t id="330">Zásah proti pašování</t>
     <t id="331">Liberální drogová politika</t>
     <t id="332">Události Civilian Economy</t>
-    <t id="333">%1: %2. Poptávka po %3 roste o %4% na 2 herní hodiny.</t>
-    <t id="334">%1: %2. Poptávka po %3 klesá o %4% na 2 herní hodiny.</t>
+    <t id="333">%1: %2. Poptávka po %3 roste o %4%% na 2 herní hodiny.</t>
+    <t id="334">%1: %2. Poptávka po %3 klesá o %4%% na 2 herní hodiny.</t>
     <t id="335">%1: Událost %2 skončila. Poptávka po %3 se vrátila do normálu.</t>
     <t id="336">%s: poptávka %s%%; zbývá %s</t>
     <t id="337">Dotčené zboží: %s</t>

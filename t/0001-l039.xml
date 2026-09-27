@@ -134,8 +134,8 @@
     <t id="155">Imposta sulle vendite civili - %1</t>
     <t id="156">Consegna al centro civile - %1</t>
     <t id="200">Disordini civili</t>
-    <t id="201">%1: i disordini riducono le entrate fiscali civili del %2%. Aliquota effettiva: %3%.</t>
-    <t id="202">%1: entrate fiscali civili ripristinate. Aliquota effettiva: %2%.</t>
+    <t id="201">%1: i disordini riducono le entrate fiscali civili del %2%%. Aliquota effettiva: %3%%.</t>
+    <t id="202">%1: entrate fiscali civili ripristinate. Aliquota effettiva: %2%%.</t>
     <t id="203">Mobilitazione pirata in %1, in partenza da %2. Categoria %3: %4 navi - %5.</t>
     <t id="204">%5 su %1 in %2: %3 disattivato per %4 minuti.</t>
     <t id="205">Sabotaggio del deposito di %1 in %2: espulse %4 unità di %3.</t>
@@ -219,8 +219,8 @@
     <t id="330">Repressione del contrabbando</t>
     <t id="331">Politiche liberali sulle droghe</t>
     <t id="332">Eventi Civilian Economy</t>
-    <t id="333">%1: %2. La domanda di %3 aumenta del %4% per 2 ore di gioco.</t>
-    <t id="334">%1: %2. La domanda di %3 diminuisce del %4% per 2 ore di gioco.</t>
+    <t id="333">%1: %2. La domanda di %3 aumenta del %4%% per 2 ore di gioco.</t>
+    <t id="334">%1: %2. La domanda di %3 diminuisce del %4%% per 2 ore di gioco.</t>
     <t id="335">%1: %2 è terminato. La domanda di %3 è tornata alla normalità.</t>
     <t id="336">%s: domanda %s%%; resta %s</t>
     <t id="337">Merci interessate: %s</t>

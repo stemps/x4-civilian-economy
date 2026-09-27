@@ -293,7 +293,7 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `ui/ce_map_status.lua` | Civilian-only map selection table, height-limited native scrolling and native reserve/growth bars. |
 | `libraries/`, `assets/`, `index/` | Cumulative construction plans and hub definition using vanilla modules/artwork. |
 | `images/` | Promotional images for posting with the mod; separate from runtime game assets. |
-| `aiscripts/build.buildstorage.xml` | Excludes registered hubs from vanilla builder recruitment; MD assigns their builders. |
+| `aiscripts/build.buildstorage.xml` | Excludes registered hubs from vanilla builder recruitment; MD assigns their builders. Skips duplicate native initialization when a registered CE hub already has a trade NPC. |
 | `t/` | Localized names and diagnostics. |
 | `tests/`, `tools/` | MD action tests, Lua mocks, plan generation and schema/toolkit validation. |
 

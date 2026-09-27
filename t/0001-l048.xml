@@ -134,8 +134,8 @@
     <t id="155">Podatek od sprzedaży cywilnej - %1</t>
     <t id="156">Dostawa do centrum cywilnego - %1</t>
     <t id="200">Niepokoje społeczne</t>
-    <t id="201">%1: niepokoje zmniejszają cywilne wpływy podatkowe o %2%. Faktyczna stawka: %3%.</t>
-    <t id="202">%1: cywilne wpływy podatkowe przywrócone. Faktyczna stawka: %2%.</t>
+    <t id="201">%1: niepokoje zmniejszają cywilne wpływy podatkowe o %2%%. Faktyczna stawka: %3%%.</t>
+    <t id="202">%1: cywilne wpływy podatkowe przywrócone. Faktyczna stawka: %2%%.</t>
     <t id="203">Mobilizacja piratów w %1, wylot z %2. Kategoria %3: %4 statków - %5.</t>
     <t id="204">%5 na %1 w %2: %3 wyłączone na %4 minut.</t>
     <t id="205">Sabotaż magazynu %1 w %2: wyrzucono %4 jednostek towaru %3.</t>
@@ -219,8 +219,8 @@
     <t id="330">Zwalczanie przemytu</t>
     <t id="331">Liberalna polityka narkotykowa</t>
     <t id="332">Wydarzenia Civilian Economy</t>
-    <t id="333">%1: %2. Popyt na %3 wzrasta o %4% na 2 godziny gry.</t>
-    <t id="334">%1: %2. Popyt na %3 spada o %4% na 2 godziny gry.</t>
+    <t id="333">%1: %2. Popyt na %3 wzrasta o %4%% na 2 godziny gry.</t>
+    <t id="334">%1: %2. Popyt na %3 spada o %4%% na 2 godziny gry.</t>
     <t id="335">%1: Wydarzenie %2 zakończyło się. Popyt na %3 wrócił do normy.</t>
     <t id="336">%s: popyt %s%%; pozostało %s</t>
     <t id="337">Dotknięte towary: %s</t>

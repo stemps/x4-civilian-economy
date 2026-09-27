@@ -1,5 +1,6 @@
 """One-shot initialization permission, independently of later build recovery."""
-from support import Table, List, NIL, Component
+from support import Table, List, NIL, Component, ROOT, REF
+from lxml import etree as E
 from support_startup import StartupHarness
 
 
@@ -24,6 +25,35 @@ class InitialHubTests(StartupHarness):
                     self.assertTrue(record.Operational)
                     self.assertEqual(sum(k=='materialize' for k,_ in self.events),1)
                     self.assertFalse(any(k=='queue' for k,_ in self.events))
+
+    def test_native_build_completion_preserves_ce_manager_and_other_stations(self):
+        base=E.parse(str(REF/'aiscripts/build.buildstorage.xml'))
+        patch=E.parse(str(ROOT/'aiscripts/build.buildstorage.xml')).findall('replace')[-1]
+        original=base.xpath(patch.get('sel'))
+        self.assertEqual(len(original),1)
+        r=self.run
+        r.env['faction'].update(player='player',ownerless='ownerless')
+        for registered in (False,True):
+            for manager in (NIL,Component(exists=True)):
+                for owner in ('civilian','argon','player','ownerless',NIL):
+                    hub=Component(tradenpc=manager)
+                    r.env.update(baseowner=owner,this=Table(object=Table(base=hub)))
+                    r.env['player'].entity.ce_hubs=List([hub]) if registered else List()
+                    expected=bool(r.expr(str(original[0]))) and not (registered and bool(manager))
+                    self.assertEqual(bool(r.expr(patch.text)),expected)
+
+    def test_cross_script_initialization_helpers_are_explicit(self):
+        pending=['md.CE_OwnerlessHub.UpdateHub'];seen=set()
+        while pending:
+            ref=pending.pop()
+            if ref in seen:continue
+            seen.add(ref)
+            _,script,name=ref.split('.')
+            nodes=self.run.scripts[script].xpath('//library[@name=$name]//include_actions',name=name)
+            for node in nodes:
+                child=node.get('ref')
+                self.assertTrue(child.startswith('md.'),child)
+                pending.append(child)
 
     def initial(self, reset=False):
         r=self.run

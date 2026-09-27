@@ -134,8 +134,8 @@
     <t id="155">Sivil satış vergisi - %1</t>
     <t id="156">Sivil merkez teslimatı - %1</t>
     <t id="200">Sivil huzursuzluk</t>
-    <t id="201">%1: huzursuzluk sivil vergi gelirini %2% azaltıyor. Etkin vergi oranı: %3%.</t>
-    <t id="202">%1: sivil vergi geliri düzeldi. Etkin vergi oranı: %2%.</t>
+    <t id="201">%1: huzursuzluk sivil vergi gelirini %2%% azaltıyor. Etkin vergi oranı: %3%%.</t>
+    <t id="202">%1: sivil vergi geliri düzeldi. Etkin vergi oranı: %2%%.</t>
     <t id="203">%1 içinde korsan seferberliği, kalkış: %2. %3 kademesi: %4 gemi - %5.</t>
     <t id="204">%2 içindeki %1 üzerinde %5: %3, %4 dakika devre dışı.</t>
     <t id="205">%2 içindeki %1 deposuna sabotaj: %4 birim %3 dışarı atıldı.</t>
@@ -219,8 +219,8 @@
     <t id="330">Kaçakçılığa Baskı</t>
     <t id="331">Liberal Uyuşturucu Politikaları</t>
     <t id="332">Civilian Economy Olayları</t>
-    <t id="333">%1: %2. %3 talebi 2 oyun saati boyunca %4% artar.</t>
-    <t id="334">%1: %2. %3 talebi 2 oyun saati boyunca %4% azalır.</t>
+    <t id="333">%1: %2. %3 talebi 2 oyun saati boyunca %4%% artar.</t>
+    <t id="334">%1: %2. %3 talebi 2 oyun saati boyunca %4%% azalır.</t>
     <t id="335">%1: %2 sona erdi. %3 talebi normale döndü.</t>
     <t id="336">%s: talep %s%%; kalan %s</t>
     <t id="337">Etkilenen mallar: %s</t>

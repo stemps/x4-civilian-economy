@@ -134,8 +134,8 @@
     <t id="155">Taxe sur les ventes civiles - %1</t>
     <t id="156">Livraison au centre civil - %1</t>
     <t id="200">Troubles civils</t>
-    <t id="201">%1 : les troubles réduisent les revenus fiscaux civils de %2%. Taux effectif : %3%.</t>
-    <t id="202">%1 : revenus fiscaux civils rétablis. Taux effectif : %2%.</t>
+    <t id="201">%1 : les troubles réduisent les revenus fiscaux civils de %2%%. Taux effectif : %3%%.</t>
+    <t id="202">%1 : revenus fiscaux civils rétablis. Taux effectif : %2%%.</t>
     <t id="203">Mobilisation pirate détectée dans %1, au départ de %2. Catégorie %3 : %4 vaisseaux - %5.</t>
     <t id="204">%5 sur %1 dans %2 : %3 désactivé pendant %4 minutes.</t>
     <t id="205">Sabotage du stockage de %1 dans %2 : %4 unités de %3 éjectées.</t>
@@ -219,8 +219,8 @@
     <t id="330">Répression de la contrebande</t>
     <t id="331">Politique libérale sur les drogues</t>
     <t id="332">Événements Civilian Economy</t>
-    <t id="333">%1 : %2. La demande de %3 augmente de %4% pendant 2 heures de jeu.</t>
-    <t id="334">%1 : %2. La demande de %3 diminue de %4% pendant 2 heures de jeu.</t>
+    <t id="333">%1 : %2. La demande de %3 augmente de %4%% pendant 2 heures de jeu.</t>
+    <t id="334">%1 : %2. La demande de %3 diminue de %4%% pendant 2 heures de jeu.</t>
     <t id="335">%1 : %2 est terminé. La demande de %3 est revenue à la normale.</t>
     <t id="336">%s : demande %s%% ; reste %s</t>
     <t id="337">Marchandises concernées : %s</t>

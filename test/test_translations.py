@@ -129,6 +129,16 @@ class TranslationCoverageTests(unittest.TestCase):
         from check_translations import ROOT
         self.assertEqual(translation_coverage_errors(ROOT / 't'), [])
 
+    def test_md_notification_percent_signs_are_escaped(self):
+        import re
+        import xml.etree.ElementTree as ET
+        from check_translations import ROOT
+        for path in (ROOT / 't').glob('0001-l*.xml'):
+            entries={node.get('id'):node.text for node in ET.parse(path).findall('.//t')}
+            for key in ('201','202','333','334'):
+                remainder=re.sub(r'%%|%[1-9]\d*','',entries[key])
+                self.assertNotIn('%',remainder,f'{path.name}: {key}')
+
 
 if __name__ == "__main__":
     unittest.main()

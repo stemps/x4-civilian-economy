@@ -134,8 +134,8 @@
     <t id="155">Zivile Verkaufssteuer - %1</t>
     <t id="156">Lieferung an ziviles Zentrum - %1</t>
     <t id="200">Zivile Unruhen</t>
-    <t id="201">%1: Unruhen verringern zivile Steuereinnahmen um %2%. Effektiver Steuersatz: %3%.</t>
-    <t id="202">%1: Zivile Steuereinnahmen wiederhergestellt. Effektiver Steuersatz: %2%.</t>
+    <t id="201">%1: Unruhen verringern zivile Steuereinnahmen um %2%%. Effektiver Steuersatz: %3%%.</t>
+    <t id="202">%1: Zivile Steuereinnahmen wiederhergestellt. Effektiver Steuersatz: %2%%.</t>
     <t id="203">Piratenmobilisierung in %1 erkannt, Abflug von %2. Stärke %3: %4 Schiffe - %5.</t>
     <t id="204">%5 an %1 in %2: %3 für %4 Minuten deaktiviert.</t>
     <t id="205">Lagersabotage an %1 in %2: %4 Einheiten %3 ausgeworfen.</t>
@@ -219,8 +219,8 @@
     <t id="330">Schmuggelbekämpfung</t>
     <t id="331">Liberale Drogenpolitik</t>
     <t id="332">Civilian Economy - Ereignisse</t>
-    <t id="333">%1: %2. Bedarf an %3 steigt für 2 Spielstunden um %4%.</t>
-    <t id="334">%1: %2. Bedarf an %3 sinkt für 2 Spielstunden um %4%.</t>
+    <t id="333">%1: %2. Bedarf an %3 steigt für 2 Spielstunden um %4%%.</t>
+    <t id="334">%1: %2. Bedarf an %3 sinkt für 2 Spielstunden um %4%%.</t>
     <t id="335">%1: %2 ist beendet. Die Nachfrage nach %3 ist wieder normal.</t>
     <t id="336">%s: Bedarf %s%%; noch %s</t>
     <t id="337">Betroffene Waren: %s</t>

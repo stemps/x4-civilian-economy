@@ -332,7 +332,7 @@
         <include_actions ref="md.CE_Construction.Readiness"/>
         <do_if value="$Ready">
           <do_if value="not $R.$Operational">
-            <include_actions ref="RebaseAccrual"/>
+            <include_actions ref="md.CE_OwnerlessHub.RebaseAccrual"/>
             <set_value name="$R.$Operational" exact="true"/>
             <do_if value="$R.$InitializedHub != $Hub">
               <signal_objects object="player.galaxy" param="'init station'" param2="$Hub" param3="false"/>
@@ -340,7 +340,7 @@
             </do_if>
             <debug_text text="'[CE] Completed-level modules operational: level=%s'.[$R.$Level]"/>
           </do_if>
-          <include_actions ref="AccrueAll"/>
+          <include_actions ref="md.CE_OwnerlessHub.AccrueAll"/>
           <do_if value="$TargetReady">
             <set_value name="$PreviousLevel" exact="$R.$Level"/>
             <set_value name="$UpgradeCompleted" exact="true"/>
@@ -352,18 +352,18 @@
             <set_value name="$R.$Build" exact="null"/>
             <debug_text text="'[CE] Upgrade completed: level=%s qualification_bypassed=%s'.[$R.$Level,$R.$TestUpgrade]"/>
             <set_value name="$R.$TestUpgrade" exact="false"/>
-            <include_actions ref="ApplyLevel"/>
-            <include_actions ref="RenameHub"/>
+            <include_actions ref="md.CE_OwnerlessHub.ApplyLevel"/>
+            <include_actions ref="md.CE_OwnerlessHub.RenameHub"/>
           </do_if>
           <set_value name="$ManagedObject" exact="$Hub"/>
-          <include_actions ref="EnsureManager"/>
-          <include_actions ref="FundAccounts"/>
-          <include_actions ref="EvaluateQualification"/>
+          <include_actions ref="md.CE_OwnerlessHub.EnsureManager"/>
+          <include_actions ref="md.CE_OwnerlessHub.FundAccounts"/>
+          <include_actions ref="md.CE_OwnerlessHub.EvaluateQualification"/>
           <do_if value="$R.$Qualified">
             <set_value name="$R.$Target" exact="$R.$Level + 1"/>
             <set_value name="$R.$TestUpgrade" exact="false"/>
             <debug_text text="'[CE] Naturally qualified for level %s'.[$R.$Target]"/>
-            <include_actions ref="QueueExpansion"/>
+            <include_actions ref="md.CE_OwnerlessHub.QueueExpansion"/>
           </do_if>
         </do_if>
         <do_else>
@@ -371,12 +371,12 @@
             <debug_text text="'[CE] Required modules unavailable: consumption and growth paused; progress preserved'"/>
           </do_if>
           <set_value name="$R.$Operational" exact="false"/>
-          <include_actions ref="RebaseAccrual"/>
+          <include_actions ref="md.CE_OwnerlessHub.RebaseAccrual"/>
           <do_if value="$Hub.exists and not $Hub.iswreck">
-            <include_actions ref="FundAccounts"/>
+            <include_actions ref="md.CE_OwnerlessHub.FundAccounts"/>
           </do_if>
         </do_else>
-        <include_actions ref="UpdateOffers"/>
+        <include_actions ref="md.CE_OwnerlessHub.UpdateOffers"/>
         <do_if value="$UpgradeCompleted">
           <include_actions ref="md.CE_Notifications.UpgradeCompleted"/>
         </do_if>

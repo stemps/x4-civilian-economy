@@ -211,7 +211,6 @@ RegisterEvent('CEAdvanceBuildReady', function(_, raw)
     local id = M.id(raw)
     local s = id and statusFor(id)
     if not CEDebugReset.busy() and s and s.testUpgrade and s.target > s.level and canFinish(id) then
-        DebugError('[CE] TEST: automatically completing target level ' .. s.target .. ' on ' .. tostring(id))
         C.ForceBuildCompletion(id)
         AddUITriggeredEvent('CELevelTesting', 'advance_complete', ConvertStringToLuaID(tostring(id)))
     end
