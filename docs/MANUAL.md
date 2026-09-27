@@ -50,6 +50,8 @@ This mod adds additional mechanics and more economic demand, which likely causes
 notable changes to the game balance. I tried to design it responsibly, but you
 have been warned.
 
+## Numbers
+
 For those interested in numbers: The Argon Prime population, which is about
 middle-ish, generates per hour about 150k Cr worth of demand at level 1 and just
 over 6M Cr at level 10. And there's about 36 times the population of Argon Prime
