@@ -36,8 +36,8 @@ class NewsNotifications(unittest.TestCase):
             open_menu=lambda n: self.events.append(('map', self.run.expr(n.get('param'))[7][2])),
             debug_text=lambda n: self.run.expr(n.get('text')))
 
-    def test_both_broadcasts_keep_full_details_in_one_log_entry(self):
-        for key in ('ce_news_raid', 'ce_news_sabotage'):
+    def test_all_broadcasts_keep_full_details_in_one_log_entry(self):
+        for key in ('ce_news_raid', 'ce_news_sabotage', 'ce_news_hacking'):
             self.events.clear()
             self.run.env['BroadcastKey'] = key
             self.run.library('md.CE_UnrestNotifications.Broadcast')
@@ -76,7 +76,7 @@ class NewsNotifications(unittest.TestCase):
 
     def test_production_cutscene_schema_and_shipped_video_reference(self):
         schema = E.XMLSchema(E.parse(str(REF / 'cutscenes/cutscenes.xsd')))
-        for key in ('ce_news_raid', 'ce_news_sabotage'):
+        for key in ('ce_news_raid', 'ce_news_sabotage', 'ce_news_hacking'):
             tree = E.parse(str(ROOT / f'cutscenes/{key}.xml'))
             schema.assertValid(tree)
             self.assertEqual(tree.find('director').get('key'), key)

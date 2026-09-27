@@ -224,7 +224,7 @@ script variables, so all AI identity/control markers live on pilots.
 General logbook entries and map fallback. Saved penalty state suppresses repeat
 tickers; committed incidents own their alert, including delayed destruction.
 Raids and successful sabotage call `Broadcast` with an explicit cutscene key and
-short localized caption. `ce_news_raid` and `ce_news_sabotage` play 12-second still
+short localized caption. `ce_news_raid`, `ce_news_sabotage` and `ce_news_hacking` play 12-second still
 clips in the native target monitor, with a warning sound and map interaction.
 The broadcast interaction stops its own cutscene before opening the affected
 object or surviving sector; critical-unrest text alerts keep their original event.
@@ -233,8 +233,9 @@ and are written once to the General logbook. Sabotage names its attack type and
 affected equipment/module; destruction captures names before removal. A null cutscene
 result falls back to the original interactive text alert. Native monitor queuing
 is retained. The cutscene API exposes no priority parameter.
-The sabotage image is generic incident artwork for all sabotage effects; the
-caption and log describe the actual outcome, including non-destructive hacks.
+The hacking surveillance image covers production disruption, turret/shield hacks
+and cargo release. The sabotage explosion image is reserved for confirmed module
+destruction. Captions and logs describe the actual outcome.
 
 `images/broadcast/` contains the approved art sources. `tools/build_news_videos.py`
 encodes H.264/yuv420p clips using imageio-ffmpeg and an installed TrueType font,
@@ -243,7 +244,7 @@ headlines scroll left at 110 pixels/sec, prefixed with BREAKING. Strings come fr
 English text IDs 291-292 and 296. These baked-in video headlines remain English;
 localizing them would require separate strip renders and language-based clip selection.
 Runtime captions use the localized native text entries. These are packaged videos, not a runtime
-image-generation or encoder dependency. Only the two production broadcast MKVs are
+image-generation or encoder dependency. Only the three production broadcast MKVs are
 included in release archives, along with cutscene XML.
 `just news-videos` rebuilds and fully decodes the runtime MKVs.
 

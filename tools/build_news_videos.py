@@ -1,4 +1,4 @@
-"""Encode approved v3 art as news clips with a separate, deterministic lower third.
+"""Encode broadcast art as news clips with a separate, deterministic lower third.
 
 Requires imageio-ffmpeg. --font accepts a TrueType font (defaults to Windows Arial).
 Captions remain native MD text; scrolling ticker strings come from the English t file.
@@ -29,7 +29,8 @@ def main():
     (ROOT / 'videos').mkdir(exist_ok=True)
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     for kind, artwork, text_id in [('raid', 'pirate-mobilisation', 291),
-                                   ('sabotage', 'station-sabotage', 292)]:
+                                   ('sabotage', 'station-sabotage', 292),
+                                   ('hacking', 'station-hacking', 292)]:
         (scratch / f'{kind}-ticker.txt').write_text(
             f'{strings[296]}: {strings[text_id]}'.upper(), encoding='utf-8')
         # Fit the entire approved image above the strip; never obscure module tips.

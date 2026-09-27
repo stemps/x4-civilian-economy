@@ -1,0 +1,11 @@
+Generated with the built-in image_gen tool on 2026-09-27.
+Reference order: user's security-room screenshot, station-sabotage.png, pirate-mobilisation.png.
+
+Use case: stylized-concept.
+Asset type: 16:9 still artwork for an X4 Foundations in-game news video.
+Input images: image 1 is the reference for the exact security room architecture; images 2 and 3 are visual style references for the other news stills, not scene content.
+Primary request: A grainy surveillance camera image of the attached futuristic station security room, with one anonymous hooded figure hunched over one of its terminals, hands operating the console to hack it.
+Keep the room recognizable: grey modular wall panels with a broad pale horizontal stripe, metal floor panels and grates, chunky dark machinery framing the entry, green/cyan wall-mounted screens and a white angular central workstation with upright monitor divider. Remove all screenshot HUD, crosshair, messages and any original occupants. Show exactly one figure, wearing a dark charcoal hooded utilitarian outfit, face hidden by the hood and turned toward the screen. The figure should be prominent enough to read in a small target monitor.
+Composition: fixed high corner security-camera viewpoint looking down into the room, slightly wide lens, with the hunched figure and terminal clearly visible in the middle ground. Landscape 16:9, full-bleed artwork.
+Style: match the existing stills' realistic game-rendered industrial science fiction, crisp believable hard-surface geometry, restrained cinematic lighting and muted steel charcoal palette. Add visibly grainy low-light surveillance noise, subtle horizontal scan lines and modest lens distortion, slightly desaturated cool grey with faint green/cyan screen glow. Keep scene legible and detailed beneath grain.
+No explosion, destruction, fire, weapons, extra people, news banner, subtitles, text, timestamp, camera labels, logo, watermark, letterbox or HUD. The news strip is added separately by the project encoder.

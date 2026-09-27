@@ -1,5 +1,22 @@
 # Mod-local Knowledgebase
 
+## 2026-09-27 - hacking-surveillance-broadcast
+
+- IMPLEMENTED: CE_Sabotage.Apply selects ce_news_hacking for successful production,
+  turret, shield and cargo incidents. DestroyModule.Confirm retains ce_news_sabotage
+  only after confirmed wreck/removal. Incident details and localized captions are
+  unchanged; both clips reuse the existing English sabotage headline (292).
+- IMPLEMENTED: station-hacking.png and its generation prompt live in images/broadcast.
+  The encoder builds the third clip with the existing red scrolling strip, and the
+  release archive allowlist explicitly includes videos/ce_news_hacking.mkv.
+- MEASURED: the hacking clip fully decodes to 288 H.264/yuv420p frames, 1280x720,
+  24 fps, 12 seconds. Rendered frame visually inspected. Playback in game remains
+  unverified. Full game restart required for changed MD and new cutscene assets.
+- TESTED: just validate passed 248 controller tests, native cutscene schema checks,
+  XML parsing and the default x4validate pass. just test-release passed 62 tests,
+  including archive inclusion of the new clip. Full script schema compilation was
+  not run for the single changed cutscene-key value.
+
 ## 2026-09-27 - complete-language-coverage
 
 - READ: `reference/t` contains 16 locale files. The matching SCV set is

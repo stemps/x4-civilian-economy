@@ -123,7 +123,7 @@
         <do_if value="$IncidentSuccess and $IncidentKind != 'destroy'">
           <set_value name="$SabotageClock.$Next" exact="player.age / 1s + 5400"/>
           <set_value name="$U.$NextSabotage" exact="player.age / 1s + 5400"/>
-          <set_value name="$BroadcastKey" exact="'ce_news_sabotage'"/>
+          <set_value name="$BroadcastKey" exact="'ce_news_hacking'"/>
           <set_value name="$BroadcastCaption" exact="{974201,294}.[$SabotageStation.knownname]"/>
           <include_actions ref="md.CE_UnrestNotifications.Broadcast"/>
         </do_if>

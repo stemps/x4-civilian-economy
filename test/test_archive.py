@@ -67,7 +67,8 @@ class ArchiveTests(unittest.TestCase):
 
     def test_broadcast_assets_included_without_unrelated_video_files(self):
         files = ('cutscenes/ce_news_raid.xml', 'videos/ce_news_raid.mkv',
-                 'cutscenes/ce_news_sabotage.xml', 'videos/ce_news_sabotage.mkv')
+                 'cutscenes/ce_news_sabotage.xml', 'videos/ce_news_sabotage.mkv',
+                 'cutscenes/ce_news_hacking.xml', 'videos/ce_news_hacking.mkv')
         for name in files:
             self.fixture.write(name, 'synthetic test asset')
         self.fixture.write('videos/unrelated.mkv', 'exclude')

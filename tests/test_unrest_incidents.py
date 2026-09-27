@@ -46,6 +46,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
                 self.module.module = self.module if kind == 'production' else Component(exists=True, knownname='Defense module')
                 self.run.library('md.CE_Sabotage.Request')
                 self.assertTrue(self.run.env['IncidentSuccess'])
+                self.assertEqual(self.run.env['BroadcastKey'], 'ce_news_hacking')
                 self.assertEqual(len(self.messages),1)
                 self.assertEqual(self.messages[0][1][1],204)
                 details = self.messages[0][1][2]
@@ -77,6 +78,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.run.native['drop_cargo']=drop
         self.run.library('md.CE_Sabotage.Request')
         self.assertEqual(requested,[100])
+        self.assertEqual(self.run.env['BroadcastKey'], 'ce_news_hacking')
         self.assertEqual(self.messages[0][1][2][-1],37)
 
     def test_manual_pause_is_not_overwritten(self):
@@ -112,6 +114,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.module.iswreck=True
         self.run.actions(tree.xpath('//cue[@name="Confirm"]/actions')[0])
         self.assertEqual(self.messages[0][1][1],206)
+        self.assertEqual(self.run.env['BroadcastKey'], 'ce_news_sabotage')
         self.assertEqual(self.messages[0][1][2],('Station','Sector','Module'))
         self.assertEqual(self.u.NextDestruction,14400)
 
