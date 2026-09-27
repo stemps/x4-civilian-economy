@@ -145,6 +145,16 @@ amounts. Destruction waits for a missing/wrecked module before committing its
 popup and destructive cooldown. No last-module or last-dock exclusion exists.
 
 `CE_Raids` owns saved group IDs, composition, berth preflight and docked creation.
+New ships explicitly receive Black Steel (`paintmod_0017`) at creation. Existing
+ships are not repainted. `libraries/factions.xml` assigns the CE skull icon to
+the unrest faction for menus and hull decals; `libraries/icons.xml` resolves its
+extension-qualified texture. The faction uses the vanilla active/inactive-only
+icon declaration, without a separate image override. The user confirmed this
+corrected the solid-square hull decal in game. `images/ce_unrest_skull.png` is the source artwork,
+inspired by the pirate broadcast still. `just raider-logo` encodes it as a 256px
+RGBA DDS with nine mip levels, gzip-wrapped in `assets/textures/ui/factions/`.
+The release archive explicitly includes that texture. A full game restart is
+required; Black Steel contrast remains an in-game acceptance check.
 Up to five groups may be active per hub, including departing and withdrawing
 ones; there are no global or capital-group caps. Ordinary launch cooldowns remain
 one hour (four hours for capital launches); explicit debug launches bypass them.

@@ -18,6 +18,7 @@ def runtime_path(name):
                      and name.endswith('.xml'))
                  or (name.startswith('t/') and name.endswith('.xml'))
                  or (name.startswith('cutscenes/') and name.endswith('.xml'))
+                 or name == 'assets/textures/ui/factions/ce_unrest_skull.gz'
                  or name in ('videos/ce_news_raid.mkv', 'videos/ce_news_sabotage.mkv')))
 
 

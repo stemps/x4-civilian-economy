@@ -3,7 +3,7 @@
   <add sel="/factions">
     <faction id="ce_unrest" name="{974201,248}" description="{974201,249}" shortname="{974201,250}" prefixname="{974201,248}" primaryrace="argon" behaviourset="default" tags="hidden pirate plunder">
       <color ref="faction_scaleplate"/>
-      <icon active="faction_scaleplate" inactive="faction_scaleplate"/>
+      <icon active="ce_unrest_skull" inactive="ce_unrest_skull"/>
       <relations locked="1">
         <relation faction="player" relation="-0.1"/>
         <relation faction="ownerless" relation="0"/>

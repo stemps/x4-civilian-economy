@@ -81,6 +81,15 @@ class ArchiveTests(unittest.TestCase):
             self.assertNotIn('civilian_economy/videos/ce_news_raid.tmp.mkv', zipped.namelist())
             self.assertNotIn('civilian_economy/cutscenes/notes.txt', zipped.namelist())
 
+    def test_raider_logo_texture_is_packaged_without_source_artwork(self):
+        texture = 'assets/textures/ui/factions/ce_unrest_skull.gz'
+        self.fixture.write(texture, 'synthetic texture')
+        self.fixture.write('images/ce_unrest_skull.png', 'source artwork')
+        archive = local_zip(self.root)
+        with zipfile.ZipFile(archive) as zipped:
+            self.assertEqual(zipped.read('civilian_economy/' + texture), b'synthetic texture')
+            self.assertNotIn('civilian_economy/images/ce_unrest_skull.png', zipped.namelist())
+
     def test_md_in_local_release_and_tagged_archives(self):
         self.fixture.write('md/ce_logistics.xml', '<mdscript name="CE_Logistics"/>\n')
         self.fixture.write('md/notes.txt', 'Not runtime content')

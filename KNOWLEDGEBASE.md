@@ -1569,3 +1569,60 @@ implemented or runtime-tested CE rewards:
   and explicitly neutral toward civilians and ownerless objects.
 - Automated migration tests exercise MD actions with mocked native ownership;
   native construction continuity and attack selection remain unverified in game.
+
+# 2026-09-27 - raider-appearance-provenance
+
+- READ: `libraries/factions.xml` assigns `faction_scaleplate` color and icon to
+  `ce_unrest`; this dates to `e8039e4` (2026-09-25, Unrest). This is not a paint
+  assignment. `CE_Raids.Request` creates ships as the hub owner without explicit
+  paint; `CE_RaidBehaviour.Prepare` transfers them to `ce_unrest`.
+- READ: `a42cc6a` (2026-09-27) changed hub ownership from ownerless to civilian,
+  also changing the initial owner selected by raider creation. Vanilla
+  `libraries/themes.xml` maps ownerless to `paintmod_0008` and civilian to
+  `paintmod_0001`; `libraries/paintmods.xml` defines these as desaturated and
+  unmodified respectively. INFERRED: this may explain the newly observed red
+  hulls; the screenshot's exact paint ID and ownership-transition rendering have
+  not been measured in game. Do not describe red as an explicit CE livery.
+- READ: vanilla `themes.xml` supports fixed and weighted random paint selection.
+  `common.xsd` exposes creation-time `paint`, `add_paint_mod`, and independent
+  faction icon/decal selection through `set_faction_identity`. Custom CE paint
+  and a dedicated emblem can be configured separately from relations/AI.
+
+- SUPERSEDED by the explicit livery implementation later on 2026-09-27: newly
+  created raiders now specify `paintmod_0018` (Grey Steel) and `ce_unrest` uses
+  `ce_unrest_skull` for its icon/decal. The earlier observations above describe
+  the previous implementation. Existing ships are not repainted.
+- READ/MEASURED: the vanilla Scale Plate icon resolves a `.tga` texture reference
+  to a `.gz` catalog member containing an uncompressed 256x256 DDS with nine mip
+  levels. CE follows that encoding with an extension-qualified path; the release
+  asset allowlist must include the `.gz`, not just the XML referencing it.
+- MEASURED: x4validate scans XML even under repo-local `.snapshots/`; give backup
+  copies a non-XML suffix such as `.xml.bak` to keep them out of mod validation.
+
+# 2026-09-27 - skull-decal-square-investigation
+
+- USER-OBSERVED: Grey Steel applied, but the skull rendered as a solid light
+  square on ship hulls. Previous static success did not verify native rendering.
+- USER-OBSERVED follow-up: the skull is visible in the target window. The UI
+  texture path therefore works; the failure is specific to hull-decal use.
+- MEASURED: the installed skull `.gz` is byte-identical to the workspace asset;
+  debug.txt records access to it. Its DDS header matches vanilla Scale Plate's
+  dimensions, pixel flags, BGRA masks, pitch, mip count and caps; only reserved
+  exporter metadata differs. All nine mip levels have valid alpha data, including
+  transparent corners at the base level. This rules out an opaque-square source
+  image, but does not prove the engine sampled this texture on the hull.
+- READ: vanilla Scale Plate and Terran faction declarations use active/inactive
+  icons without an explicit image override. CANDIDATE repair: remove CE's
+  redundant `image="ce_unrest_skull"` override and retain the skull icons and
+  texture unchanged, isolating faction decal wiring. Root cause and in-game
+  effectiveness are still UNVERIFIED; do not record this as a confirmed fix.
+
+- SUPERSEDED by user confirmation later on 2026-09-27: removing only the faction
+  `image` override restored the visible skull hull decal. Keep active/inactive
+  icons and let the engine derive the decal; do not restore that override.
+- MEASURED: the game extension folder is a junction to this development repo.
+  Edits are already deployed through it; local testing needs no ZIP installation.
+- Black Steel comparison requested after the successful skull test: creation
+  paint changed from Grey Steel (`paintmod_0018`) to Black Steel (`paintmod_0017`,
+  vanilla ware name `{20114,10171}`). Existing ships retain their paint; restart
+  and spawn a new raid to compare. The new appearance is not yet user-verified.

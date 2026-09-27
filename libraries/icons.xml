@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/icons">
+    <icon name="ce_unrest_skull" texture="extensions\civilian_economy\assets\textures\ui\factions\ce_unrest_skull.tga" height="256" width="256"/>
+  </add>
+</diff>

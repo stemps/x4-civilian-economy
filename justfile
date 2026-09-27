@@ -32,6 +32,10 @@ release:
 build-zip:
     if ('{{python}}') { & '{{python}}' scripts/release.py build-zip; exit $LASTEXITCODE } else { uv run python scripts/release.py build-zip; exit $LASTEXITCODE }
 
+# Encode the raider skull source as a mipmapped game texture.
+raider-logo:
+    if ('{{python}}') { & '{{python}}' tools/build_raider_logo.py; exit $LASTEXITCODE } else { uv run --with pillow python tools/build_raider_logo.py; exit $LASTEXITCODE }
+
 # Render and fully decode the approved runtime broadcast videos.
 news-videos:
     if ('{{python}}') { & '{{python}}' tools/build_news_videos.py; exit $LASTEXITCODE } else { uv run --with imageio-ffmpeg python tools/build_news_videos.py; exit $LASTEXITCODE }

@@ -67,6 +67,7 @@
                 <create_ship name="$RaidShip" dock="$RaidDocks.{$RaidIndex}" macro="$RaidMacro" commandeerable="false">
                   <owner exact="$R.$Hub.owner" overridenpc="true"/>
                   <pilot><select faction="faction.argon" tags="tag.commander"/><skills><skill type="piloting" exact="12"/><skill type="morale" exact="12"/></skills></pilot>
+                  <paint ware="ware.paintmod_0017"/>
                 </create_ship>
                 <do_if value="$RaidShip.exists">
                   <append_to_list name="$RaidGroup.$Ships" exact="$RaidShip"/>
