@@ -214,7 +214,7 @@ RegisterEvent('CEInitialBuildReady', function(_, raw)
     local id = M.id(raw)
     local s = id and statusFor(id)
     if s and s.debugInitial and not s.stale and s.target == 0
-        and GetComponentData(id, 'owner') == 'ownerless' and canFinish(id) then
+        and GetComponentData(id, 'owner') == 'civilian' and canFinish(id) then
         DebugError('[CE] TEST: automatically completing initial build on ' .. tostring(id))
         C.ForceBuildCompletion(id)
         AddUITriggeredEvent('CELevelTesting', 'initial_complete', ConvertStringToLuaID(tostring(id)))

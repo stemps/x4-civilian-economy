@@ -47,7 +47,7 @@ class DebugAdvanceTests(StartupHarness):
         self.assertEqual(len(self.pending),1)
         record.Hub.owner='player';self.command(record,'advance_level_5')
         self.assertEqual(len(self.pending),1)
-        record.Hub.owner='ownerless';record.Target=2
+        record.Hub.owner='civilian';record.Target=2
         self.command(record,'advance_level_5');self.assertEqual(record.Target,2)
         self.assertEqual(len(self.pending),1)
 

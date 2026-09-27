@@ -10,12 +10,12 @@ class ConstructionTests(unittest.TestCase):
         self.run = r = Runner()
         self.components = Table(Dock=module('dockarea'), Storage=module('storage'),
                                 Pier=module('pier'), Connectors=List([module('connectionmodule')]), Valid=True)
-        self.hub = Component(exists=True, iswreck=False, owner='ownerless',
+        self.hub = Component(exists=True, iswreck=False, owner='civilian',
                              buildstorage=Table(exists=True, builds=Table(queued=List(), inprogress=List())))
         self.record = Table(Hub=self.hub, Construction=self.components, ProfileRace='terran',
                             Level=1, Target=0, Build=NIL, PlotReady=True)
         r.env.update(R=self.record, Hub=self.hub, Station=self.hub, Base=NIL,
-                     faction=Table(ownerless='ownerless'),
+                     faction=Table(ownerless='ownerless',civilian='civilian'),
                      tag=Table({s:s for s in ('dockarea','storage','pier','base','connection','module','dock_s','dock_m')}))
         self.calls = []
         r.stubs.update(FundAccounts=lambda:None, AssignBuilder=lambda:None)

@@ -9,7 +9,7 @@
           <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
           <do_for_each name="$Sector" in="$Registry.keys.list">
             <set_value name="$R" exact="$Registry.{$Sector}"/>
-            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and event.param3 == $R.$Hub">
+            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and event.param3 == $R.$Hub">
               <include_actions ref="md.CE_Unrest.Ensure"/>
               <set_value name="$DebugCommands" exact="['stage_1','stage_2','stage_3','stage_4','clear','warning','raid_1','raid_2','raid_3','production','turrets','cargo','shields','destroy','cooldowns']"/>
               <!-- Each freshly published menu uses one MD-owned token. Consume before any mutation. -->

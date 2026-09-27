@@ -21,11 +21,14 @@ class HubStartupTests(StartupHarness):
         self.assertLess(stages.index('process'),storage_fund)
         self.assertLess(storage_fund,stages.index('assign'))
         self.assertTrue(hub.buildstorage.tradenpc.exists)
+        self.assertEqual(hub.owner,'civilian')
+        self.assertEqual(hub.buildstorage.tradenpc.owner,'civilian')
         hub.constructionsequence=record.TargetSequence
         hub.planmodule=Table({entry.id:Component(exists=True,isoperational=True) for entry in record.TargetSequence})
         hub.isoperational=True; r.env.update(R=record,Hub=hub)
         r.library('UpdateHub')
         self.assertTrue(record.Operational); self.assertIs(record.TargetSequence,NIL)
+        self.assertEqual(hub.tradenpc.owner,'civilian')
         self.assertTrue(all(w.Offer.exists for w in record.Wares.values() if w.Rate>0))
 
     def test_no_builder_then_later_retry_without_duplicate_build_or_order(self):

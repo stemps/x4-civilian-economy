@@ -10,13 +10,13 @@ class GalaxyTests(unittest.TestCase):
         self.run=Runner();definitions(self.run)
         self.registry=Table();self.created=[]
         self.run.env.update(Registry=self.registry,PlanIDs=List(['plan'+str(i) for i in range(10)]),
-            faction=Table(ownerless='ownerless'))
+            faction=Table(ownerless='ownerless',civilian='civilian'))
         self.run.env['player']['entity']=Table()
         for name in ('FundAccounts','QueueExpansion','AssignBuilder','RenameHub','ReserveGrowthPlot'):
             self.run.stubs[name]=lambda:None
         self.run.native['add_to_group']=lambda n:None
         def create(n):
-            hub=Object(exists=True,iswreck=False,owner='ownerless',sector=self.run.env['Sector'],
+            hub=Object(exists=True,iswreck=False,owner=self.run.expr(n.get('owner')),sector=self.run.env['Sector'],
                        isclass=Table(container=False),buildstorage=NIL)
             self.created.append(hub);self.run.env['NewHub']=hub
         self.run.native['create_station']=create
@@ -25,6 +25,96 @@ class GalaxyTests(unittest.TestCase):
         self.run.env.update(Sector=sector,Population=pop)
         self.run.library('ReconcileSector')
         return self.registry[sector]
+    def test_hostile_sector_blocks_creation_until_liberated(self):
+        sector=self.sector()
+        sector.owner.hasrelation=Table(enemy=Table(civilian=True))
+        record=self.reconcile(sector,100000000)
+        self.assertFalse(record.Hub.exists)
+        self.reconcile(sector,100000000)
+        self.assertEqual(len(self.created),0)
+        sector.owner.hasrelation.enemy.civilian=False
+        self.reconcile(sector,100000000)
+        self.assertEqual(record.Hub.owner,'civilian')
+        self.assertEqual(len(self.created),1)
+
+    def test_unowned_sector_can_spawn_with_valid_profile(self):
+        sector=self.sector()
+        self.run.env['Sector']=sector
+        self.run.library('CaptureSectorProfile')
+        sector.owner=NIL
+        self.assertTrue(self.reconcile(sector,100000000).Hub.exists)
+
+    def test_conquest_keeps_hub_but_blocks_replacement(self):
+        sector=self.sector();record=self.reconcile(sector,100000000)
+        hub=record.Hub;record.Level=3;record.GrowthSeconds=42
+        sector.owner.hasrelation=Table(enemy=Table(civilian=True))
+        self.reconcile(sector,100000000)
+        self.assertIs(record.Hub,hub)
+        hub.iswreck=True
+        self.reconcile(sector,100000000)
+        self.assertFalse(record.Hub.exists)
+        self.assertEqual(len(self.created),1)
+        sector.owner.hasrelation.enemy.civilian=False
+        self.reconcile(sector,100000000)
+        self.assertEqual(len(self.created),2)
+        self.assertEqual((record.Level,record.GrowthSeconds),(3,42))
+
+    def test_legacy_migration_preserves_objects_and_state(self):
+        sector=self.sector();record=self.reconcile(sector,100000000)
+        hub=record.Hub;hub.owner='ownerless'
+        hub.tradenpc=Object(exists=True,owner='ownerless')
+        manager=Object(exists=True,owner='ownerless')
+        build=Object(exists=True)
+        storage=Object(exists=True,owner='ownerless',tradenpc=manager,money=123,
+                       builds=Table(inprogress=List([build])))
+        hub.buildstorage=storage;record.Build=build;record.Target=2
+        record.Wares['water'].Reserve=37;record.GrowthSeconds=99
+        record.DemandEvent=Table(ID=3);event=record.DemandEvent
+        changes=[]
+        def change(n):
+            obj=self.run.expr(n.get('object'))
+            changes.append(obj);obj.owner=self.run.expr(n.get('faction'))
+        self.run.native['set_owner']=change
+        self.run.env['R']=record
+        self.run.library('MigrateHubOwnership')
+        self.assertEqual(len(changes),4)
+        self.run.library('MigrateHubOwnership')
+        self.assertEqual(len(changes),4)
+        self.assertIs(record.Hub,hub);self.assertIs(hub.buildstorage,storage)
+        self.assertIs(record.Build,build);self.assertIs(record.DemandEvent,event)
+        self.assertEqual((record.Target,record.GrowthSeconds,record.Wares['water'].Reserve),(2,99,37))
+        self.assertEqual(storage.money,123)
+        self.assertTrue(all(obj.owner=='civilian' for obj in changes))
+
+    def test_migration_skips_wrecks_and_other_owners(self):
+        record=self.reconcile(self.sector(),100000000)
+        self.run.env['R']=record
+        self.run.native['set_owner']=lambda n:self.fail('Unexpected ownership transfer')
+        for owner,wreck in [('player',False),('argon',False),('ownerless',True)]:
+            record.Hub.owner=owner;record.Hub.iswreck=wreck
+            self.run.library('MigrateHubOwnership')
+
+    def test_reconcile_migrates_only_registered_hubs_before_population_request(self):
+        record=self.reconcile(self.sector(),100000000)
+        record.Hub.owner='ownerless'
+        unrelated=Object(exists=True,owner='ownerless')
+        self.run.native['set_owner']=lambda n:setattr(self.run.expr(n.get('object')),'owner',self.run.expr(n.get('faction')))
+        self.run.stubs['md.CE_DebugCreate.ReconcileOverrides']=lambda:None
+        self.run.native['find_sector']=lambda n:self.run.set(n.get('name'),List())
+        self.run.native['raise_lua_event']=lambda n:self.assertEqual(record.Hub.owner,'civilian')
+        self.run.env['PopulationRequest']=NIL
+        self.run.library('Reconcile')
+        self.assertEqual(unrelated.owner,'ownerless')
+
+    def test_sector_reconciliation_repairs_legacy_hub_in_hostile_sector(self):
+        sector=self.sector();record=self.reconcile(sector,100000000)
+        hub=record.Hub;hub.owner='ownerless'
+        sector.owner.hasrelation=Table(enemy=Table(civilian=True))
+        self.run.native['set_owner']=lambda n:setattr(self.run.expr(n.get('object')),'owner',self.run.expr(n.get('faction')))
+        self.reconcile(sector,100000000)
+        self.assertIs(record.Hub,hub)
+        self.assertEqual(hub.owner,'civilian')
+        self.assertEqual(len(self.created),1)
     def test_population_threshold_is_inclusive_and_creates_once(self):
         a,b,c=self.sector(),self.sector(),self.sector()
         for population in (0,10000,99999999):

@@ -108,7 +108,7 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
         self.hub.owner='player'
         self.run.library('md.CE_DemandEvents.Tick')
         self.assertEqual(self.r.DemandEvent.ID,0)
-        self.hub.owner='ownerless'
+        self.hub.owner='civilian'
         self.r.Operational=False
         self.run.library('md.CE_DemandEvents.Tick')
         self.assertEqual(self.r.DemandEvent.ID,0)
@@ -185,7 +185,7 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
         self.debug(5)
         self.assertEqual(self.r.DemandEvent.ID,0)
         self.hub.owner='player';self.debug(1)
-        self.hub.owner='ownerless'
+        self.hub.owner='civilian'
         self.run.env['event'].param3=Component();self.debug(1)
         self.run.env['event'].param3=self.hub
         self.run.env['md'].CE_Settings.State.Debug=False;self.debug(1)
@@ -202,7 +202,7 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
         self.r.Hub=NIL;self.r.Operational=False
         self.advance(3600)
         self.assertEqual(self.r.DemandEvent.ID,1)
-        self.r.Hub=Component(exists=True,iswreck=False,owner='ownerless',sector=self.sector)
+        self.r.Hub=Component(exists=True,iswreck=False,owner='civilian',sector=self.sector)
         self.r.Operational=True
         self.advance(3600)
         self.assertEqual(self.r.DemandEvent.ID,0)

@@ -94,7 +94,7 @@
         <set_value name="$PlacementOutcome" exact="'established_or_busy_site'"/>
         <!-- No storage, native modules, accepted plan, builder, or operational hub
              may be moved. Storage creation is delayed until layout acceptance. -->
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless and not $R.$Operational and not @$R.$InitializedHub and not @$R.$CompletedSequence and not @$R.$TargetSequence and not $R.$Build.exists and not @$R.$LayoutPending and $Hub.constructionsequence.count == 0 and not $Hub.buildstorage.exists">
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and not $R.$Operational and not @$R.$InitializedHub and not @$R.$CompletedSequence and not @$R.$TargetSequence and not $R.$Build.exists and not @$R.$LayoutPending and $Hub.constructionsequence.count == 0 and not $Hub.buildstorage.exists">
           <set_value name="$PlacementOutcome" exact="'placement_retry_cap'"/>
           <do_if value="$Placement.$Moves lt 3">
             <set_value name="$Placement.$Moves" operation="add"/>

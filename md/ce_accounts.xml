@@ -31,19 +31,19 @@
     <library name="EnsureManager">
       <actions>
         <do_if value="$ManagedObject.isoperational and not $ManagedObject.tradenpc.exists">
-          <!-- Explicit appearance avoids ownerless.primaryrace lookup; ownership stays ownerless. -->
+          <!-- Civilians have no primary race; select manager appearance explicitly. -->
           <create_cue_actor name="$Manager" cue="md.CE_OwnerlessHub.Init">
             <select faction="faction.argon" tags="controlpost.manager.tag"/>
-            <owner exact="faction.ownerless"/>
+            <owner exact="faction.civilian"/>
           </create_cue_actor>
           <do_if value="$Manager">
             <assign_control_entity object="$ManagedObject" actor="$Manager" post="controlpost.manager" transfer="true"/>
             <remove_cue_actor actor="$Manager" cue="md.CE_OwnerlessHub.Init"/>
             <create_ai_unit object="$ManagedObject"/>
-            <debug_text text="'[CE] Ownerless manager initialised on %s'.[$ManagedObject]"/>
+            <debug_text text="'[CE] Civilian manager initialised on %s'.[$ManagedObject]"/>
           </do_if>
           <do_else>
-            <debug_text text="'[CE] BLOCKED: could not create ownerless manager on %s'.[$ManagedObject]"/>
+            <debug_text text="'[CE] BLOCKED: could not create civilian manager on %s'.[$ManagedObject]"/>
           </do_else>
         </do_if>
       </actions>

@@ -150,9 +150,9 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         def create(n):
             dock=self.run.expr(n.get('dock'))
             self.assertFalse(dock.occupied,'Native engine rejects an already assigned external berth')
-            ship=RaidShip(exists=True,iswreck=False,owner='ownerless',isplayerowned=False,pilot=Component(),dock=dock,
+            ship=RaidShip(exists=True,iswreck=False,owner='civilian',isplayerowned=False,pilot=Component(),dock=dock,
                            macro=self.run.expr(n.get('macro')),orders=List(),boardingoperations=List(),
-                           attention=0,lastattacktime=-1,trueowner='ownerless',sector=self.sector,size=100,
+                           attention=0,lastattacktime=-1,trueowner='civilian',sector=self.sector,size=100,
                            units=DroneBay(transport=SimpleNamespace(count=0),other=0,maxcount=10),cargo=Table(free=Table(all=100)),
                            weapons=Table(operational=Table(list=List())),
                            isclass=Table(ship_l=self.run.expr(n.get('macro'))=='L',ship_m=self.run.expr(n.get('macro'))=='M'))
@@ -441,7 +441,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.assertFalse(self.run.env['IncidentSuccess'])
         self.assertEqual(len(self.created),35)
         self.assertEqual(len(groups),5)
-        self.r.Hub=Component(exists=True,iswreck=False,owner='ownerless',sector=self.sector,knownname='Other hub')
+        self.r.Hub=Component(exists=True,iswreck=False,owner='civilian',sector=self.sector,knownname='Other hub')
         for _ in range(5):
             self.run.library('md.CE_Raids.Request')
             self.assertTrue(self.run.env['IncidentSuccess'])

@@ -1554,3 +1554,18 @@ implemented or runtime-tested CE rewards:
 - VALIDATED: `just schema` and `just lua` pass. The shipped-action expiry case
   consumes 450 units across two hours at 200/hour plus half an hour at the normal
   100/hour; a subsequent delivery adds only its actually transferred stock.
+# 2026-09-27 - civilian-hub-ownership
+
+- Source-verified: vanilla `civilian` has locked relations, including Xenon and
+  Kha'ak hostility, and no primary race. Keep explicit manager appearance selection.
+- Hubs now use civilian ownership. Keep historical MD names and plan IDs for saves;
+  migrate only registered live ownerless hubs, without replacing their objects.
+  Manager/build-storage repair also handles partial ownership propagation.
+- Creation tests the sector owner's enemy relation toward civilians, not nearby
+  enemies or the player's relations. Existing hubs survive the eligibility check;
+  destroyed hubs wait for non-hostile ownership before reconstruction.
+- Funding still comes from `faction.ownerless`; changing ownership does not change
+  the established account funding mechanism. `ce_unrest` remains separately owned
+  and explicitly neutral toward civilians and ownerless objects.
+- Automated migration tests exercise MD actions with mocked native ownership;
+  native construction continuity and attack selection remain unverified in game.

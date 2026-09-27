@@ -9,7 +9,7 @@
           <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
           <do_for_each name="$Sector" in="$Registry.keys.list">
             <set_value name="$R" exact="$Registry.{$Sector}"/>
-            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and event.param3 == $R.$Hub">
+            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and event.param3 == $R.$Hub">
               <include_actions ref="md.CE_Unrest.Ensure"/>
               <do_for_each name="$DebugWare" in="$R.$Wares.keys.list">
                 <set_value name="$DebugW" exact="$R.$Wares.{$DebugWare}"/>

@@ -172,8 +172,8 @@ class LifecycleTests(unittest.TestCase):
         self.run=Runner();definitions(self.run)
         self.run.env['ModuleCounts']=List([4,6,8,11,13,16,19,21,23,27])
         self.run.env['PlanIDs']=List(['p'+str(i) for i in range(1,11)])
-        self.run.env['faction']=Table(ownerless='ownerless')
-        self.hub=Component(exists=True,iswreck=False,owner='ownerless',
+        self.run.env['faction']=Table(ownerless='ownerless',civilian='civilian')
+        self.hub=Component(exists=True,iswreck=False,owner='civilian',
                        isoperational=True,isclass=Table(container=True),money=0,
                        constructionsequence=List([Table(id=str(i)) for i in range(6)]),
                        planmodule=Table({str(i):Table(isoperational=i<4) for i in range(6)}),

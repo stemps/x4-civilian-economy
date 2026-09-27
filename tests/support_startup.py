@@ -18,7 +18,7 @@ class StartupHarness(unittest.TestCase):
                            'pier':module('pier'), 'connection':module('connectionmodule')}
         r.env.update(Sector=self.sector, Registry=Table(), Hubs=List(), R=NIL,
                      PopulationRequest=NIL, PopulationApplied=NIL,
-                     faction=Table(ownerless='ownerless'),
+                     faction=Table(ownerless='ownerless',civilian='civilian'),
                      tag=Table({s:s for s in ('storage','dockarea','pier','base','connection','module','dock_s','dock_m')}))
         r.env['player'].update(age=100,entity=Table(),galaxy='galaxy')
         r.native.update(can_safely_extend_build_plot=self.check_plot, extend_build_plot=self.extend_plot,
@@ -30,7 +30,7 @@ class StartupHarness(unittest.TestCase):
                         assign_construction_vessel=self.assign, create_order=self.order,
                         set_object_account=lambda n:None, set_object_name=lambda n:None,
                         write_to_logbook=lambda n:None, show_notification=lambda n:None, create_ai_unit=lambda n:None,
-                        create_cue_actor=lambda n:r.set(n.get('name'), Component(exists=True)),
+                        create_cue_actor=lambda n:r.set(n.get('name'), Component(exists=True,owner=r.expr(n.find('owner').get('exact')))),
                         assign_control_entity=lambda n:setattr(r.expr(n.get('object')),'tradenpc',r.expr(n.get('actor'))),
                         remove_cue_actor=lambda n:None,
                         add_to_group=lambda n:r.env['Hubs'].append(r.expr(n.get('object'))),
@@ -83,7 +83,7 @@ class StartupHarness(unittest.TestCase):
 
     def create_station(self, n):
         self.assertIsNone(n.find('construction'))
-        hub = Component(exists=True, iswreck=False, isoperational=False, owner='ownerless',
+        hub = Component(exists=True, iswreck=False, isoperational=False, owner=self.run.expr(n.get('owner')),
                         sector=self.run.env['Sector'], isclass=Table(container=True), money=0,
                         buildstorage=NIL, constructionsequence=NIL, planmodule=Table(), position=Table(x=50000,y=0,z=0),
                         hasrelation=Table(dock=Table()),
@@ -174,5 +174,3 @@ class StartupHarness(unittest.TestCase):
             r.env=context; context['event']=Table(param=result,param2=success)
             r.actions(r.construction.xpath('//cue[@name="Completed"]/actions')[0])
         finally:r.env=caller
-
-

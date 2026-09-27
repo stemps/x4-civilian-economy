@@ -190,6 +190,10 @@
     </cue>
     <library name="Reconcile">
       <actions>
+        <do_for_each name="$MigrationSector" in="$Registry.keys.list">
+          <set_value name="$R" exact="$Registry.{$MigrationSector}"/>
+          <include_actions ref="MigrateHubOwnership"/>
+        </do_for_each>
         <set_value name="$NextReconcile" exact="player.age + 5min"/>
         <include_actions ref="md.CE_DebugCreate.ReconcileOverrides"/>
         <find_sector name="$PopulationSectors" space="player.galaxy" multiple="true"/>
@@ -199,6 +203,27 @@
         <set_value name="$PopulationRequest" exact="if $PopulationRequest? then $PopulationRequest + 1 else 1"/>
         <set_value name="player.entity.$ce_population_request" exact="[$PopulationRequest,$PopulationSectors]"/>
         <raise_lua_event name="'CEPopulationRequest'"/>
+      </actions>
+    </library>
+    <!-- Registered legacy hubs only; retain their objects and all sector state. -->
+    <library name="MigrateHubOwnership">
+      <actions>
+        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and ($R.$Hub.owner == faction.ownerless or $R.$Hub.owner == faction.civilian)">
+          <do_if value="$R.$Hub.owner == faction.ownerless">
+            <set_owner object="$R.$Hub" faction="faction.civilian" overridenpc="true"/>
+          </do_if>
+          <do_if value="$R.$Hub.tradenpc.exists and $R.$Hub.tradenpc.owner == faction.ownerless">
+            <set_owner object="$R.$Hub.tradenpc" faction="faction.civilian"/>
+          </do_if>
+          <do_if value="$R.$Hub.buildstorage.exists">
+            <do_if value="$R.$Hub.buildstorage.owner == faction.ownerless">
+              <set_owner object="$R.$Hub.buildstorage" faction="faction.civilian" overridenpc="true"/>
+            </do_if>
+            <do_if value="$R.$Hub.buildstorage.tradenpc.exists and $R.$Hub.buildstorage.tradenpc.owner == faction.ownerless">
+              <set_owner object="$R.$Hub.buildstorage.tradenpc" faction="faction.civilian"/>
+            </do_if>
+          </do_if>
+        </do_if>
       </actions>
     </library>
     <library name="ForgetHub">
@@ -403,14 +428,15 @@
         <include_actions ref="CaptureSectorProfile"/>
         <do_if value="$Sector and ($Population ge 100000000 or $Registry.{$Sector}?)">
           <include_actions ref="EnsureRecord"/>
+          <include_actions ref="MigrateHubOwnership"/>
           <include_actions ref="UpdatePopulation"/>
           <include_actions ref="RefreshProfile"/>
           <do_if value="(not $R.$Hub.exists or $R.$Hub.iswreck) and $Population ge 100000000">
             <do_if value="$R.$Hub != null">
               <include_actions ref="ForgetHub"/>
             </do_if>
-            <do_if value="$R.$Definitions? and $R.$Construction.$Valid">
-              <create_station name="$NewHub" macro="macro.ce_civilian_hub_macro" owner="faction.ownerless" sector="$Sector" state="componentstate.operational" rawname="'{974201,1}'" rawdescription="'{974201,2}'" method="default">
+            <do_if value="$R.$Definitions? and $R.$Construction.$Valid and (not $Sector.owner or not $Sector.owner.hasrelation.enemy.{faction.civilian})">
+              <create_station name="$NewHub" macro="macro.ce_civilian_hub_macro" owner="faction.civilian" sector="$Sector" state="componentstate.operational" rawname="'{974201,1}'" rawdescription="'{974201,2}'" method="default">
                 <safepos x="$Sector.coreposition.x + 50km" y="0m" z="$Sector.coreposition.z" radius="20km" includeplotbox="true" allowyaxis="false"/>
               </create_station>
               <do_if value="$NewHub.exists">
@@ -421,13 +447,13 @@
                 <debug_text text="'[CE] Construction site created: %s earned_level=%s generation=%s'.[$NewHub,$R.$Level,$R.$Generation]"/>
               </do_if>
             </do_if>
-            <do_else>
+            <do_elseif value="not $R.$Definitions? or not $R.$Construction.$Valid">
               <set_value name="$ConstructionFailure" exact="'invalid_components'"/>
               <include_actions ref="md.CE_Construction.ReportFailure"/>
-            </do_else>
+            </do_elseif>
           </do_if>
           <set_value name="$Hub" exact="$R.$Hub"/>
-          <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless">
+          <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian">
             <add_to_group groupname="$Hubs" object="$Hub"/>
             <include_actions ref="RenameHub"/>
             <include_actions ref="FundAccounts"/>

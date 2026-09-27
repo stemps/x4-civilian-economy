@@ -9,7 +9,7 @@
           <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
           <do_for_each name="$Sector" in="$Registry.keys.list">
             <set_value name="$R" exact="$Registry.{$Sector}"/>
-            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and event.param3 == $R.$Hub and $R.$DemandEvent? and not @$R.$SnapshotError">
+            <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and event.param3 == $R.$Hub and $R.$DemandEvent? and not @$R.$SnapshotError">
               <do_all exact="12" counter="$DECommandIndex">
                 <set_value name="$DEChosen" exact="$DECommandIndex - 1"/>
                 <set_value name="$DEExpected" exact="'%1:%2'.[$DEChosen,$R.$DemandEvent.$Token]"/>

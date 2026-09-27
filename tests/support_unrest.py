@@ -6,10 +6,10 @@ class UnrestFixture:
     def setUp(self):
         self.run = Runner()
         self.sector = Component(exists=True, isplayerowned=True, knownname='Sector')
-        self.hub = Component(exists=True, iswreck=False, sector=self.sector, owner='ownerless', knownname='Hub')
+        self.hub = Component(exists=True, iswreck=False, sector=self.sector, owner='civilian', knownname='Hub')
         self.r = Table(Level=5, Target=0, Hub=self.hub, Operational=True, PauseOffers=False,
                        Wares=Table(), Categories=Table(), GrowthSeconds=0.0, Last=0.0)
-        self.run.env.update(R=self.r, faction=Table(player='player',ownerless='ownerless',ce_unrest='raiders'))
+        self.run.env.update(R=self.r, faction=Table(player='player',ownerless='ownerless',civilian='civilian',ce_unrest='raiders'))
         self.run.library('md.CE_Unrest.Ensure')
         self.u = self.r.Unrest
         self.messages=[]

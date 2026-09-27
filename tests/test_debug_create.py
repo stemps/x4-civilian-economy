@@ -43,6 +43,16 @@ class DebugCreateTests(StartupHarness):
         self.assertEqual(len(self.hubs), 1)
         self.assertEqual(self.run.env['player'].entity.ce_hub_sectors, [self.sector])
 
+    def test_debug_creation_respects_hostile_owner(self):
+        self.owner.hasrelation=Table(enemy=Table(civilian=True))
+        record=self.request()
+        self.assertFalse(record.Hub.exists)
+        self.assertEqual(len(self.hubs),0)
+        self.owner.hasrelation.enemy.civilian=False
+        self.retry()
+        self.assertTrue(record.Hub.exists)
+        self.assertEqual(record.Hub.owner,'civilian')
+
     def test_invalid_duplicate_and_captured_hub_requests_do_not_mutate(self):
         for target in (NIL, Component(exists=True, isclass=Table(sector=False))):
             self.request(target)
@@ -162,7 +172,7 @@ class DebugCreateTests(StartupHarness):
         record.Hub.owner = 'player'
         self.run.library('md.CE_DebugCreate.Tick')
         self.assertIs(record.DebugInitialHub, NIL)
-        record.Hub.owner = 'ownerless'
+        record.Hub.owner = 'civilian'
         self.complete()
         self.assertEqual(self.raised, [])
         record.DebugInitialHub = Component(exists=True)

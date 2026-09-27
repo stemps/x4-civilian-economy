@@ -7,6 +7,7 @@
       <relations locked="1">
         <relation faction="player" relation="-0.1"/>
         <relation faction="ownerless" relation="0"/>
+        <relation faction="civilian" relation="0"/>
       </relations>
     </faction>
   </add>

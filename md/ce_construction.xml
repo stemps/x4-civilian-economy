@@ -83,7 +83,7 @@
       <actions>
         <set_value name="$Hub" exact="$R.$Hub"/>
         <!-- Recover a lost native build task without generating a different layout. -->
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless and @$R.$TargetSequence and not $R.$Build.exists and $Hub.buildstorage.exists">
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and @$R.$TargetSequence and not $R.$Build.exists and $Hub.buildstorage.exists">
           <set_value name="$CheckSequence" exact="$R.$TargetSequence"/>
           <include_actions ref="md.CE_Construction.CheckReady"/>
           <do_if value="not $SequenceReady and $Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count == 0">
@@ -91,7 +91,7 @@
             <include_actions ref="md.CE_Construction.StartBuild"/>
           </do_if>
         </do_if>
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless and not @$R.$LayoutPending and not $R.$Build.exists and not @$R.$TargetSequence">
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and not @$R.$LayoutPending and not $R.$Build.exists and not @$R.$TargetSequence">
           <set_value name="$Construction" exact="$R.$Construction"/>
           <include_actions ref="md.CE_Construction.ValidateComponents"/>
           <do_if value="$Construction.$Valid and (not @$R.$CompletedSequence or $R.$Target gt 0)">
@@ -146,7 +146,7 @@
             <event_object_construction_sequence_created object="$Station"/>
           </conditions>
           <actions>
-            <do_if value="$R.$Hub == $Station and $Station.exists and not $Station.iswreck and $Station.owner == faction.ownerless and $R.$LayoutToken == $Token and $R.$LayoutPending">
+            <do_if value="$R.$Hub == $Station and $Station.exists and not $Station.iswreck and $Station.owner == faction.civilian and $R.$LayoutToken == $Token and $R.$LayoutPending">
               <set_value name="$Sequence" exact="if event.param2 then event.param else null"/>
               <include_actions ref="md.CE_Construction.Accept"/>
             </do_if>
@@ -232,8 +232,8 @@
         <set_value name="$Ready" exact="false"/>
         <set_value name="$TargetReady" exact="false"/>
         <set_value name="$R.$PauseReason" exact="'hub_unavailable'"/>
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner != faction.ownerless"><set_value name="$R.$PauseReason" exact="'owner_changed'"/></do_if>
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.ownerless">
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner != faction.civilian"><set_value name="$R.$PauseReason" exact="'owner_changed'"/></do_if>
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian">
           <set_value name="$CheckSequence" exact="@$R.$CompletedSequence"/>
           <include_actions ref="md.CE_Construction.CheckReady"/>
           <set_value name="$Ready" exact="$SequenceReady and (not $R.$Population? or $R.$Population gt 0)"/>

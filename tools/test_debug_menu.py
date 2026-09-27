@@ -10,7 +10,7 @@ lua.execute('''
 local nativeffi = require('ffi')
 marked, valid, progress, waiting = true, true, 0, false
 debugEnabled = nil
-occupied, owner = {}, 'ownerless'
+occupied, owner = {}, 'civilian'
 calls, closes = 0, 0
 entries, commands = {}, {}
 status = {42, 1, 0, true, 60, 120, false, true,
@@ -174,7 +174,7 @@ status[17]=5000000000;status[18]=true;status[19]=true
 open();assert(action(140) and action(141))
 events.CEInitialBuildReady(nil,77);assert(calls==before)
 owner='player';events.CEInitialBuildReady(nil,42);assert(calls==before)
-owner='ownerless';status[15]=true;events.CEInitialBuildReady(nil,42);assert(calls==before)
+owner='civilian';status[15]=true;events.CEInitialBuildReady(nil,42);assert(calls==before)
 status[15]=false;status[3]=2;events.CEInitialBuildReady(nil,42);assert(calls==before)
 status[3]=0;progress=-1;events.CEInitialBuildReady(nil,42);assert(calls==before)
 waiting=true;events.CEInitialBuildReady(nil,42);assert(calls==before+1 and commands[#commands]=='initial_complete')

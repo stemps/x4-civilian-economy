@@ -1,5 +1,25 @@
 # Runtime architecture
 
+## Hub ownership and reconstruction
+
+Hubs and their managers belong to `faction.civilian`. The historical
+`CE_OwnerlessHub` script/cue names and construction-plan IDs remain stable for
+saved-game compatibility. `MigrateHubOwnership` transfers registered, live legacy
+ownerless hubs in place, repairing ownerless managers and build storage as needed.
+It runs at the start of `Reconcile` (including game load) and in `ReconcileSector`.
+It does not reset sector records or convert objects owned by other factions.
+
+`ReconcileSector` gates creation, including replacement and debug creation, on the
+sector owner's enemy relation toward civilians. Unowned and non-hostile sectors
+qualify; nearby enemies do not affect eligibility. Existing hubs keep operating
+after hostile conquest. Destruction retains earned progress under the existing
+loss policy; reconstruction resumes when the sector qualifies again. Funding
+continues to use the ownerless faction account. Unrest fleets still switch to
+`ce_unrest`, explicitly neutral toward both civilian and ownerless hubs.
+
+These MD ownership changes require a full restart and save load. Native ownership
+propagation and continuity of an active construction need in-game verification.
+
 ## Localization
 
 `t/0001-l044.xml` is the canonical English source for page 974201. The other
@@ -30,7 +50,7 @@ Each registry record lazily gains `DemandEvent`: ID, signed integer percentage,
 expiry, next eligible start, affected ware list, names, sector and command token.
 It belongs to the sector and survives hub replacement. New records and old saves
 wait 3-6 game hours before the first event. The minute controller selects uniformly
-from applicable events for operational ownerless hubs, with one active event per
+from applicable events for operational civilian hubs, with one active event per
 sector, a two-hour duration and a further 3-6-hour gap. Unavailable baskets do not
 create queued catch-up events. Timers continue while the hub is unavailable.
 
@@ -234,7 +254,7 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_placement.xml` | Current-plot-first layout retries, bounded safe enlargement and empty-shell relocation; internal cue state and retry diagnostics. |
 | `md/ce_construction.xml` | Racial component selection, asynchronous native layout generation, validation, queue recovery and module readiness. |
 | `ui/ce_population.lua` | Native accessible-population reader; no economic state. |
-| `ui/ce_debug_tools.lua` | Optional testing menu with top-level diagnostics and station/construction, ware and unrest subgroups; guarded native force-completion and scoped ownerless interaction fallback. |
+| `ui/ce_debug_tools.lua` | Optional testing menu with top-level diagnostics and station/construction, ware and unrest subgroups; guarded native force-completion and scoped civilian interaction fallback. |
 | `md/ce_debug_wares.xml` | Token-guarded virtual reserve randomization/emptying for active positive-rate wares; settles consumption and refreshes offers and snapshots. |
 | `md/ce_debug_advance.xml` | Validated debug target requests, saved per-hub completion permissions, native-build completion dispatch and token-guarded one-hour growth progress increments. |
 | `md/ce_debug_create.xml` | Sector-targeted debug creation, fixed population/profile selection, and identity-scoped initial-build completion permission. |
@@ -420,7 +440,7 @@ Resolved/saved definitions use three-field rows; reload does not reprice the bas
 ## Racial construction
 
 `CE_Construction.Resolve` queries native `get_module_definition` categories for the
-captured race, without filtering by the ownerless hub faction. It chooses the
+captured race, without filtering by the civilian hub faction. It chooses the
 smallest positive container storage, S/M dock (by combined docking capacity), and
 capital pier (`numpierdocks`). Ties use native enumeration order; saved choices never
 reroll. All racial connection modules become the allowed connector pool.
@@ -714,7 +734,7 @@ no saved-state migration or fixes to the ownership/raid review findings.
 The interaction testing section offers levels 2-10; only targets above an active
 hub's current level are enabled, with no pending expansion. Lua rechecks fresh
 state on click. MD resolves a bounded command list, checks native readiness,
-identity, ownerless ownership and absence of a pending plan/task, then queues the
+identity, civilian ownership and absence of a pending plan/task, then queues the
 chosen cumulative target through CE_Construction. Existing base entry IDs and
 normal layout validation/retries remain in effect; Level is never assigned early.
 
@@ -754,7 +774,7 @@ records have no override and retain the 100M creation threshold.
 `DebugInitialHub` is a saved, exact object identity. The accepted construction
 callback and minute ticks publish a fresh snapshot before `CEInitialBuildReady`.
 The callback explicitly reads the controller registry across the namespace boundary.
-Lua checks current membership, snapshot permission, ownerless ownership and native
+Lua checks current membership, snapshot permission, civilian ownership and native
 build readiness, then invokes ForceBuildCompletion and sends `initial_complete`.
 MD still waits for native module readiness before declaring operation. Completion,
 hub loss, identity mismatch or ownership change revokes permission. Automatic

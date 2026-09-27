@@ -58,7 +58,7 @@
               </do_if>
             </do_for_each>
           </do_if>
-          <set_value name="$R.$Snapshot" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$GrowthSeconds,$RequiredGrowthSeconds,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade,@$R.$Population,@$R.$PauseReason,3,@$R.$ProfileError,false,$Unlocks,@$R.$PopulationOverride,@$R.$DebugFallback,@$R.$DebugInitialHub != null and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and $R.$DebugInitialHub == $R.$Hub and not @$R.$CompletedSequence and $R.$Target == 0]"/>
+          <set_value name="$R.$Snapshot" exact="[$R.$Hub,$R.$Level,$R.$Target,$R.$Operational,$R.$GrowthSeconds,$RequiredGrowthSeconds,$R.$PauseOffers,$R.$PlotReady,$Rows,$R.$TestUpgrade,@$R.$Population,@$R.$PauseReason,3,@$R.$ProfileError,false,$Unlocks,@$R.$PopulationOverride,@$R.$DebugFallback,@$R.$DebugInitialHub != null and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and $R.$DebugInitialHub == $R.$Hub and not @$R.$CompletedSequence and $R.$Target == 0]"/>
           <do_if value="@$R.$SnapshotError">
             <debug_text text="'[CE] Details recovered: %s'.[$R.$Hub]"/>
           </do_if>

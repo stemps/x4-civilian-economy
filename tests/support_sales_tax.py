@@ -15,7 +15,7 @@ class SalesTaxFixture:
                          amount=100, transferredamount=amount, unitprice=price, sellfree=False)
         record.Transfers[deal] = Ware('food')
         run.env.update(R=record, event=Table(param=deal),
-                       faction=Table(ownerless='ownerless', player='player'))
+                       faction=Table(ownerless='ownerless',civilian='civilian', player='player'))
         run.stubs.update(UpdateOffers=lambda: None, PublishDiagnostics=lambda: None,
                          PublishAllDiagnostics=lambda: None)
         payments = []

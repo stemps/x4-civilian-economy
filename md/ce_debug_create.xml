@@ -65,7 +65,7 @@
       <actions>
         <do_if value="@$R.$DebugInitialHub">
           <set_value name="$Hub" exact="$R.$Hub"/>
-          <do_if value="$R.$DebugInitialHub != $Hub or not $Hub.exists or $Hub.iswreck or $Hub.owner != faction.ownerless or @$R.$CompletedSequence or $R.$Target != 0">
+          <do_if value="$R.$DebugInitialHub != $Hub or not $Hub.exists or $Hub.iswreck or $Hub.owner != faction.civilian or @$R.$CompletedSequence or $R.$Target != 0">
             <debug_text text="'[CE] TEST initial completion ended: sector=%s hub=%s'.[$Sector,$R.$DebugInitialHub]"/>
             <include_actions ref="md.CE_DebugCreate.Forget"/>
           </do_if>

@@ -96,7 +96,7 @@
           <include_actions ref="md.CE_Reserves.Accrue"/>
           <set_value name="$DETickChanged" exact="true"/>
         </do_if>
-        <do_if value="$R.$DemandEvent.$ID == 0 and player.age / 1s ge $R.$DemandEvent.$Next and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.ownerless and $R.$Operational and not @$R.$ProfileError">
+        <do_if value="$R.$DemandEvent.$ID == 0 and player.age / 1s ge $R.$DemandEvent.$Next and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and $R.$Operational and not @$R.$ProfileError">
           <include_actions ref="md.CE_DemandEvents.Candidates"/>
           <do_if value="$DECandidates.count gt 0">
             <set_value name="$DEChosen" exact="$DECandidates.random"/>
