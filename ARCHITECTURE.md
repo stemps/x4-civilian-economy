@@ -715,16 +715,26 @@ Do not add tables here without updating and testing the native callback contract
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
 The five hub summary rows are fixed. With no events the ware heading is also
 fixed; otherwise the event list, ware heading and wares scroll together.
-`maxVisibleHeight` caps the single table at 40% of the screen height and
-`getVisibleHeight()` determines its bottom-aligned position. Short lists use only
+Every scrolling row uses `addRow(true, { interactive=false })`, matching vanilla
+informational capacity rows. Native `calculateMinRowHeight` groups a selectable
+row with subsequent unselectable rows; making the entire list unselectable forces
+the whole list to fit and prevents scrolling. Fixed summary rows remain unselectable.
+`maxVisibleHeight` caps the single table at 40% of the screen height, rounded down
+to whole pixels. Bottom placement rounds `getVisibleHeight()` up, rounds the
+resulting y position down, and leaves two extra pixels for native widget rounding.
+Short lists use only
 the height they need. `reserveScrollBar=true` leaves room in the variable-width
 last column. There are no page controls or five-ware limit.
 
 Before native updates rebuild the frame, CE records `GetTopRow` for the same hub
-and restores it through `setTopRow`, clamped when the basket shrinks. Switching
+only when the result is numeric, retaining the previous position if the native
+table is unavailable. Drawing defaults a missing position to the first scrollable
+row and restores it through `setTopRow`, clamped when the basket shrinks. Switching
 hubs, native selection modes or cleanup resets the position. The Lua fixture
 checks header/ware row modes, large and empty lists, viewport bounds at several
-screen heights, scroll restoration and the one-table contract.
+screen heights, scroll restoration and the one-table contract. It also executes
+vanilla's fixed/minimum row-height functions against the mock row measurements
+to catch unscrollable groups exceeding the table cap.
 
 The renderer separates selection/order retention, panel geometry and row access,
 summary widgets and ware headings/rows into local helpers. They all populate the

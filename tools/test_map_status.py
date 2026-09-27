@@ -1,5 +1,6 @@
 """Execute shipped map adapters with LuaJIT and strict table/engine stand-ins."""
 from pathlib import Path
+import os
 from xml.etree import ElementTree as E
 from lupa.luajit21 import LuaRuntime
 
@@ -47,7 +48,7 @@ GetComponentData=function(id,key) assert(key=='name');return 'Hub '..id end
 GetRenderTargetMousePosition=function(id) assert(id==7);if mouse then return 10,10 end end
 override, overrideCalls = nil, 0
 SetMouseOverOverride=function(id,text) assert(id==7);override=text;overrideCalls=overrideCalls+1 end
-GetTopRow=function(id) assert(id==21);return liveTopRow or 7 end
+GetTopRow=function(id) assert(id==21);if missingTable then return nil end;return liveTopRow or 7 end
 DebugError=function() end
 callbacks={}
 RegisterEvent=function(event,fn) callbacks[event]=fn end
@@ -77,7 +78,20 @@ function newFrame()
   function t:setDefaultBackgroundColSpan(a,b) assert(a==1 and b==5) end
   function t:setDefaultCellProperties() end
   function t:setDefaultComplexCellProperties() end
-  function t:getFullHeight() return #self.rows*20 + (self.columns==2 and (leftExtraHeight or 0) or 0) end
+  function t:getRowHeight(index)
+   local r=self.rows[index]
+    local rowHeight=20
+    for _,cell in ipairs(r) do
+     -- Explicit wrapped-cell measurements, not a native font-layout emulator.
+     if cell.properties.wordwrap then rowHeight=math.max(rowHeight,(wrappedRowHeights or {})[index] or 20) end
+    end
+   return rowHeight
+  end
+  function t:getFullHeight()
+   local height=0
+   for index in ipairs(self.rows) do height=height+self:getRowHeight(index) end
+   return height + (self.columns==2 and (leftExtraHeight or 0) or 0)
+  end
   function t:getVisibleHeight() return math.min(self:getFullHeight(),self.properties.maxVisibleHeight or math.huge) end
   function t:setTopRow(row) self.topRow=row end
   function t:addRow(data,props)
@@ -109,6 +123,7 @@ function draw()
  assert(#f.tables==1, 'MapMenu.viewCreated requires exactly one selected table')
  -- Model the native frame validator, including disabled buttons on plain rows.
  for _,t in ipairs(f.tables) do
+  if t.columns==5 then assertNativeTableFits(t) end
   for rowIndex,r in ipairs(t.rows) do
    for colIndex=1,t.columns do
     local cell=r[colIndex]
@@ -124,6 +139,39 @@ function draw()
  return f.tables[1]
 end
 function value(cell) return type(cell.text)=='function' and cell.text() or cell.text end
+'''
+# Execute the actual vanilla sizing functions so the mock cannot silently permit
+# unselectable row groups which X4 refuses to scroll. No game files are modified.
+reference = Path(os.environ.get('X4_REFERENCE', ROOT.parent.parent / 'reference'))
+widget_source = (reference / 'ui/widget/lua/widget_fullscreen.lua').read_text(encoding='utf-8')
+setup += '''
+widgetSystem={}
+local private={scaledSizes={table_borderSize=2,tableRowGroups_borderSize=4}}
+GetTableNumRows=function(t) return #t.rows end
+GetTableRowHeight=function(t,index) return t:getRowHeight(index) end
+'''
+for native_function in ('calculateFixedRowHeight', 'calculateMinRowHeight'):
+    start = widget_source.index('function widgetSystem.' + native_function + '(')
+    end = widget_source.index('\nfunction ', start + 1)
+    setup += widget_source[start:end] + '\n'
+setup += '''
+function assertNativeTableFits(t)
+ local element={numFixedRows=0,unselectableRows={},borderbelowrows={},paddingrows={},rowGroups={}}
+ for i,r in ipairs(t.rows) do
+  if r.properties.fixed then element.numFixedRows=i end
+  if not r.rowdata then element.unselectableRows[i]=true end
+  element.borderbelowrows[i]=r.properties.borderBelow
+  element.paddingrows[i]={top=0,bottom=0}
+ end
+ local fixed=widgetSystem.calculateFixedRowHeight(t,element)
+ local normal=widgetSystem.calculateMinRowHeight(t,element)
+ local minimum=math.max(normal,35)+fixed -- native config.table.minScrollBarHeight
+ local full=t:getFullHeight()
+ local available=t:getVisibleHeight()
+ local scrollbar=available<full and full>minimum
+ local required=scrollbar and minimum or full
+ assert(available>=required, 'Native table minimum height exceeds cap: '..available..' < '..required)
+end
 '''
 lua.execute(setup)
 addon_files = [e.get('name') for e in E.parse(ROOT / 'ui.xml').iter('file')]
@@ -143,7 +191,7 @@ known=false;assert(not M.get(42));known=true
 valid=false;assert(not M.get(42));valid=true
 now=3
 local t=draw();assert(t.columns==5 and t.properties.tabOrder==21 and #t.rows==20)
-assert(t.properties.y==1080-400-2-2-4)
+assert(t.properties.y==1080-400-2-2-4-2)
 assert(value(t.rows[2][1])=='Population 8.52 billion')
 assert(value(t.rows[3][2])=='Level 1 (growing)' and t.rows[3][1].properties.current()==50)
 assert(t.rows[3][2].properties.width==t.rows[3][2]:getWidth())
@@ -280,22 +328,41 @@ assert(draw().columns==5)
 ''')
 # Native scrolling constraints: fixed headers, all wares present, bounded geometry.
 deferred.execute('''
-status[2]=4;status[9]=snapshot(42,40)[9];now=now+1
-for _,height in ipairs({720,1080,1440}) do
+-- Exact reported budget with synthetic row measurements: 573 content / 572 cap.
+status[2]=10;status[9]=snapshot(42,14)[9];now=now+1
+Helper.viewHeight=1430;wrappedRowHeights={[1]=193}
+local boundary=draw()
+assert(boundary:getFullHeight()==573 and boundary:getVisibleHeight()==572)
+status[2]=10;status[9]=snapshot(42,40)[9];now=now+1
+wrappedRowHeights={[1]=41.25,[8]=60.5}
+for _,height in ipairs({720,1080,1081,1432,1440,1513,1513.5}) do
  Helper.viewHeight=height
  local t=draw()
- assert(#t.rows==46 and t.properties.maxVisibleHeight==height*0.4)
- assert(t:getVisibleHeight()==height*0.4)
- assert(t.properties.y==height-height*0.4-8)
+ assert(#t.rows==46 and t.properties.maxVisibleHeight==math.floor(height*0.4))
+ assert(t:getFullHeight()==981.75 and t:getVisibleHeight()==math.floor(height*0.4))
+ assert(t.properties.y%1==0)
+ -- Conservative pixel budget: round space down and required content up.
+ local available=math.floor(height-8-t.properties.y)
+ assert(available>=math.ceil(t:getVisibleHeight())+2)
  for i,r in ipairs(t.rows) do
   assert(r.properties.fixed==(i<=6))
+  assert(r.rowdata==(i>6 and true or nil) and r.properties.interactive==false)
   for col=1,5 do assert(r[col].kind~='button') end
  end
 end
 menu.selectedShipsTable=21;liveTopRow=35;menu.onUpdate()
 local t=draw();assert(t.topRow==35)
+missingTable=true;menu.onUpdate();t=draw();assert(t.topRow==35)
+missingTable=false;liveTopRow=20;menu.onUpdate();t=draw();assert(t.topRow==20)
+missingTable=true
+menu.selectedcomponents={['43']=true};t=draw();menu.onUpdate();assert(draw().topRow==7)
+menu.selectedcomponents={['42']=true};t=draw();menu.onUpdate();assert(draw().topRow==7)
+missingTable=false;liveTopRow=35;menu.onUpdate()
 status[9]=snapshot(42,6)[9];now=now+1;t=draw()
 assert(#t.rows==12 and t.topRow==12 and value(t.rows[12][2])=='Ware 6')
+assert(t:getVisibleHeight()==301.75)
+assert(math.floor(Helper.viewHeight-8-t.properties.y)>=math.ceil(t:getVisibleHeight())+2)
+wrappedRowHeights=nil
 status[9]={};now=now+1;t=draw();assert(#t.rows==7 and t.topRow==7)
 menu.cleanup();t=draw();assert(t.topRow==7)
 ''')

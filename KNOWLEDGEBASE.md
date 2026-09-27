@@ -1674,3 +1674,41 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - VALIDATED: 248 controller tests, `just validate`, `just schema`, `just lua`
   and `just translations` pass. Schema checks report no introduced errors;
   roots without a bundled schema remain outside native XSD coverage.
+
+## 2026-09-27 - map-height-rounding-and-scroll-recovery
+
+- MEASURED: debug.txt at game time 242049.56 rejects a table with 572 pixels
+  available and 573 required. At 242050.30, ce_map_status.lua:180 fails in
+  math.min because the saved top row is nil. A mocked nil GetTopRow result
+  reproduces that exact Lua failure; native table rejection causing the nil
+  return is inferred from the sequence, not separately instrumented.
+- READ: native helper getVisibleHeight caps height without rounding. CE used a
+  fractional 40% cap and tight bottom placement. WITHDRAWN: rounding as the cause
+  of this failure. The same error recurred at 242404.53 after the UI reload;
+  the native scroll-group contract below explains why extra clearance did not help.
+- IMPLEMENTED: floor the cap, ceil visible height before bottom placement,
+  floor y and reserve two extra pixels. Preserve the last numeric scroll position
+  when GetTopRow returns nil; default missing state to the first scrolling row.
+- Tests cover fractional viewports, explicit wrapped-cell heights, level-10
+  scrolling, short lists, missing widgets, recovered widgets and selection resets.
+  These are simulated geometry/lifecycle checks, not native rendering acceptance.
+- Lua-only change: /reloadui suffices. In-game acceptance remains pending.
+- VALIDATED: all three `just lua` suites and `git diff --check` pass.
+
+## 2026-09-27 - native-scrollable-row-boundaries
+
+- READ: widget_fullscreen.lua calculateMinRowHeight requires each selectable row
+  and its following unselectable rows to fit together. Table creation falls back
+  to requiring the full content height when scrolling would not reduce that
+  minimum. CE made every row unselectable, so long ware lists could not scroll.
+- FIXED: each non-fixed row now uses true row data and interactive=false, exactly
+  as vanilla menu_map.addCapacityRow does. Summary rows stay fixed/unselectable;
+  event rows, scrolling headings, wares and empty-state rows have independent
+  scroll boundaries. This adds no buttons or data actions.
+- MEASURED: executing the native fixed/minimum-height functions in the Lua
+  fixture rejects the previous renderer at a 288-pixel cap with 981.75 pixels
+  of content. All three just lua suites pass after the fix, including synthetic
+  573-content/572-cap geometry, concurrent events and missing-widget recovery.
+- The old mock checked geometry but omitted native row grouping. Passing those
+  earlier checks did not establish native scrolling. In-game acceptance of the
+  corrected renderer remains pending; /reloadui suffices.

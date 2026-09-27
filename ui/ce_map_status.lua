@@ -46,7 +46,7 @@ local function createPanel(menu, frame, s)
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
     local border = frame:addFrameBorder('selectedships', {offset=Helper.standardContainerOffset})
     local t=frame:addTable(5,{tabOrder=21,width=width,x=(Helper.viewWidth-width)/2,y=0,
-        scaling=false,reserveScrollBar=true,skipTabChange=true,maxVisibleHeight=Helper.viewHeight*0.4,
+        scaling=false,reserveScrollBar=true,skipTabChange=true,maxVisibleHeight=math.floor(Helper.viewHeight*0.4),
         backgroundID='solid',backgroundColor=Color['frame_background_semitransparent'],
         backgroundPadding=Helper.standardContainerOffset,frameborder=border.id})
     -- MapMenu.viewCreated binds positional widget IDs: this hook MUST add one table.
@@ -61,7 +61,11 @@ local function createPanel(menu, frame, s)
     local rows={}
     local function tableRow(index)
         while #rows<index do
-            rows[#rows+1]=t:addRow(nil,{fixed=#rows<fixedRows,borderBelow=false})
+            local fixed = #rows<fixedRows
+            -- Native scrolling keeps each selectable row and following plain rows
+            -- together. Give each scrolling row its own boundary, as vanilla does
+            -- for informational capacity rows, without making it interactive.
+            rows[#rows+1]=t:addRow(not fixed or nil,{fixed=fixed,interactive=false,borderBelow=false})
         end
         return rows[index]
     end
@@ -177,9 +181,11 @@ local function draw(menu, frame, s)
         panel.row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),
             {wordwrap=true,cellBGColor=panel.background})
     end
-    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(topRow, math.max(panel.fixedRows+1, math.max(1,#order)+6+panel.eventCount))))
-    panel.table.properties.y=Helper.viewHeight-panel.table:getVisibleHeight()-Helper.borderSize
-        -menu.borderOffset-Helper.standardContainerOffset
+    local restoredTopRow = type(topRow) == 'number' and topRow or panel.fixedRows+1
+    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(restoredTopRow, math.max(panel.fixedRows+1, math.max(1,#order)+6+panel.eventCount))))
+    -- Leave two pixels of clearance for native widget rounding at the bottom edge.
+    panel.table.properties.y=math.floor(Helper.viewHeight-math.ceil(panel.table:getVisibleHeight())-Helper.borderSize
+        -menu.borderOffset-Helper.standardContainerOffset-2)
 end
 local function register()
     if registered then return true end
@@ -200,7 +206,8 @@ local function register()
         -- Capture the live scroll position before nativeUpdate may rebuild the frame.
         local before = selection(menu)
         if before and selected == tostring(before.id) and menu.selectedShipsTable and menu.selectedShipsTable ~= 0 then
-            topRow = GetTopRow(menu.selectedShipsTable)
+            local liveTopRow = GetTopRow(menu.selectedShipsTable)
+            if type(liveTopRow) == 'number' then topRow = liveTopRow end
         end
         local result = nativeUpdate(...)
         local s = selection(menu)
