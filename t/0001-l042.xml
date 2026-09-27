@@ -221,14 +221,15 @@
     <t id="332">Události Civilian Economy</t>
     <t id="333">%1: %2. Poptávka po %3 roste o %4% na 2 herní hodiny.</t>
     <t id="334">%1: %2. Poptávka po %3 klesá o %4% na 2 herní hodiny.</t>
-    <t id="335">%1: %2 skončilo. Civilní poptávka je opět normální.</t>
+    <t id="335">%1: Událost %2 skončila. Poptávka po %3 se vrátila do normálu.</t>
     <t id="336">%s: poptávka %s%%; zbývá %s</t>
     <t id="337">Dotčené zboží: %s</t>
     <t id="338">Události</t>
     <t id="339">Spustit %s</t>
-    <t id="340">Ukončit aktuální událost</t>
-    <t id="341">Spustí událost na 2 herní hodiny a nahradí aktuální. Náhodná síla; pouze aktuálně spotřebovávané zboží.</t>
-    <t id="342">Ihned obnoví normální poptávku a zahájí běžné čekání 3-6 herních hodin.</t>
-    <t id="343">Vyžaduje funkční civilní centrum, vhodné odemčené zboží a aktuální údaje o stavu.</t>
+    <t id="340">Ukončit všechny události</t>
+    <t id="341">Spustit na 2 herní hodiny souběžně se slučitelnými událostmi. Náhodná intenzita, pouze již spotřebovávané zboží.</t>
+    <t id="342">Ukončit vybrané události a obnovit poptávku po jejich zboží. Ostatní události zůstanou aktivní. Bez čekací doby.</t>
+    <t id="343">Vyžaduje funkční civilní uzel, vhodné odemčené zboží a aktuální údaje. Žádná aktivní událost nesmí ovlivňovat stejné zboží.</t>
+    <t id="344">Ukončit %s</t>
   </page>
 </language>

@@ -221,14 +221,15 @@
     <t id="332">Événements Civilian Economy</t>
     <t id="333">%1 : %2. La demande de %3 augmente de %4% pendant 2 heures de jeu.</t>
     <t id="334">%1 : %2. La demande de %3 diminue de %4% pendant 2 heures de jeu.</t>
-    <t id="335">%1 : %2 est terminé. La demande civile est revenue à la normale.</t>
+    <t id="335">%1 : %2 est terminé. La demande de %3 est revenue à la normale.</t>
     <t id="336">%s : demande %s%% ; reste %s</t>
     <t id="337">Marchandises concernées : %s</t>
     <t id="338">Événements</t>
     <t id="339">Déclencher %s</t>
-    <t id="340">Terminer l'événement actuel</t>
-    <t id="341">Lance cet événement pour 2 heures de jeu, remplaçant l'événement actuel. Intensité aléatoire ; uniquement les marchandises actuellement consommées.</t>
-    <t id="342">Rétablit immédiatement la demande normale et commence l'attente habituelle de 3-6 heures de jeu.</t>
-    <t id="343">Nécessite un centre civil opérationnel, des marchandises débloquées applicables et des données d'état actuelles.</t>
+    <t id="340">Terminer tous les événements</t>
+    <t id="341">Lancer pour 2 heures de jeu aux côtés des événements compatibles. Intensité aléatoire, uniquement pour les marchandises déjà consommées.</t>
+    <t id="342">Terminer les événements sélectionnés et rétablir la demande de leurs marchandises. Les autres événements restent actifs. Aucun délai imposé.</t>
+    <t id="343">Nécessite un centre civil opérationnel, des marchandises adaptées débloquées et des données à jour. Aucun événement actif ne doit affecter les mêmes marchandises.</t>
+    <t id="344">Terminer %s</t>
   </page>
 </language>

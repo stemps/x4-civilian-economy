@@ -46,45 +46,63 @@ entries. `CE_DebugEvents` accepts token-guarded hub requests from the Events gro
 in the existing debug interaction menu. Event mechanics never change faction laws,
 police behaviour or native production.
 
-Each registry record lazily gains `DemandEvent`: ID, signed integer percentage,
-expiry, next eligible start, affected ware list, names, sector and command token.
-It belongs to the sector and survives hub replacement. New records and old saves
-wait 3-6 game hours before the first event. The minute controller selects uniformly
-from applicable events for operational civilian hubs, with one active event per
-sector, a two-hour duration and a further 3-6-hour gap. Unavailable baskets do not
-create queued catch-up events. Timers continue while the hub is unavailable.
+Each registry record lazily gains version-2 `DemandEvents`, containing an `Active`
+table keyed by event ID, sector identity and a command token. Each active entry
+holds its ID, signed percentage, expiry, frozen affected ware list and ware names.
+Migration copies an old `DemandEvent` without changing its deadline or replaying
+its start, advances the token and removes the obsolete single-event state and
+cooldown. Accrual, demand preparation and diagnostics can migrate before the
+first minute tick. Repeated migration preserves the new collection.
 
-Candidates use committed active positive-rate wares and racial categories. Water,
-medicine and energy are excluded from staple foods; festivals use imported foods
-and drugs. Industrial events use refined metals, silicon wafers, advanced
-composites, metallic microlattice and silicon carbide. Tech Boom uses microchips,
-advanced electronics and computronic substrate. Missing and locked goods stay out.
-The selected ware list is frozen for the event, so later level unlocks do not join
-it. Increased demand rolls +25-100%; reductions roll -25-50%, once per event.
+Candidates use active positive-rate wares and racial categories. Water, medicine
+and energy are excluded from staples; festivals use imported foods and drugs.
+Industrial events use refined metals, silicon wafers, advanced composites,
+metallic microlattice and silicon carbide. Tech Boom uses microchips, advanced
+electronics and computronic substrate. Locked goods stay out, and new level
+unlocks do not join an already active event's frozen basket. Start rejects any
+ware intersection with another event, including partial overlaps and duplicates.
 
-`CE_Demand.PrepareRates` composes the event multiplier with baseline definition,
-level, population and settings scaling. `CE_Reserves.Accrue` splits updates at an
-expired event's deadline using `AccrueInterval`; unrest receives the same endpoint
-through its interval entry points. Expiry recomputes normal rates and restores the
-accrual boundary after rate commit rebases the clock, then consumes the remaining
-interval normally. Inventory, offers and in-flight deals retain their identities.
-Non-operational clock rebases cannot cause backward accrual. Notification delivery
-can wait until the next minute tick, but consumption does not extend the event.
+The minute controller rolls independently for each unoccupied applicable group:
+staples, water, medicine, energy, technology, industrial materials, exotic
+foods/drugs. With K applicable groups, including occupied ones, a group's chance
+is `1 / (120 * (K - 1) + 1)` per game minute; it then chooses uniformly among that
+group's compatible events. The renewal calculation includes 120 active minute
+intervals and geometric idle failures, targeting one active event per sector.
+There are no initial delays, post-event cooldowns or missed-roll catch-up. K=1
+runs consecutive events; K=0 starts none. Natural starts require an operational
+civilian-faction hub. Positive effects roll +25-100%; reductions roll -25-50%,
+once per event. Debug interventions and changing eligibility are outside the
+long-run average. Timers continue while the hub is unavailable.
 
-Snapshot v3 slot 21 is optional:
-`[eventID, signedPercent, remainingSeconds, wareNames, eligibleIDs, commandToken]`.
-ID zero means no active event. The UI decoder tolerates absent or invalid event
-data. Stale snapshots retain the previous event for display but cannot authorize
-debug commands. The map inserts one fixed event row above the ware heading only
-while an event is active, retaining its single-table layout and scroll bounds.
-Debug commands use `CEEventTesting` with `eventID:token` and hub identity; ID zero
-ends the current event. MD rechecks debug mode, ownership, identity and applicability.
-Triggering replaces any current event using ordinary end/start notifications;
-ending early begins the normal waiting period. Timing gates alone are bypassed.
+`CE_Demand.PrepareRates` combines the applicable event with baseline definition,
+level, population and settings scaling. `CE_Reserves.Accrue` finds successive
+expiry deadlines, accrues reserves and unrest to each boundary, removes all
+simultaneous expiries, and recomputes rates once per batch. It restores `Last`
+after rate commit rebases the clock, then consumes the remaining interval.
+Non-operational rebases cannot move accrual backward. Offers, deals and inventory
+retain their identities. End notifications identify only the restored goods;
+other events may still be active. Tickers can wait for the next minute tick.
 
-Regression coverage executes the shipped MD actions and Lua event menu/panel code.
-Native ticker display, map layout and save serialization still need in-game
-acceptance. Installing these MD changes requires a full game restart.
+Snapshot v3 optional slot 21 is `[2, eventRows, eligibleIDs, commandToken]`, with
+rows `[eventID, signedPercent, remainingSeconds, wareNames]` ordered by ID. The
+UI also accepts the legacy six-field single-event payload for display, but only
+the new format authorizes debug commands. Stale snapshots retain event display
+and cannot authorize commands. With active events, the map fixes only its five
+hub summary rows; events, ware heading and wares scroll in the same table. With
+no events the ware heading remains the sixth fixed row. Changing the event list
+returns the viewport to its first scrollable row.
+
+Debug commands use `CEEventTesting`, `start:ID:token` or `end:ID:token` and hub
+identity; `end:0:token` ends all events. Triggers add compatible events and never
+replace an existing one. MD rechecks debug mode, snapshot health, ownership,
+identity and ware conflicts. End actions work even when the hub is temporarily
+non-operational, and create no cooldown. Separate notifications use the removed
+event's preserved entry while all remaining modifiers continue.
+
+Regression coverage executes shipped MD actions and Lua menu/panel code, plus a
+seeded renewal simulation using the shipped group denominator and event duration.
+Native rendering, ticker timing and save serialization still require in-game
+acceptance. Installing these MD/text changes requires a full game restart.
 
 ## Release tooling
 
@@ -694,8 +712,8 @@ rows above the ware heading. Ware rows cannot inherit the summary's wrapped heig
 The three visual ware columns still use a bar anchor plus name/time text cells.
 Do not add tables here without updating and testing the native callback contract.
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
-The summary and ware-heading rows (1-6, or 1-7 with an active demand event) are
-fixed; all ware rows scroll.
+The five hub summary rows are fixed. With no events the ware heading is also
+fixed; otherwise the event list, ware heading and wares scroll together.
 `maxVisibleHeight` caps the single table at 40% of the screen height and
 `getVisibleHeight()` determines its bottom-aligned position. Short lists use only
 the height they need. `reserveScrollBar=true` leaves room in the variable-width

@@ -221,14 +221,15 @@
     <t id="332">Eventos de Civilian Economy</t>
     <t id="333">%1: %2. Demanda de %3 aumenta em %4% por 2 horas de jogo.</t>
     <t id="334">%1: %2. Demanda de %3 diminui em %4% por 2 horas de jogo.</t>
-    <t id="335">%1: %2 terminou. A demanda civil voltou ao normal.</t>
+    <t id="335">%1: %2 terminou. A demanda por %3 voltou ao normal.</t>
     <t id="336">%s: demanda %s%%; restam %s</t>
     <t id="337">Mercadorias afetadas: %s</t>
     <t id="338">Eventos</t>
     <t id="339">Disparar %s</t>
-    <t id="340">Encerrar evento atual</t>
-    <t id="341">Inicia o evento por 2 horas de jogo, substituindo o atual. Intensidade aleatória; apenas mercadorias consumidas atualmente.</t>
-    <t id="342">Restaura a demanda normal imediatamente e inicia a espera normal de 3-6 horas de jogo.</t>
-    <t id="343">Exige centro civil operacional com mercadorias desbloqueadas aplicáveis e dados de estado atuais.</t>
+    <t id="340">Encerrar todos os eventos</t>
+    <t id="341">Iniciar por 2 horas de jogo junto a eventos compatíveis. Intensidade aleatória, apenas mercadorias já consumidas.</t>
+    <t id="342">Encerrar os eventos selecionados e restaurar a demanda por suas mercadorias. Os outros eventos continuam ativos. Sem tempo de espera.</t>
+    <t id="343">Requer um centro civil operacional, mercadorias adequadas desbloqueadas e dados atuais. Nenhum evento ativo pode afetar as mesmas mercadorias.</t>
+    <t id="344">Encerrar %s</t>
   </page>
 </language>

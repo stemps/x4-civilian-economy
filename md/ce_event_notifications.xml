@@ -3,22 +3,22 @@
   <cues>
     <library name="Start">
       <actions>
-        <set_value name="$DETitle" exact="readtext.{974201}.{320 + $R.$DemandEvent.$ID}"/>
-        <set_value name="$DEText" exact="if $R.$DemandEvent.$Percent gt 0 then {974201,333}.[$R.$DemandEvent.$Sector.knownname,$DETitle,$R.$DemandEvent.$Names,$R.$DemandEvent.$Percent] else {974201,334}.[$R.$DemandEvent.$Sector.knownname,$DETitle,$R.$DemandEvent.$Names,-$R.$DemandEvent.$Percent]"/>
+        <set_value name="$DETitle" exact="readtext.{974201}.{320 + $DEEvent.$ID}"/>
+        <set_value name="$DEText" exact="if $DEEvent.$Percent gt 0 then {974201,333}.[$R.$DemandEvents.$Sector.knownname,$DETitle,$DEEvent.$Names,$DEEvent.$Percent] else {974201,334}.[$R.$DemandEvents.$Sector.knownname,$DETitle,$DEEvent.$Names,-$DEEvent.$Percent]"/>
         <include_actions ref="md.CE_EventNotifications.Show"/>
       </actions>
     </library>
     <library name="End">
       <actions>
-        <set_value name="$DETitle" exact="readtext.{974201}.{320 + $R.$DemandEvent.$ID}"/>
-        <set_value name="$DEText" exact="{974201,335}.[$R.$DemandEvent.$Sector.knownname,$DETitle]"/>
+        <set_value name="$DETitle" exact="readtext.{974201}.{320 + $DEEvent.$ID}"/>
+        <set_value name="$DEText" exact="{974201,335}.[$R.$DemandEvents.$Sector.knownname,$DETitle,$DEEvent.$Names]"/>
         <include_actions ref="md.CE_EventNotifications.Show"/>
       </actions>
     </library>
     <library name="Show">
       <actions>
         <show_notification text="$DEText" timeout="8s"/>
-        <write_to_logbook category="general" title="{974201,332}" text="$DEText" object="$R.$DemandEvent.$Sector" interaction="showonmap"/>
+        <write_to_logbook category="general" title="{974201,332}" text="$DEText" object="$R.$DemandEvents.$Sector" interaction="showonmap"/>
       </actions>
     </library>
   </cues>

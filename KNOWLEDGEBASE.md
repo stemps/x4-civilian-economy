@@ -1534,6 +1534,8 @@ implemented or runtime-tested CE rewards:
 
 ## 2026-09-27 - temporary sector demand events
 
+Historical single-event model; superseded by concurrent-sector-events below.
+
 - IMPLEMENTED: eleven events modify only a sector hub's existing consumption.
   Events last 7200 game seconds, with independent 10800-21600-second gaps, including
   the first event after initialization. Positive effects roll +25-100%; bumper
@@ -1626,3 +1628,32 @@ implemented or runtime-tested CE rewards:
   paint changed from Grey Steel (`paintmod_0018`) to Black Steel (`paintmod_0017`,
   vanilla ware name `{20114,10171}`). Existing ships retain their paint; restart
   and spawn a new raid to compare. The new appearance is not yet user-verified.
+
+## 2026-09-27 - concurrent-sector-events
+
+- IMPLEMENTED: `DemandEvents` version 2 holds an ID-keyed active collection and
+  one command token. Migration retains the old event's exact deadline, strength
+  and ware list without announcing its start; the old cooldown is discarded.
+- Same-ware intersection, not merely event names or group identity, prevents
+  conflicts. Frozen baskets remain authoritative after upgrades. Ending one
+  event normalizes only its goods and retains all unrelated modifiers.
+- Minute rolls use seven demand groups. With K applicable groups including
+  occupied ones, each unoccupied group rolls 1/[120*(K-1)+1]. The +1 accounts for
+  immediate success on the expiry tick; omitting it biases the renewal average.
+  No cooldown or catch-up exists. A single available group runs consecutively.
+- MEASURED in seeded simulation, not the game: group counts 2-7 average within
+  5% of one active event, with both quiet periods and concurrency. Tests derive
+  the denominator and duration from shipped MD actions. Debug starts and changes
+  in eligibility are excluded from this equilibrium claim.
+- Expiry accrual processes chronological deadlines, removes equal-time events
+  together and recomputes rates once per boundary. Restore `Last` after rate
+  commit before accruing the tail; otherwise late updates lose elapsed demand.
+- Snapshot v3 slot 21 now carries `[2, rows, eligibleIDs, token]`. Legacy payloads
+  remain displayable but cannot authorize the new start/end debug protocol.
+  The map retains one table; multiple events scroll instead of becoming fixed
+  rows that could crowd out goods at small resolutions.
+- Native save migration, ticker presentation and panel rendering still need
+  in-game acceptance. Full restart required for the MD and localization changes.
+- VALIDATED: 248 controller tests, `just validate`, `just schema`, `just lua`
+  and `just translations` pass. Schema checks report no introduced errors;
+  roots without a bundled schema remain outside native XSD coverage.

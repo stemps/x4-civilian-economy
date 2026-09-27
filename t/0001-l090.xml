@@ -221,14 +221,15 @@
     <t id="332">Civilian Economy Olayları</t>
     <t id="333">%1: %2. %3 talebi 2 oyun saati boyunca %4% artar.</t>
     <t id="334">%1: %2. %3 talebi 2 oyun saati boyunca %4% azalır.</t>
-    <t id="335">%1: %2 bitti. Sivil talep normale döndü.</t>
+    <t id="335">%1: %2 sona erdi. %3 talebi normale döndü.</t>
     <t id="336">%s: talep %s%%; kalan %s</t>
     <t id="337">Etkilenen mallar: %s</t>
     <t id="338">Olaylar</t>
     <t id="339">%s tetikle</t>
-    <t id="340">Mevcut olayı bitir</t>
-    <t id="341">Mevcut olayın yerine 2 oyun saatlik olay başlatır. Rastgele şiddet; yalnızca şu an tüketilen mallar.</t>
-    <t id="342">Normal talebi hemen geri getirir ve olağan 3-6 oyun saatlik beklemeyi başlatır.</t>
-    <t id="343">Uygun açılmış malları ve güncel durum verileri olan çalışır sivil merkez gerektirir.</t>
+    <t id="340">Tüm olayları bitir</t>
+    <t id="341">Uyumlu olaylarla birlikte 2 oyun saati boyunca başlat. Rastgele etki düzeyi kullanır ve yalnızca mevcut tüketim mallarını etkiler.</t>
+    <t id="342">Seçili olayları bitir ve etkiledikleri malların talebini normale döndür. Diğer olaylar sürer. Bekleme süresi uygulanmaz.</t>
+    <t id="343">Çalışan bir sivil merkez, uygun kilidi açılmış mallar ve güncel durum bilgisi gerektirir. Aynı malları etkileyen etkin bir olay bulunmamalıdır.</t>
+    <t id="344">%s olayını bitir</t>
   </page>
 </language>

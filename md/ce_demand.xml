@@ -60,6 +60,7 @@
     </library>
     <library name="PrepareRates">
       <actions>
+        <do_if value="$R.$DemandEvent?"><include_actions ref="md.CE_DemandEvents.Ensure"/></do_if>
         <include_actions ref="md.CE_Settings.Read"/>
         <set_value name="$CandidateStage" exact="'rates'"/>
         <set_value name="$CandidateRates" exact="[]"/>
@@ -79,8 +80,13 @@
             <do_all exact="$R.$Level - $Definition.{2}">
               <set_value name="$Rate" exact="$Rate * 1.25f"/>
             </do_all>
-            <do_if value="$R.$DemandEvent? and $R.$DemandEvent.$ID gt 0 and $R.$DemandEvent.$Wares.indexof.{$Ware}">
-              <set_value name="$Rate" exact="$Rate * (100 + $R.$DemandEvent.$Percent) / 100.0f"/>
+            <do_if value="$R.$DemandEvents?">
+              <do_for_each name="$DEModID" in="$R.$DemandEvents.$Active.keys.list">
+                <do_if value="$R.$DemandEvents.$Active.{$DEModID}.$Wares.indexof.{$Ware}">
+                  <set_value name="$Rate" exact="$Rate * (100 + $R.$DemandEvents.$Active.{$DEModID}.$Percent) / 100.0f"/>
+                  <break/>
+                </do_if>
+              </do_for_each>
             </do_if>
             <do_if value="not ($Rate ge 0 and $Rate le 1000000000000.0f)">
               <set_value name="$CandidateValid" exact="false"/>

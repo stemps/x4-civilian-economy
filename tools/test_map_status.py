@@ -323,7 +323,7 @@ for _,height in ipairs({720,1080,1440}) do
  assert(t.rows[6][1].properties.wordwrap)
  assert(t.rows[6][1].properties.mouseOverText():find('Long material name',1,true))
  assert(value(t.rows[5][1]):find('Critical',1,true))
- for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=7)) end
+ for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=5)) end
  assert(t:getVisibleHeight()==height*0.4)
 end
 status[21][2]=-50;status[21][1]=9;now=now+1
@@ -337,7 +337,39 @@ status[21]={0,0,0,'',{},8};now=now+1
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
 t=draw();assert(#t.rows==46 and value(t.rows[6][5])=='Buying')
 status[21]={99,50,100,'bad',{},9};now=now+1
-assert(not CEHubStatus.getFresh(42).demandEvent)
+assert(not CEHubStatus.getFresh(42).demandEvents)
 status[21]=nil;now=now+1;assert(draw().columns==5)
 ''')
 print('Demand events: optional snapshots, summary row, warnings, long text and scrolling passed')
+
+# Versioned multi-event payloads: stable ID order, independently live cells and scrollable rows.
+deferred.execute('''
+status[21]={2,{{8,75,7200,'Metals'},{3,50,5400,'Water'},{1,-25,3600,'Food'}},{5},10}
+now=now+1
+local t=draw()
+assert(#t.rows==49 and t.topRow==6)
+assert(value(t.rows[6][1]):find('Lost Harvest',1,true))
+assert(value(t.rows[7][1]):find('Drought',1,true))
+assert(value(t.rows[8][1]):find('Industrial Boom',1,true))
+assert(value(t.rows[9][5])=='Buying' and value(t.rows[10][2])=='Ware 1')
+for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=5)) end
+status[21][2][2][3]=4800;now=now+1
+assert(value(t.rows[7][1]):find('1h 20m',1,true))
+menu.selectedShipsTable=21;liveTopRow=25;menu.onUpdate();t=draw();assert(t.topRow==25)
+status[21][2]={};for _,id in ipairs({1,3,4,5,6,7,8}) do
+ status[21][2][#status[21][2]+1]={id,50,3600,string.rep('Long affected goods ',20)}
+end
+for _,height in ipairs({720,1080,1440}) do
+ Helper.viewHeight=height;now=now+1;t=draw()
+ assert(#t.rows==53 and t:getVisibleHeight()==height*0.4)
+ for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=5)) end
+ assert(value(t.rows[13][5])=='Buying')
+end
+status[21][2]={{3,50,600,'Water'}};now=now+1
+menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
+t=draw();assert(#t.rows==47 and t.topRow==6)
+status[21][2]={{3,50,600,'Water'},{3,50,600,'Water'}};now=now+1
+assert(not CEHubStatus.getFresh(42).demandEvents)
+status[21]={2,{}, {},12};now=now+1;t=draw();assert(#t.rows==46 and t.topRow==7)
+''')
+print('Concurrent events: old/new decoding, ID ordering, individual timers, seven scrollable events and debug actions passed')

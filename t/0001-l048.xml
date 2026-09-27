@@ -221,14 +221,15 @@
     <t id="332">Wydarzenia Civilian Economy</t>
     <t id="333">%1: %2. Popyt na %3 wzrasta o %4% na 2 godziny gry.</t>
     <t id="334">%1: %2. Popyt na %3 spada o %4% na 2 godziny gry.</t>
-    <t id="335">%1: %2 zakończone. Popyt cywilny wrócił do normy.</t>
+    <t id="335">%1: Wydarzenie %2 zakończyło się. Popyt na %3 wrócił do normy.</t>
     <t id="336">%s: popyt %s%%; pozostało %s</t>
     <t id="337">Dotknięte towary: %s</t>
     <t id="338">Wydarzenia</t>
     <t id="339">Wywołaj %s</t>
-    <t id="340">Zakończ bieżące wydarzenie</t>
-    <t id="341">Rozpoczyna wydarzenie na 2 godziny gry, zastępując bieżące. Losowa siła; tylko obecnie zużywane towary.</t>
-    <t id="342">Natychmiast przywraca zwykły popyt i rozpoczyna normalne oczekiwanie 3-6 godzin gry.</t>
-    <t id="343">Wymaga sprawnego centrum cywilnego, odpowiednich odblokowanych towarów i aktualnych danych stanu.</t>
+    <t id="340">Zakończ wszystkie wydarzenia</t>
+    <t id="341">Rozpocznij na 2 godziny gry obok zgodnych wydarzeń. Losowa siła, tylko towary już zużywane.</t>
+    <t id="342">Zakończ wybrane wydarzenia i przywróć popyt na ich towary. Pozostałe wydarzenia pozostają aktywne. Bez czasu oczekiwania.</t>
+    <t id="343">Wymaga działającego centrum cywilnego, odpowiednich odblokowanych towarów i aktualnych danych. Aktywne wydarzenie nie może wpływać na te same towary.</t>
+    <t id="344">Zakończ %s</t>
   </page>
 </language>

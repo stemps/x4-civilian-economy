@@ -221,14 +221,15 @@
     <t id="332">Civilian Economy - Ereignisse</t>
     <t id="333">%1: %2. Bedarf an %3 steigt für 2 Spielstunden um %4%.</t>
     <t id="334">%1: %2. Bedarf an %3 sinkt für 2 Spielstunden um %4%.</t>
-    <t id="335">%1: %2 beendet. Ziviler Bedarf wieder normal.</t>
+    <t id="335">%1: %2 ist beendet. Die Nachfrage nach %3 ist wieder normal.</t>
     <t id="336">%s: Bedarf %s%%; noch %s</t>
     <t id="337">Betroffene Waren: %s</t>
     <t id="338">Ereignisse</t>
     <t id="339">%s auslösen</t>
-    <t id="340">Aktuelles Ereignis beenden</t>
-    <t id="341">Startet dieses Ereignis für 2 Spielstunden und ersetzt das laufende Ereignis. Zufällige Stärke; betrifft nur aktuell verbrauchte Waren.</t>
-    <t id="342">Stellt den normalen Bedarf sofort wieder her und startet die normale Wartezeit von 3-6 Spielstunden.</t>
-    <t id="343">Benötigt ein betriebsbereites ziviles Zentrum mit passenden freigeschalteten Waren und aktuellen Statusdaten.</t>
+    <t id="340">Alle Ereignisse beenden</t>
+    <t id="341">Für 2 Spielstunden zusätzlich zu vereinbaren Ereignissen starten. Zufällige Stärke; betrifft nur bereits verbrauchte Waren.</t>
+    <t id="342">Die ausgewählten Ereignisse beenden und die Nachfrage nach ihren Waren normalisieren. Andere Ereignisse bleiben aktiv. Keine Wartezeit.</t>
+    <t id="343">Erfordert ein betriebsbereites ziviles Zentrum, passende freigeschaltete Waren und aktuelle Statusdaten. Kein aktives Ereignis darf dieselben Waren beeinflussen.</t>
+    <t id="344">%s beenden</t>
   </page>
 </language>

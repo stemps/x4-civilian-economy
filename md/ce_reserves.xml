@@ -29,15 +29,22 @@
     </library>
     <library name="Accrue">
       <actions>
-        <!-- Never charge an expired modifier to the tail of a delayed update. -->
-        <do_if value="$R.$DemandEvent? and $R.$DemandEvent.$ID gt 0 and player.age / 1s ge $R.$DemandEvent.$End">
-          <set_value name="$DEBoundary" exact="[$R.$Last,$R.$DemandEvent.$End].max"/>
+        <do_if value="$R.$DemandEvent?"><include_actions ref="md.CE_DemandEvents.Ensure"/></do_if>
+        <include_actions ref="md.CE_DemandEvents.NextExpiry"/>
+        <do_while value="$DEDeadline ge 0 and player.age / 1s ge $DEDeadline">
+          <set_value name="$DEBoundary" exact="[$R.$Last,$DEDeadline].max"/>
           <set_value name="$ReserveNow" exact="$DEBoundary"/>
           <include_actions ref="md.CE_Reserves.AccrueInterval"/>
-          <include_actions ref="md.CE_DemandEvents.End"/>
-          <!-- Rate commit rebases to now. Restore the boundary for the normal-rate tail. -->
+          <!-- Remove all events at this deadline, then commit rates only once. -->
+          <do_for_each name="$DEEndKey" in="$R.$DemandEvents.$Active.keys.list">
+            <do_if value="$R.$DemandEvents.$Active.{$DEEndKey}.$End le $DEDeadline">
+              <include_actions ref="md.CE_DemandEvents.Remove"/>
+            </do_if>
+          </do_for_each>
+          <include_actions ref="md.CE_Demand.ApplyLevel"/>
           <set_value name="$R.$Last" exact="$DEBoundary"/>
-        </do_if>
+          <include_actions ref="md.CE_DemandEvents.NextExpiry"/>
+        </do_while>
         <set_value name="$ReserveNow" exact="player.age / 1s"/>
         <include_actions ref="md.CE_Reserves.AccrueInterval"/>
       </actions>

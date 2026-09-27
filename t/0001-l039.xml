@@ -221,14 +221,15 @@
     <t id="332">Eventi Civilian Economy</t>
     <t id="333">%1: %2. La domanda di %3 aumenta del %4% per 2 ore di gioco.</t>
     <t id="334">%1: %2. La domanda di %3 diminuisce del %4% per 2 ore di gioco.</t>
-    <t id="335">%1: %2 è terminato. La domanda civile è tornata normale.</t>
+    <t id="335">%1: %2 è terminato. La domanda di %3 è tornata alla normalità.</t>
     <t id="336">%s: domanda %s%%; resta %s</t>
     <t id="337">Merci interessate: %s</t>
     <t id="338">Eventi</t>
     <t id="339">Attiva %s</t>
-    <t id="340">Termina evento attuale</t>
-    <t id="341">Avvia l'evento per 2 ore di gioco, sostituendo quello attuale. Intensità casuale; solo merci attualmente consumate.</t>
-    <t id="342">Ripristina subito la domanda normale e avvia l'attesa normale di 3-6 ore di gioco.</t>
-    <t id="343">Richiede un centro civile operativo, merci sbloccate applicabili e dati di stato attuali.</t>
+    <t id="340">Termina tutti gli eventi</t>
+    <t id="341">Avvia per 2 ore di gioco insieme agli eventi compatibili. Intensità casuale, solo merci già consumate.</t>
+    <t id="342">Termina gli eventi selezionati e ripristina la domanda delle loro merci. Gli altri eventi restano attivi. Nessun tempo di attesa.</t>
+    <t id="343">Richiede un centro civile operativo, merci adatte sbloccate e dati aggiornati. Nessun evento attivo deve influenzare le stesse merci.</t>
+    <t id="344">Termina %s</t>
   </page>
 </language>

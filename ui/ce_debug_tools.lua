@@ -127,26 +127,30 @@ local function buildActions()
             end
         end
     end
-    if s and s.demandEvent then
+    if s and s.demandEvents and s.demandEvents.version == 2 then
         actionSection = section .. '_events'
         menu.insertInteractionGroup(section, actionSection, text(338))
-        local token = s.demandEvent.token
-        local function eligible(eventID)
+        local token = s.demandEvents.token
+        local function eligible(mode, eventID)
             local fresh = statusFor(id)
-            local e = fresh and fresh.demandEvent
-            if not fresh or fresh.stale or not e or e.token ~= token then return false end
-            if eventID == 0 then return e.id > 0 end
+            local e = fresh and fresh.demandEvents
+            if not fresh or fresh.stale or not e or e.version ~= 2 or e.token ~= token then return false end
+            if mode == 'end' then return eventID == 0 and #e.events > 0 or M.event(fresh,eventID) ~= nil end
             if not fresh.active or fresh.profileError then return false end
             for _, candidate in ipairs(e.eligible) do if candidate == eventID then return true end end
             return false
         end
-        for index=0,11 do
-            local eventID = index
-            action(eventID == 0 and text(340) or text(339, text(320 + eventID)),
-                function() return eligible(eventID) end,
-                function()
-                    AddUITriggeredEvent('CEEventTesting', string.format('%d:%d', eventID, token), ConvertStringToLuaID(tostring(id)))
-                end, text(eventID == 0 and 342 or (eligible(eventID) and 341 or 343)))
+        local function eventAction(mode, eventID, label, hint)
+            action(label, function() return eligible(mode,eventID) end, function()
+                AddUITriggeredEvent('CEEventTesting', string.format('%s:%d:%d', mode,eventID,token), ConvertStringToLuaID(tostring(id)))
+            end, hint)
+        end
+        eventAction('end',0,text(340),text(342))
+        for _, e in ipairs(s.demandEvents.events) do
+            eventAction('end',e.id,text(344,text(320+e.id)),text(342))
+        end
+        for eventID=1,11 do
+            eventAction('start',eventID,text(339,text(320+eventID)),text(eligible('start',eventID) and 341 or 343))
         end
     end
     if s and s.unrest and s.unrest.token then

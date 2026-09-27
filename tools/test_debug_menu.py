@@ -219,26 +219,30 @@ progressAction.script();assert(#commands==count)
 ''')
 lua.execute('''
 status[3]=0;status[4]=true;status[14]=false;status[15]=false
-status[21]={1,50,7200,'Food',{1,2},12}
+status[21]={2,{{1,50,7200,'Food'},{3,25,6000,'Water'}},{5,6,7},12}
 open();assert(groups.actions_ce_debug_events.text==translations[338])
-local function trigger(id)
- local label=string.format(translations[339],translations[320+id])
+local function eventAction(template,id)
+ local label=string.format(translations[template],translations[320+id])
  for _,e in ipairs(entries) do if e.text==label then return e end end
  error('missing event '..id)
 end
-assert(action(340).active)
-for i=1,11 do assert(trigger(i).active==(i<=2)) end
+local function trigger(id) return eventAction(339,id) end
+assert(action(340).active and eventAction(344,1).active and eventAction(344,3).active)
+for i=1,11 do assert(trigger(i).active==(i>=5 and i<=7)) end
 local count=#commands
-trigger(5).script();assert(#commands==count)
-local old=trigger(1);status[21][6]=13;old.script();assert(#commands==count)
-open();local chosen=trigger(2);chosen.script();chosen.script()
-assert(#commands==count+1 and commands[#commands]=='2:13')
-open();action(340).script();assert(commands[#commands]=='0:13')
-status[21][1]=0;open();assert(not action(340).active)
-status[15]=true;open();assert(not trigger(1).active)
-status[15]=false;status[4]=false;open();assert(not trigger(1).active)
-status[4]=true;open();old=trigger(1);debugEnabled=false;count=#commands
+trigger(1).script();assert(#commands==count)
+local old=trigger(5);status[21][4]=13;old.script();assert(#commands==count)
+open();local chosen=trigger(5);chosen.script();chosen.script()
+assert(#commands==count+1 and commands[#commands]=='start:5:13')
+open();eventAction(344,3).script();assert(commands[#commands]=='end:3:13')
+open();action(340).script();assert(commands[#commands]=='end:0:13')
+status[21][2]={};open();assert(not action(340).active)
+status[15]=true;open();assert(not trigger(5).active)
+status[15]=false;status[4]=false;open();assert(not trigger(5).active)
+status[4]=true;open();old=trigger(5);debugEnabled=false;count=#commands
 old.script();assert(#commands==count);debugEnabled=true
+-- Old cached single-event data may display, but cannot authorize new commands.
+status[21]={1,50,7200,'Food',{1,2},13};open();assert(not groups.actions_ce_debug_events)
 status[21]=nil
 ''')
 print('LuaJIT diagnostics, debug events, nested actions, stale-token guards and build completion passed')

@@ -208,14 +208,15 @@
     <t id="332">Civilian Economy Events</t>
     <t id="333">%1: %2. Demand for %3 increases by %4% for 2 game hours.</t>
     <t id="334">%1: %2. Demand for %3 decreases by %4% for 2 game hours.</t>
-    <t id="335">%1: %2 has ended. Civilian demand has returned to normal.</t>
+    <t id="335">%1: %2 has ended. Demand for %3 has returned to normal.</t>
     <t id="336">%s: demand %s%%; %s remaining</t>
     <t id="337">Affected goods: %s</t>
     <t id="338">Events</t>
     <t id="339">Trigger %s</t>
-    <t id="340">End current event</t>
-    <t id="341">Start this event for 2 game hours, replacing any current event. Uses a random strength and only currently consumed goods.</t>
-    <t id="342">Restore normal demand immediately and begin the normal 3-6 game-hour waiting period.</t>
-    <t id="343">Requires an operational civilian hub with applicable unlocked goods and a current status snapshot.</t>
+    <t id="340">End all events</t>
+    <t id="341">Start this event for 2 game hours alongside compatible events. Uses a random strength and only currently consumed goods.</t>
+    <t id="342">End the selected events and restore demand for their goods. Other events remain active. No cooldown is applied.</t>
+    <t id="343">Requires an operational civilian hub, applicable unlocked goods and a current status snapshot. An active event must not affect any of the same goods.</t>
+    <t id="344">End %s</t>
   </page>
 </language>

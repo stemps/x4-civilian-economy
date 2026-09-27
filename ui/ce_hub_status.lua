@@ -101,11 +101,23 @@ local function decode(id, s)
     result.populationOverride, result.debugFallback = number(s[17]), yes(s[18])
     result.debugInitial = yes(s[19]) and not yes(s[15])
     if type(s[21]) == 'table' then
-        local e = s[21]
-        local id, percent, remaining, token = number(e[1]), tonumber(e[2]), number(e[3]), number(e[6])
-        if id and id <= 11 and id == math.floor(id) and percent and percent >= -50 and percent <= 100 and percent == math.floor(percent)
-            and remaining and type(e[4]) == 'string' and type(e[5]) == 'table' and token and token == math.floor(token) then
-            result.demandEvent = {id=id, percent=percent, remaining=remaining, names=e[4], eligible=e[5], token=token}
+        local payload, events, seen = s[21], {}, {}
+        local modern = payload[1] == 2 and type(payload[2]) == 'table'
+        local rows = modern and payload[2] or (payload[1] == 0 and {} or {payload})
+        local eligible, token = modern and payload[3] or payload[5], number(modern and payload[4] or payload[6])
+        local valid = type(eligible) == 'table' and token and token == math.floor(token)
+        for _, e in ipairs(rows) do
+            if type(e) ~= 'table' then valid = false; break end
+            local eventID, percent, remaining = number(e[1]), tonumber(e[2]), number(e[3])
+            if not eventID or eventID < 1 or eventID > 11 or eventID ~= math.floor(eventID) or seen[eventID]
+                or not percent or percent < -50 or percent > 100 or percent ~= math.floor(percent)
+                or not remaining or type(e[4]) ~= 'string' then valid = false; break end
+            seen[eventID] = true
+            events[#events+1] = {id=eventID, percent=percent, remaining=remaining, names=e[4]}
+        end
+        if valid then
+            table.sort(events, function(a,b) return a.id < b.id end)
+            result.demandEvents = {events=events, eligible=eligible, token=token, version=modern and 2 or 1}
         end
     end
     if type(s[20]) == 'table' then
@@ -292,17 +304,27 @@ function M.signature(s)
     if not s then return '' end
     local parts = {tostring(s.id), s.available and 'ready' or 'missing', tostring(s.level), tostring(s.target), tostring(s.stale), tostring(s.profileError), tostring(s.pausedOffers)}
     if s.unrest then parts[#parts + 1] = tostring(s.unrest.stage) .. ':' .. table.concat(s.unrest.causes, ',') end
-    parts[#parts + 1] = tostring(s.demandEvent and s.demandEvent.id or 0)
+    parts[#parts + 1] = M.eventSignature(s)
     for _, w in ipairs(s.wares) do parts[#parts + 1] = w.key .. ':' .. M.wareCode(w) end
     return table.concat(parts, '\n')
 end
 
-function M.eventText(s)
-    local e = s and s.demandEvent
-    if not e or e.id == 0 then return '' end
+function M.eventSignature(s)
+    local ids = {}
+    for _, e in ipairs(s and s.demandEvents and s.demandEvents.events or {}) do ids[#ids+1] = tostring(e.id) end
+    return table.concat(ids, ',')
+end
+function M.event(s, eventID)
+    for _, e in ipairs(s and s.demandEvents and s.demandEvents.events or {}) do
+        if not eventID or e.id == eventID then return e end
+    end
+end
+function M.eventText(s, eventID)
+    local e = M.event(s, eventID)
+    if not e then return '' end
     return M.text(336, M.text(320 + e.id), string.format('%+d', e.percent), M.time(e.remaining, true))
 end
-function M.eventHint(s)
-    local e = s and s.demandEvent
+function M.eventHint(s, eventID)
+    local e = M.event(s, eventID)
     return e and M.text(337, e.names) or ''
 end

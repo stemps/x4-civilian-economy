@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mdscript name="CE_DemandEvents" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
   <cues>
-    <!-- Synchronous, sector-record-owned state. Event IDs are stable snapshot/command IDs. -->
+    <!-- Synchronous libraries. State belongs to the sector record, never a hub object. -->
     <library name="Ensure">
       <actions>
-        <do_if value="not $R.$DemandEvent?">
-          <set_value name="$R.$DemandEvent" exact="table[$ID=0,$Percent=0,$End=0.0f,$Wares=[],$Names='',$Sector=$Sector,$Token=0]"/>
-          <set_value name="$R.$DemandEvent.$Next" min="player.age / 1s + 10800" max="player.age / 1s + 21600"/>
+        <do_if value="not $R.$DemandEvents?">
+          <set_value name="$R.$DemandEvents" exact="table[$Version=2,$Active=table[],$Sector=if $R.$Hub.exists then $R.$Hub.sector else @$Sector,$Token=0]"/>
+          <do_if value="$R.$DemandEvent?">
+            <set_value name="$R.$DemandEvents.$Sector" exact="$R.$DemandEvent.$Sector"/>
+            <set_value name="$R.$DemandEvents.$Token" exact="$R.$DemandEvent.$Token + 1"/>
+            <do_if value="$R.$DemandEvent.$ID gt 0">
+              <set_value name="$DELegacy" exact="$R.$DemandEvent"/>
+              <set_value name="$R.$DemandEvents.$Active.{$DELegacy.$ID}" exact="table[$ID=$DELegacy.$ID,$Percent=$DELegacy.$Percent,$End=$DELegacy.$End,$Wares=$DELegacy.$Wares,$Names=$DELegacy.$Names]"/>
+            </do_if>
+          </do_if>
         </do_if>
+        <!-- Never replay migration, extend a deadline or retain the former cooldown. -->
+        <do_if value="$R.$DemandEvent?"><remove_value name="$R.$DemandEvent"/></do_if>
       </actions>
     </library>
     <library name="Candidates">
@@ -45,64 +54,128 @@
         <do_all exact="11" counter="$DEIndex">
           <do_if value="$DELists.{$DEIndex}.count gt 0"><append_to_list name="$DECandidates" exact="$DEIndex"/></do_if>
         </do_all>
+        <set_value name="$DEEligible" exact="[]"/>
+        <do_for_each name="$DECheckID" in="$DECandidates">
+          <set_value name="$DEConflict" exact="false"/>
+          <do_if value="$R.$DemandEvents?">
+            <do_for_each name="$DEActiveID" in="$R.$DemandEvents.$Active.keys.list">
+              <do_if value="$DEActiveID == $DECheckID"><set_value name="$DEConflict" exact="true"/></do_if>
+              <do_for_each name="$DECheckWare" in="$DELists.{$DECheckID}">
+                <do_if value="$R.$DemandEvents.$Active.{$DEActiveID}.$Wares.indexof.{$DECheckWare}"><set_value name="$DEConflict" exact="true"/></do_if>
+              </do_for_each>
+            </do_for_each>
+          </do_if>
+          <do_if value="not $DEConflict"><append_to_list name="$DEEligible" exact="$DECheckID"/></do_if>
+        </do_for_each>
       </actions>
     </library>
-    <!-- Caller settles consumption and supplies DEChosen and its nonempty DELists entry. -->
+
+    <!-- Caller settles consumption and supplies DEChosen. Reject the entire conflicting basket. -->
     <library name="Start">
       <actions>
-        <do_if value="$R.$DemandEvent.$ID gt 0"><include_actions ref="md.CE_DemandEvents.End"/></do_if>
-        <set_value name="$R.$DemandEvent.$ID" exact="$DEChosen"/>
-        <set_value name="$DEPercent" min="25" max="100"/>
-        <do_if value="[2,9,10].indexof.{$DEChosen}">
-          <set_value name="$DEPercent" min="25" max="50"/>
-          <set_value name="$DEPercent" exact="-($DEPercent)i"/>
+        <include_actions ref="md.CE_DemandEvents.Candidates"/>
+        <set_value name="$DEStarted" exact="false"/>
+        <do_if value="$DEEligible.indexof.{$DEChosen}">
+          <set_value name="$DEPercent" min="25" max="100"/>
+          <do_if value="[2,9,10].indexof.{$DEChosen}">
+            <set_value name="$DEPercent" min="25" max="50"/>
+            <set_value name="$DEPercent" exact="-($DEPercent)i"/>
+          </do_if>
+          <set_value name="$DEEvent" exact="table[$ID=$DEChosen,$Percent=($DEPercent)i,$End=player.age / 1s + 7200,$Wares=$DELists.{$DEChosen},$Names='']"/>
+          <do_for_each name="$DENameWare" in="$DEEvent.$Wares">
+            <do_if value="$DEEvent.$Names != ''"><set_value name="$DEEvent.$Names" exact="$DEEvent.$Names + ', '"/></do_if>
+            <set_value name="$DEEvent.$Names" exact="$DEEvent.$Names + $DENameWare.name"/>
+          </do_for_each>
+          <set_value name="$R.$DemandEvents.$Active.{$DEChosen}" exact="$DEEvent"/>
+          <set_value name="$R.$DemandEvents.$Token" operation="add"/>
+          <include_actions ref="md.CE_Demand.ApplyLevel"/>
+          <include_actions ref="md.CE_EventNotifications.Start"/>
+          <set_value name="$DEStarted" exact="true"/>
+          <debug_text text="'[CE] Demand event started: sector=%1 id=%2 percent=%3 end=%4 wares=%5'.[$R.$DemandEvents.$Sector,$DEEvent.$ID,$DEEvent.$Percent,$DEEvent.$End,$DEEvent.$Wares]"/>
         </do_if>
-        <set_value name="$R.$DemandEvent.$Percent" exact="($DEPercent)i"/>
-        <set_value name="$R.$DemandEvent.$End" exact="player.age / 1s + 7200"/>
-        <set_value name="$R.$DemandEvent.$Wares" exact="$DELists.{$DEChosen}"/>
-        <set_value name="$R.$DemandEvent.$Names" exact="''"/>
-        <do_for_each name="$DENameWare" in="$R.$DemandEvent.$Wares">
-          <do_if value="$R.$DemandEvent.$Names != ''"><set_value name="$R.$DemandEvent.$Names" exact="$R.$DemandEvent.$Names + ', '"/></do_if>
-          <set_value name="$R.$DemandEvent.$Names" exact="$R.$DemandEvent.$Names + $DENameWare.name"/>
-        </do_for_each>
-        <set_value name="$R.$DemandEvent.$Token" operation="add"/>
-        <include_actions ref="md.CE_Demand.ApplyLevel"/>
-        <include_actions ref="md.CE_EventNotifications.Start"/>
-        <debug_text text="'[CE] Demand event started: sector=%1 id=%2 percent=%3 end=%4 wares=%5'.[$R.$DemandEvent.$Sector,$R.$DemandEvent.$ID,$R.$DemandEvent.$Percent,$R.$DemandEvent.$End,$R.$DemandEvent.$Wares]"/>
       </actions>
     </library>
-    <!-- Does not accrue: expiry's caller owns the historical boundary. -->
+    <!-- Remove DEEndKey without accruing/recomputing: caller owns the interval and batch. -->
+    <library name="Remove">
+      <actions>
+        <do_if value="$R.$DemandEvents.$Active.{$DEEndKey}?">
+          <set_value name="$DEEvent" exact="$R.$DemandEvents.$Active.{$DEEndKey}"/>
+          <remove_value name="$R.$DemandEvents.$Active.{$DEEndKey}"/>
+          <set_value name="$R.$DemandEvents.$Token" operation="add"/>
+          <include_actions ref="md.CE_EventNotifications.End"/>
+          <debug_text text="'[CE] Demand event ended: sector=%1 id=%2 time=%3'.[$R.$DemandEvents.$Sector,$DEEvent.$ID,player.age / 1s]"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- DEEndID zero ends all; otherwise end just that ID. No cooldown is created. -->
     <library name="End">
       <actions>
-        <do_if value="$R.$DemandEvent? and $R.$DemandEvent.$ID gt 0">
-          <debug_text text="'[CE] Demand event ended: sector=%1 id=%2 time=%3'.[$R.$DemandEvent.$Sector,$R.$DemandEvent.$ID,player.age / 1s]"/>
-          <include_actions ref="md.CE_EventNotifications.End"/>
-          <set_value name="$R.$DemandEvent.$ID" exact="0"/>
-          <set_value name="$R.$DemandEvent.$Percent" exact="0"/>
-          <set_value name="$R.$DemandEvent.$End" exact="0.0f"/>
-          <set_value name="$R.$DemandEvent.$Wares" exact="[]"/>
-          <set_value name="$R.$DemandEvent.$Names" exact="''"/>
-          <set_value name="$R.$DemandEvent.$Next" min="player.age / 1s + 10800" max="player.age / 1s + 21600"/>
-          <set_value name="$R.$DemandEvent.$Token" operation="add"/>
-          <include_actions ref="md.CE_Demand.ApplyLevel"/>
+        <set_value name="$DEEnded" exact="false"/>
+        <do_for_each name="$DEEndKey" in="$R.$DemandEvents.$Active.keys.list">
+          <do_if value="$DEEndID == 0 or $DEEndID == $DEEndKey">
+            <include_actions ref="md.CE_DemandEvents.Remove"/>
+            <set_value name="$DEEnded" exact="true"/>
+          </do_if>
+        </do_for_each>
+        <do_if value="$DEEnded"><include_actions ref="md.CE_Demand.ApplyLevel"/></do_if>
+      </actions>
+    </library>
+    <library name="NextExpiry">
+      <actions>
+        <set_value name="$DEDeadline" exact="-1.0f"/>
+        <do_if value="$R.$DemandEvents?">
+          <do_for_each name="$DEExpiryKey" in="$R.$DemandEvents.$Active.keys.list">
+            <do_if value="$DEDeadline lt 0 or $R.$DemandEvents.$Active.{$DEExpiryKey}.$End lt $DEDeadline">
+              <set_value name="$DEDeadline" exact="$R.$DemandEvents.$Active.{$DEExpiryKey}.$End"/>
+            </do_if>
+          </do_for_each>
         </do_if>
       </actions>
     </library>
+    <library name="Groups">
+      <actions>
+        <set_value name="$DEGroups" exact="[[1,2],[3],[6],[7],[5],[8,9],[4,10,11]]"/>
+        <set_value name="$DEGroupCount" exact="0"/>
+        <do_for_each name="$DECountGroup" in="$DEGroups">
+          <set_value name="$DEGroupPresent" exact="false"/>
+          <do_for_each name="$DECountID" in="$DECountGroup">
+            <do_if value="$DECandidates.indexof.{$DECountID} or $R.$DemandEvents.$Active.{$DECountID}?"><set_value name="$DEGroupPresent" exact="true"/></do_if>
+          </do_for_each>
+          <do_if value="$DEGroupPresent"><set_value name="$DEGroupCount" operation="add"/></do_if>
+        </do_for_each>
+        <!-- 120 occupied minute intervals plus geometrically distributed idle failures. -->
+        <set_value name="$DERollDenominator" exact="120 * ([$DEGroupCount,1].max - 1) + 1"/>
+      </actions>
+    </library>
+    <!-- Called once per minute AFTER UpdateHub has settled consumption. Never catch up missed rolls. -->
     <library name="Tick">
       <actions>
         <include_actions ref="md.CE_DemandEvents.Ensure"/>
         <set_value name="$DETickChanged" exact="false"/>
-        <do_if value="$R.$DemandEvent.$ID gt 0 and player.age / 1s ge $R.$DemandEvent.$End">
+        <include_actions ref="md.CE_DemandEvents.NextExpiry"/>
+        <do_if value="$DEDeadline ge 0 and player.age / 1s ge $DEDeadline">
           <include_actions ref="md.CE_Reserves.Accrue"/>
           <set_value name="$DETickChanged" exact="true"/>
         </do_if>
-        <do_if value="$R.$DemandEvent.$ID == 0 and player.age / 1s ge $R.$DemandEvent.$Next and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and $R.$Operational and not @$R.$ProfileError">
+        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and $R.$Operational and not @$R.$ProfileError">
           <include_actions ref="md.CE_DemandEvents.Candidates"/>
-          <do_if value="$DECandidates.count gt 0">
-            <set_value name="$DEChosen" exact="$DECandidates.random"/>
-            <include_actions ref="md.CE_DemandEvents.Start"/>
-            <set_value name="$DETickChanged" exact="true"/>
-          </do_if>
+          <include_actions ref="md.CE_DemandEvents.Groups"/>
+          <do_for_each name="$DERollGroup" in="$DEGroups">
+            <set_value name="$DEGroupOccupied" exact="false"/>
+            <set_value name="$DEGroupChoices" exact="[]"/>
+            <do_for_each name="$DERollID" in="$DERollGroup">
+              <do_if value="$R.$DemandEvents.$Active.{$DERollID}?"><set_value name="$DEGroupOccupied" exact="true"/></do_if>
+              <do_if value="$DEEligible.indexof.{$DERollID}"><append_to_list name="$DEGroupChoices" exact="$DERollID"/></do_if>
+            </do_for_each>
+            <do_if value="not $DEGroupOccupied and $DEGroupChoices.count gt 0">
+              <set_value name="$DERoll" min="1" max="$DERollDenominator"/>
+              <do_if value="$DERoll == 1">
+                <set_value name="$DEChosen" exact="$DEGroupChoices.random"/>
+                <include_actions ref="md.CE_DemandEvents.Start"/>
+                <do_if value="$DEStarted"><set_value name="$DETickChanged" exact="true"/></do_if>
+              </do_if>
+            </do_if>
+          </do_for_each>
         </do_if>
         <do_if value="$DETickChanged">
           <include_actions ref="md.CE_Reserves.Qualify"/>
@@ -112,10 +185,18 @@
     </library>
     <library name="Snapshot">
       <actions>
-        <set_value name="$DEPayload" exact="[0,0,0.0f,'',[],0]"/>
-        <do_if value="$R.$DemandEvent?">
+        <set_value name="$DEPayload" exact="[2,[],[],0]"/>
+        <do_if value="$R.$DemandEvent?"><include_actions ref="md.CE_DemandEvents.Ensure"/></do_if>
+        <do_if value="$R.$DemandEvents?">
           <include_actions ref="md.CE_DemandEvents.Candidates"/>
-          <set_value name="$DEPayload" exact="[$R.$DemandEvent.$ID,$R.$DemandEvent.$Percent,[0.0f,$R.$DemandEvent.$End - player.age / 1s].max,$R.$DemandEvent.$Names,$DECandidates,$R.$DemandEvent.$Token]"/>
+          <set_value name="$DERows" exact="[]"/>
+          <do_all exact="11" counter="$DERowID">
+            <do_if value="$R.$DemandEvents.$Active.{$DERowID}?">
+              <set_value name="$DERowEvent" exact="$R.$DemandEvents.$Active.{$DERowID}"/>
+              <append_to_list name="$DERows" exact="[$DERowID,$DERowEvent.$Percent,[0.0f,$DERowEvent.$End - player.age / 1s].max,$DERowEvent.$Names]"/>
+            </do_if>
+          </do_all>
+          <set_value name="$DEPayload" exact="[2,$DERows,$DEEligible,$R.$DemandEvents.$Token]"/>
         </do_if>
       </actions>
     </library>

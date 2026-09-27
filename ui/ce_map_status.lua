@@ -6,6 +6,7 @@ local C = ffi.C
 local registered = false
 local topRow, selected, signature = 7, nil, nil
 local order = {}
+local eventSignature
 local tooltipMap
 local function clearTooltip()
     if tooltipMap then SetMouseOverOverride(tooltipMap, nil); tooltipMap = nil end
@@ -25,19 +26,22 @@ end
 
 local function updateSelection(s)
     local key = tostring(s.id)
-    if selected ~= key then topRow, order = 7, M.order(s) else
+    if selected ~= key then topRow, order = M.eventSignature(s) ~= '' and 6 or 7, M.order(s) else
         local retained, seen = {}, {}
         for _,id in ipairs(order) do if M.find(s,id) then retained[#retained+1]=id;seen[id]=true end end
         for _,id in ipairs(M.order(s)) do if not seen[id] then retained[#retained+1]=id end end
         order=retained
     end
+    local newEvents = M.eventSignature(s)
+    if eventSignature ~= newEvents then topRow = newEvents ~= '' and 6 or 7 end
+    eventSignature = newEvents
     selected, signature = key, M.signature(s)
 end
 
 local function createPanel(menu, frame, s)
     local data = menu.selectedShipsTableData
-    local eventRow = s.demandEvent and s.demandEvent.id > 0 and 1 or 0
-    local fixedRows = 6 + eventRow
+    local eventCount = s.demandEvents and #s.demandEvents.events or 0
+    local fixedRows = eventCount > 0 and 5 or 6
     local width = math.min(Helper.scaleX(1100), Helper.viewWidth - 2 *
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
     local border = frame:addFrameBorder('selectedships', {offset=Helper.standardContainerOffset})
@@ -62,7 +66,7 @@ local function createPanel(menu, frame, s)
         return rows[index]
     end
     local function row(index)
-        local result=tableRow(index+fixedRows-1)
+        local result=tableRow(index+5+eventCount)
         result[1]:setBackgroundColSpan(5)
         return result
     end
@@ -73,7 +77,7 @@ local function createPanel(menu, frame, s)
     local blue = {r=12,g=85,b=140,a=100,glow=0}
     local background = Color['rowgroup_background_default']
     return {table=t, data=data, current=current, tableRow=tableRow, row=row, summaryLine=summaryLine,
-        green=green, blue=blue, background=background, eventRow=eventRow, fixedRows=fixedRows}
+        green=green, blue=blue, background=background, eventCount=eventCount, fixedRows=fixedRows}
 end
 
 local function drawSummary(panel, s)
@@ -112,9 +116,10 @@ local function drawSummary(panel, s)
     elseif s.unrest then
         summaryLine(4,function() return M.unrest(current()) end)
     end
-    if panel.eventRow == 1 then
-        tableRow(6)[1]:setColSpan(5):createText(function() return M.eventText(current()) end,
-            {wordwrap=true, mouseOverText=function() return M.eventHint(current()) end})
+    for index, event in ipairs(s.demandEvents and s.demandEvents.events or {}) do
+        local eventID = event.id
+        tableRow(5+index)[1]:setColSpan(5):createText(function() return M.eventText(current(), eventID) end,
+            {wordwrap=true, mouseOverText=function() return M.eventHint(current(), eventID) end})
     end
 end
 
@@ -172,7 +177,7 @@ local function draw(menu, frame, s)
         panel.row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),
             {wordwrap=true,cellBGColor=panel.background})
     end
-    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(topRow, math.max(panel.fixedRows+1, #order+panel.fixedRows))))
+    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(topRow, math.max(panel.fixedRows+1, math.max(1,#order)+6+panel.eventCount))))
     panel.table.properties.y=Helper.viewHeight-panel.table:getVisibleHeight()-Helper.borderSize
         -menu.borderOffset-Helper.standardContainerOffset
 end
@@ -186,6 +191,7 @@ local function register()
         local s = selection(menu)
         if s then return draw(menu, frame, s) end
         topRow, selected, signature = 7, nil, nil
+        eventSignature = nil
         return nativeDraw(frame, ...)
     end
     menu.onUpdate = function(...)
@@ -212,6 +218,7 @@ local function register()
     menu.cleanup = function(...)
         clearTooltip()
         topRow, selected, signature = 7, nil, nil
+        eventSignature = nil
         M.reset()
         return nativeCleanup(...)
     end
