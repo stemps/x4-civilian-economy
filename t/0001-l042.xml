@@ -243,5 +243,9 @@
     <t id="366">Obnova CE dokončena. Nové uzly úrovně 1 se po dokončení plánování objeví plně postavené.</t>
     <t id="367">Inicializace nových uzlů CE</t>
     <t id="368">Obnova čeká</t>
+    <t id="369">Doba zásobování: %s / %s</t>
+    <t id="370">Stav: růst</t>
+    <t id="371">Pozastaveno: chybí zásoby</t>
+    <t id="372">Probíhá výstavba</t>
   </page>
 </language>

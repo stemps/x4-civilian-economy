@@ -243,5 +243,9 @@
     <t id="366">CE sıfırlaması tamamlandı. Planlama bitince yeni seviye 1 merkezler tamamen inşa edilmiş olarak görünür.</t>
     <t id="367">Yeni CE merkezleri başlatılıyor</t>
     <t id="368">Sıfırlama bekliyor</t>
+    <t id="369">Tedarik sağlanan süre: %s / %s</t>
+    <t id="370">Durum: büyüyor</t>
+    <t id="371">Duraklatıldı: eksik malzemeler</t>
+    <t id="372">İnşaat sürüyor</t>
   </page>
 </language>

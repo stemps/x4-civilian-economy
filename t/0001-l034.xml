@@ -243,5 +243,9 @@
     <t id="366">Reinicio CE completo. Los nuevos centros de nivel 1 aparecerán totalmente construidos cuando termine la planificación.</t>
     <t id="367">Inicializando centros CE</t>
     <t id="368">Reinicio en espera</t>
+    <t id="369">Tiempo con suministros: %s / %s</t>
+    <t id="370">Estado: creciendo</t>
+    <t id="371">En pausa: faltan suministros</t>
+    <t id="372">Construcción en curso</t>
   </page>
 </language>

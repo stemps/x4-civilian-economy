@@ -243,5 +243,9 @@
     <t id="366">CE-Reset abgeschlossen. Neue Zentren der Stufe 1 erscheinen nach Abschluss der Planung vollständig gebaut.</t>
     <t id="367">Neue CE-Zentren initialisieren</t>
     <t id="368">Reset wartet</t>
+    <t id="369">Versorgte Zeit: %s / %s</t>
+    <t id="370">Status: Wachstum</t>
+    <t id="371">Pausiert: fehlende Waren</t>
+    <t id="372">Bau läuft</t>
   </page>
 </language>

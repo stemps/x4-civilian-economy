@@ -579,7 +579,11 @@ untouched. Registration is idempotent, with the same
 load/population-request retry convention as testing UI.
 
 `ce_hub_status.lua` owns membership normalization and the shared positional-to-named
-snapshot decoder. Map `get` caches player blackboard membership/snapshots for one real
+snapshot decoder. Its `progressHint` formatter owns the status-only level tooltip:
+supplied time and one status, missing goods on separate lines, and compact
+construction/earned-upgrade/maximum-level states. Data warnings replace progress
+details. The map adapter supplies the current snapshot without composing messages.
+Map `get` caches player blackboard membership/snapshots for one real
 second; object validity and player knowledge are checked at use. Snapshot version 3
 is required by all UI consumers; incompatible versions show details unavailable.
 The shared validator rejects incomplete/duplicate rows. Testing UI uses `getFresh`

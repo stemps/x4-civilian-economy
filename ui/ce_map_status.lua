@@ -99,8 +99,7 @@ local function drawSummary(panel, s)
         return now and now.available and now.level<10 and math.min(100,100*now.growth/now.required) or 0
     end
     local function growthHint()
-        local now=current()
-        return M.progress(now)..'\n'..M.state(now)..'\n'..M.action(now)
+        return M.progressHint(current())
     end
     progress[1]:createStatusBar({current=percent,start=percent,max=100,
         valueColor=green,markerColor=Color['statusbar_marker_hidden'],

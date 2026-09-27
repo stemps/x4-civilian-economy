@@ -243,5 +243,9 @@
     <t id="366">Réinitialisation CE terminée. Les nouveaux hubs de niveau 1 apparaissent entièrement construits une fois la planification terminée.</t>
     <t id="367">Initialisation des hubs CE</t>
     <t id="368">Réinitialisation en attente</t>
+    <t id="369">Temps approvisionné : %s / %s</t>
+    <t id="370">État : croissance</t>
+    <t id="371">En pause : marchandises manquantes</t>
+    <t id="372">Construction en cours</t>
   </page>
 </language>

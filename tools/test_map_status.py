@@ -218,7 +218,7 @@ t=draw();assert(value(t.rows[7][2])=='Ware 1' and value(t.rows[11][2])=='Ware 5'
 assert(value(t.rows[11][3])=='Empty' and value(t.rows[11][4])=='Needed')
 assert(t.rows[11][4].properties.color==Color.text_negative)
 assert(value(t.rows[3][2])=='Level 1 (stagnating)')
-assert(t.rows[3][2].properties.mouseOverText():find('Ware 5 needed',1,true))
+assert(t.rows[3][2].properties.mouseOverText():find('Paused: missing supplies\n- Ware 5',1,true))
 status[9][1][8]=899;now=5;t=draw()
 assert(value(t.rows[7][4])=='Low' and t.rows[7][4].properties.color==Color.text_warning)
 status[9][1][8]=900;now=6;t=draw();assert(value(t.rows[7][4])=='Supplied')
@@ -264,14 +264,16 @@ assert(value(t.rows[3][2])=='Level 1 (stagnating)' and M.get(42).pausedOffers)
 for reason,label in pairs({constructing='constructing',damaged_modules='damaged modules',
  no_population='no population',owner_changed='ownership changed',hub_unavailable='hub unavailable',
  modules_unavailable='modules unavailable'}) do
- status[12]=reason;now=now+1;assert(t.rows[3][2].properties.mouseOverText():find('Paused: '..label,1,true))
+ status[12]=reason;now=now+1
+ local expected=reason=='constructing' and M.text(372) or 'Paused: '..label
+ assert(t.rows[3][2].properties.mouseOverText():find(expected,1,true))
 end
 status[4]=true;status[14]=true;now=now+1;assert(M.state(M.get(42))==M.text(89))
 status[14]=false;status[15]=true;now=now+1;assert(M.state(M.get(42))==M.text(88))
 status[15]=false;status[13]=2;now=now+1;assert(not M.get(42).available)
 status[13]=3;status[3]=2;now=now+1;t=draw()
 assert(value(t.rows[3][2])=='Level 1 (expanding)')
-assert(t.rows[3][2].properties.mouseOverText():find(M.text(105),1,true))
+assert(t.rows[3][2].properties.mouseOverText()==M.text(99,2)..'\n\n'..M.text(372))
 status[3]=0;status[2]=10;now=now+1;t=draw();assert(value(t.rows[3][2])=='Level 10 (maximum)')
 status[9][1][4]=1485;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='1,485')
 status[9][1][4]=57000;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='57.00 k')
@@ -309,6 +311,32 @@ sample.wares[1].reserve=0
 assert(M.state(sample)==M.text(101)) -- ready takes precedence over shortage
 sample.plotReady=false;assert(M.state(sample)==M.text(102))
 sample.level=10;assert(M.state(sample)==M.text(100) and M.action(sample)==M.text(114))
+-- Progress tooltips keep one status and never repeat instructions or missing goods.
+assert(M.progressHint(nil)==M.text(68))
+assert(M.progressHint(sample)==M.text(100))
+sample.level=1;sample.growth=3600;sample.wares[1].reserve=1
+assert(M.progressHint(sample)=='Progress toward level 2\nSupplied time: 1h 0m / 2h 0m\n\nStatus: Growing')
+sample.wares[1].reserve=0
+sample.wares[2]={rate=1,reserve=0,remaining=0,capacity=10,key='second',name='Second'}
+assert(M.progressHint(sample)=='Progress toward level 2\nSupplied time: 1h 0m / 2h 0m\n\nPaused: missing supplies\n- Test\n- Second')
+sample.active=false;sample.pauseReason='damaged_modules'
+assert(M.progressHint(sample):find(M.text(83),1,true))
+assert(not M.progressHint(sample):find('- Test',1,true))
+sample.target=2;sample.pauseReason='constructing'
+assert(M.progressHint(sample)==M.text(99,2)..'\n\n'..M.text(372))
+for phase,id in pairs({planning=345,layout_retry=346,build_retry=347}) do
+ sample.layoutPhase=phase
+ assert(M.progressHint(sample)==M.text(99,2)..'\n\n'..M.text(id))
+end
+sample.layoutPhase=nil;sample.target=0;sample.pauseReason=nil;sample.active=true
+sample.growth=sample.required
+assert(M.progressHint(sample)==M.text(115,2)..'\n\n'..M.text(102))
+sample.plotReady=true
+assert(M.progressHint(sample)==M.text(115,2)..'\n\n'..M.text(101))
+sample.stale=true
+assert(M.progressHint(sample)==M.text(88))
+sample.stale=false;sample.profileError=true
+assert(M.progressHint(sample)==M.text(89))
 ''')
 # Verify the deferred-load path independently of the already-registered menu.
 deferred = LuaRuntime()

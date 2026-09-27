@@ -243,5 +243,9 @@
     <t id="366">Ripristino CE completato. I nuovi centri di livello 1 appariranno già costruiti al termine della pianificazione.</t>
     <t id="367">Inizializzazione centri CE</t>
     <t id="368">Ripristino in attesa</t>
+    <t id="369">Tempo con rifornimenti: %s / %s</t>
+    <t id="370">Stato: in crescita</t>
+    <t id="371">In pausa: rifornimenti mancanti</t>
+    <t id="372">Costruzione in corso</t>
   </page>
 </language>

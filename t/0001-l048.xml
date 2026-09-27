@@ -243,5 +243,9 @@
     <t id="366">Reset CE zakończony. Nowe centra poziomu 1 pojawią się w pełni zbudowane po zakończeniu planowania.</t>
     <t id="367">Inicjalizacja nowych centrów CE</t>
     <t id="368">Reset oczekuje</t>
+    <t id="369">Czas zaopatrzenia: %s / %s</t>
+    <t id="370">Status: rozwój</t>
+    <t id="371">Wstrzymano: brak zaopatrzenia</t>
+    <t id="372">Budowa w toku</t>
   </page>
 </language>

@@ -230,5 +230,9 @@
     <t id="366">CE reset complete. New level-1 hubs appear fully built once planning finishes.</t>
     <t id="367">Initializing fresh CE hubs</t>
     <t id="368">Reset waiting</t>
+    <t id="369">Supplied time: %s / %s</t>
+    <t id="370">Status: Growing</t>
+    <t id="371">Paused: missing supplies</t>
+    <t id="372">Construction in progress</t>
   </page>
 </language>

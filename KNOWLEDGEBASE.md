@@ -1,5 +1,14 @@
 # Mod-local Knowledgebase
 
+### 2026-09-28 - status-only-level-tooltip
+
+- The level-progress tooltip is composed by `CEHubStatus.progressHint`, not by
+  concatenating progress, state and action prose. It labels accrued growth as
+  supplied time, lists each missing ware once, and omits general instructions.
+- Construction and earned upgrades omit the supplied-time counter. Stale or
+  failed-demand-refresh warnings replace details rather than presenting retained
+  snapshots as a current growth status. Snapshot format and simulation are unchanged.
+
 ## Station planning and reset
 
 - MEASURED (2026-09-27): forward planning passed 600/600 fresh 10 km cubic

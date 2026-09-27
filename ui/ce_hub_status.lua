@@ -275,6 +275,26 @@ function M.tooltip(s)
     return M.text(77) .. ': ' .. level .. '\n' .. M.text(76) .. ': ' .. M.population(s.population)
         .. (s.unrest and ('\n' .. M.unrest(s)) or '')
 end
+function M.progressHint(s)
+    local facts = M.classify(s)
+    if not facts.available then return M.text(68) end
+    if facts.warning then return M.text(facts.warning == 'stale' and 88 or 89) end
+    if facts.maximum then return M.text(100) end
+    local layout = M.layoutState(s)
+    if facts.pending or layout or s.pauseReason == 'constructing' then
+        local target = facts.pending and s.target or s.level
+        return M.text(99, target) .. '\n\n' .. (layout or M.text(372))
+    end
+    local heading = M.text(115, s.level + 1)
+    if facts.ready then return heading .. '\n\n' .. M.state(s) end
+    local status = M.state(s)
+    if s.active and #facts.missing > 0 then
+        status = M.text(371) .. '\n- ' .. table.concat(facts.missing, '\n- ')
+    elseif facts.growing then
+        status = M.text(370)
+    end
+    return heading .. '\n' .. M.text(369, M.time(s.growth), M.time(s.required)) .. '\n\n' .. status
+end
 function M.progress(s)
     local facts = M.classify(s)
     if not facts.available then return M.text(68) end

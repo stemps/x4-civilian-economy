@@ -243,5 +243,9 @@
     <t id="366">Reinício CE concluído. Os novos centros de nível 1 aparecerão totalmente construídos após o planejamento.</t>
     <t id="367">Inicializando novos centros CE</t>
     <t id="368">Reinício aguardando</t>
+    <t id="369">Tempo com suprimentos: %s / %s</t>
+    <t id="370">Estado: crescendo</t>
+    <t id="371">Pausado: faltam suprimentos</t>
+    <t id="372">Construção em andamento</t>
   </page>
 </language>
