@@ -17,7 +17,12 @@ lua:
     if ('{{python}}') { & '{{python}}' tools/test_population_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_population_bridge.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_map_status.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_map_status.py; exit $LASTEXITCODE }
 
-check: validate lua test-release
+check: translations validate lua test-release
+
+# Require every English entry in all game locales, including format contracts.
+translations:
+    if ('{{python}}') { & '{{python}}' test/test_translations.py; exit $LASTEXITCODE } else { uv run python test/test_translations.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' test/check_translations.py; exit $LASTEXITCODE } else { uv run python test/check_translations.py; exit $LASTEXITCODE }
 
 # Validate, record, push, package and publish a release from clean main.
 release:

@@ -12,7 +12,7 @@
     <t id="16">Diagnostic snapshot updated every game minute and after recorded deliveries. Reopen the menu to refresh. Incoming goods count as supplies only after delivery.</t>
     <t id="30">Civilian Economy: this save contains the old energy-only prototype. Load a save from before installing Civilian Economy to test leveling. No migration or additional hub was created.</t>
     <t id="31">%s Civilian Trade Hub \(level %s\)</t>
-    <t id="32">Level %d | Target %d (0 = none)</t>
+    <t id="32">Level %d | Target %d \(0 = none\)</t>
     <t id="33">History: %.0f / %.0f min</t>
     <t id="34">Consumption active</t>
     <t id="35">Building/damaged: usage paused</t>

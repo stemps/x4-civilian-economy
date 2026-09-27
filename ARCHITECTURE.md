@@ -1,5 +1,23 @@
 # Runtime architecture
 
+## Localization
+
+`t/0001-l044.xml` is the canonical English source for page 974201. The other
+15 `0001-lNNN.xml` files carry the same page/text IDs for all locales shipped
+in the game reference, matching Supply Chain View's coverage. This includes
+Bulgarian, Turkish and Ukrainian even where the game's language selector does
+not enable them. Entries cover UI labels, tooltips, MD messages and debug actions.
+
+`test/check_translations.py` mirrors SCV's translation coverage gate, adapted
+to CE's existing English filename instead of adding a second English source.
+It checks every page, required locale files, missing/extra/duplicate/empty entries,
+language IDs and X4 text escapes. CE additionally checks ordered Lua format
+specifiers, numbered MD arguments, text references and literal newline counts.
+`test/test_translations.py` exercises failure fixtures and the shipped files.
+`just translations` runs both; `just check` runs it before the other checks.
+These checks validate coverage and formatting, not linguistic quality or UI fit.
+Translation files require a full game restart; `/reloadui` is insufficient.
+
 ## Sector demand events
 
 `CE_DemandEvents` owns eleven stable event IDs, applicable ware baskets, selection
@@ -174,9 +192,9 @@ caption and log describe the actual outcome, including non-destructive hacks.
 encodes H.264/yuv420p clips using imageio-ffmpeg and an installed TrueType font,
 fitting the full images above a solid red lower third without cropping. Bold white
 headlines scroll left at 110 pixels/sec, prefixed with BREAKING. Strings come from
-English text IDs 291-292 and 296 (the only current language is English);
-future language additions also need localized strip renders and clip selection.
-Runtime captions remain native text. These are packaged videos, not a runtime
+English text IDs 291-292 and 296. These baked-in video headlines remain English;
+localizing them would require separate strip renders and language-based clip selection.
+Runtime captions use the localized native text entries. These are packaged videos, not a runtime
 image-generation or encoder dependency. Only the two production broadcast MKVs are
 included in release archives, along with cutscene XML.
 `just news-videos` rebuilds and fully decodes the runtime MKVs.

@@ -1,5 +1,30 @@
 # Mod-local Knowledgebase
 
+## 2026-09-27 - complete-language-coverage
+
+- READ: `reference/t` contains 16 locale files. The matching SCV set is
+  7, 33, 34, 39, 42, 44, 48, 49, 55, 81, 82, 86, 88, 90, 359, 380. The reference
+  language registry enables 13: Turkish/Ukrainian are commented out and Bulgarian
+  is absent. Providing text does not enable a game language.
+- IMPLEMENTED: CE keeps `t/0001-l044.xml` as its single English source and ships
+  15 additional locales. This supersedes older English-only notes below. All
+  translations were authored within Codex from the gameplay context.
+- TESTED: `just translations` covers 229 entries per locale and 22 regressions,
+  including missing files, multiple pages, duplicates, empty text, language IDs,
+  parentheses and formatting. Lua format argument order must match English;
+  numbered MD arguments may be reordered but not lost or duplicated. Coverage
+  cannot establish linguistic quality or in-game layout fit.
+- TESTED: `just validate` passed 234 controller tests, XML parsing and x4validate
+  with no reported issues; `just lua` passed the debug menu, population bridge
+  and map status suites. No MD/AI changes were made, so the optional full script
+  schema compilation was not requested.
+- READ: `ui/ce_hub_status.lua` divides population by 1e6, 1e9 and 1e12 for
+  text IDs 73-75. Localized unit labels must retain those magnitudes; changing
+  a billion label to a hundred-million label without changing the value is wrong.
+- READ: news videos bake English IDs 291-292/296 into their images. The localized
+  runtime captions and log/ticker messages do not change those rendered headlines.
+  Full game restart required for new text files.
+
 ## 2026-09-27 - nested-debug-controls
 
 - READ: installed UI Extensions documents `insertInteractionGroup(parentId,
