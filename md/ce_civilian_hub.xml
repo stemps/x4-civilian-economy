@@ -379,7 +379,8 @@
     </library>
     <library xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="AssignBuilder">
       <actions>
-        <do_if value="$Hub.buildstorage.exists and $Hub.buildstorage.buildmodule.exists and ($Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count) gt 0 and not $Hub.buildstorage.buildmodule.constructionvessel.exists">
+        <!-- Seed/reset builds complete through InitialTick, including delayed completion and task recovery. -->
+        <do_if value="not (@$R.$InitialHub == $Hub and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0) and $Hub.buildstorage.exists and $Hub.buildstorage.buildmodule.exists and ($Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count) gt 0 and not $Hub.buildstorage.buildmodule.constructionvessel.exists">
           <find_ship name="$Builders" space="player.galaxy" primarypurpose="purpose.build" class="class.ship_xl" multiple="true" checkoperational="true"/>
           <set_value name="$Candidates" exact="[]"/>
           <set_value name="$Nearest" exact="100000"/>

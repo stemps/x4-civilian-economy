@@ -74,7 +74,7 @@ class InitialHubTests(StartupHarness):
     def test_initial_and_reset_hubs_complete_only_stage_one(self):
         for reset in (False,True):
             with self.subTest(reset=reset):
-                self.setUp();record=self.initial(reset)
+                self.setUp();builder=self.builder();record=self.initial(reset)
                 self.assertIs(record.InitialHub,record.Hub)
                 self.complete()
                 self.assertTrue(record.Operational)
@@ -84,6 +84,48 @@ class InitialHubTests(StartupHarness):
                 self.assertLess(record.CompletedSequence.count,record.FullSequence.count)
                 self.assertEqual(self.native_requests[0],(record.Construction.Plan,1))
                 self.assertEqual(sum(k=='materialize' for k,_ in self.events),1)
+                self.assertIs(builder.constructionmodule,NIL)
+                self.assertFalse(any(k in ('assign','order') for k,_ in self.events))
+                self.assertTrue(record.Hub.buildstorage.exists)
+                self.assertEqual(record.Hub.buildstorage.money,0)
+                self.assertGreater(record.Hub.money,0)
+                self.assertFalse(any(k=='fund' and obj is record.Hub.buildstorage for k,obj in self.events))
+
+    def test_pending_initial_completion_never_books_builder_during_recovery(self):
+        for reset in (False,True):
+            with self.subTest(reset=reset):
+                self.setUp();builder=self.builder();record=self.initial(reset)
+                self.run.native['raise_lua_event']=lambda n:None
+                self.complete()
+                self.assertTrue(record.Build.exists)
+                self.assertIs(record.InitialHub,record.Hub)
+                self.retry()
+                self.run.env.update(R=record,Hub=record.Hub,Sector=self.sector)
+                self.run.library('md.CE_Construction.StartBuild')
+                self.assertEqual(record.Hub.buildstorage.money,0)
+                self.assertGreater(record.Hub.money,0)
+                self.assertIs(builder.constructionmodule,NIL)
+                self.assertFalse(any(k in ('assign','order') for k,_ in self.events))
+                self.run.native['raise_lua_event']=self.initial_event
+                self.run.env['player'].age+=2
+                self.run.library('md.CE_Construction.InitialTick')
+                self.assertTrue(record.Operational)
+                self.assertIs(record.InitialHub,NIL)
+                record.Target=2;self.start();self.complete(index=1)
+                self.assertIs(record.Hub.buildstorage.buildmodule.constructionvessel,builder)
+                self.assertEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)
+
+    def test_idle_storage_preserves_leftovers_without_topping_up_stale_budget(self):
+        record=self.initial();self.complete()
+        storage=record.Hub.buildstorage
+        storage.money=12345
+        storage.cargo=Table(hullparts=100)
+        # The harness retains the previous requested budget after completion.
+        self.assertGreater(storage.wantedmoney,storage.money)
+        self.retry()
+        self.assertIs(record.Hub.buildstorage,storage)
+        self.assertEqual(storage.money,12345)
+        self.assertEqual(storage.cargo.hullparts,100)
 
     def test_expansion_uses_regular_build_and_preserves_master_sequence(self):
         record=self.initial();self.complete();full=record.FullSequence
@@ -107,6 +149,7 @@ class InitialHubTests(StartupHarness):
                 self.complete(index=1)
                 self.assertTrue(record.Build.exists)
                 self.assertEqual(sum(k=='materialize' for k,_ in self.events),int(completed))
+                self.assertEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)
 
     def test_reload_retains_pending_permission_but_does_not_replay_completed_initialization(self):
         record=self.initial();hub=record.Hub
@@ -131,3 +174,4 @@ class InitialHubTests(StartupHarness):
         self.assertFalse(record.Operational)
         self.assertTrue(record.Build.exists)
         self.assertFalse(any(k=='materialize' for k,_ in self.events))
+        self.assertEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)

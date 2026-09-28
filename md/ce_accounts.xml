@@ -21,7 +21,9 @@
           <include_actions ref="md.CE_CivilianHub.EnsureManager"/>
           <set_object_account object="$Hub.buildstorage"/>
           <set_value name="$BuildBudget" exact="$Hub.buildstorage.wantedmoney"/>
-          <do_if value="$BuildBudget gt $Hub.buildstorage.money">
+          <!-- Fund real construction only; seed/reset completion needs no materials.
+               Idle storage keeps leftovers without topping up a stale native budget. -->
+          <do_if value="$BuildBudget gt $Hub.buildstorage.money and ($Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count) gt 0 and not (@$R.$InitialHub == $Hub and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0)">
             <transfer_money from="faction.ownerless" to="$Hub.buildstorage" amount="$BuildBudget - $Hub.buildstorage.money" result="$Funded"/>
             <debug_text text="'[CE] Construction funding=%s budget=%s'.[$Funded,$BuildBudget]"/>
           </do_if>

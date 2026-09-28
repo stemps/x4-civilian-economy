@@ -2174,3 +2174,29 @@ Historical single-event model; superseded by concurrent-sector-events below.
   tooling tests, 64 release-suite tests, translations, generated plans and Lua.
   Native MD/AI schemas compiled in 91.7/110.6s and merged AI patches introduced
   no errors. `just test-tooling` passed all 14 focused regression tests.
+
+## 2026-09-28 - initial-hub-builder-exclusion
+
+- READ: StartBuild calls AssignBuilder before InitialTick requests force
+  completion; ReconcileSector also calls AssignBuilder while a build is pending.
+  Excluding seed/reset hubs only at the first call would miss reconciliation.
+- MOCKED: an available builder reproduced bookings on new-save and debug-reset
+  initialization. The shared AssignBuilder guard now excludes the exact InitialHub
+  at generation 1, level 1, target 0, including delayed completion and recovered
+  tasks. Readiness revokes permission, allowing later upgrades to hire normally.
+- VALIDATED: `just validate` passes 275 tests and XML/reference checks. Native
+  in-game behavior remains unverified; this MD change requires a full restart.
+
+## 2026-09-28 - construction-funding-only-for-active-builds
+
+- READ: CE_Accounts keeps build-storage manager/account provisioning separate
+  from transfers. Construction transfers now require queued/in-progress work and
+  exclude exact-object InitialHub permission at generation 1, level 1, target 0.
+  Station operating funds are unaffected. Idle storage, cargo and credits remain.
+- MOCKED: tests reproduced seed/reset funding and idle top-ups from stale
+  wantedmoney. Initial completion and recovery now receive no construction funds;
+  upgrades, replacements and later discoveries retain funding. Idle leftovers
+  survive reconciliation. The lifecycle funding fixture explicitly supplies an
+  in-progress task rather than relying only on a positive wantedmoney value.
+- VALIDATED: `just validate` passes 276 tests and XML/reference checks. No native
+  game verification performed; a full restart is required for this MD change.

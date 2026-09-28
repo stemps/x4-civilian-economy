@@ -529,6 +529,12 @@ First-generation level-1 seeds, including reset hubs, retain exact-object
 InitialHub permission. A validated native build is published in
 $ce_initial_build_hubs; ui/ce_initial_construction.lua rechecks that fresh
 membership, civilian ownership and native build readiness before force completion.
+The shared AssignBuilder routine excludes these initial hubs, including delayed
+completion and task recovery, so neither build startup nor reconciliation reserves
+a builder for seed/reset construction.
+CE_Accounts retains build storage and its manager but funds it only for queued or
+active construction outside initial completion. Idle storage retains leftover
+credits and cargo without budget top-ups; the hub operating account remains funded.
 Readiness revokes permission before any later expansion. Ordinary replacements,
 later discoveries and upgrades use funded native builds. Debug-create/advance
 shortcuts remain independently authorized. Native force completion does not

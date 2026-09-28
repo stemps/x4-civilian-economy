@@ -181,6 +181,7 @@ class LifecycleTests(unittest.TestCase):
         self.run.native['add_build_to_expand_station']=add
         self.run.native['process_build']=lambda n:None
     def test_expansion_keeps_base_demand_until_all_modules_finish(self):
+        self.hub.buildstorage.builds.inprogress.append(Component(exists=True))
         self.run.env['player']['age']=60
         self.run.library('UpdateHub')
         self.assertTrue(self.r.Operational);self.assertEqual(self.r.Level,1)
