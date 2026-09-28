@@ -2121,3 +2121,37 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - VALIDATED: just validate and just translations pass after moving the control;
   existing settings callback coverage follows the new control order. In-game
   visual confirmation remains pending.
+
+## 2026-09-28 - validation runtime and isolation
+
+- IMPLEMENTED: the test MD interpreter caches only normalized paths and compiled
+  ordinary expressions, each with a process-local 8,192-entry LRU. Evaluation
+  still reads the current Runner environment; mutable literals, XML trees and
+  profile fixtures remain independent. Never cache evaluated profiles or XML
+  library nodes: tests deliberately modify both state and shipped action trees.
+- IMPLEMENTED: release fixtures copy a pristine working repository and bare
+  remote per test, repointing origin. The seed is built once per process. Copies
+  have independent Git objects, configuration, hooks and refs; real commits,
+  pushes and rollback checks remain exercised.
+- MEASURED on Windows, Python 3.14.2, lxml 6.1.3/libxml2 2.11.9: three baseline
+  `just validate` runs at db293db took 146.536/190.449/176.656s; three optimized
+  runs took 19.569/20.613/19.888s. Median controller time fell from 173.427s for
+  263 tests to 15.711s for 277 tests. The 14 added tests cover caching, isolation,
+  check selection and timing failures. The post-change tree also includes the
+  separate settings-organization commit f361749; these are local suite timings,
+  not an isolated hardware benchmark. No tests or statistical loops were removed.
+- MEASURED: baseline release-suite runs took 78.997/76.681/73.470s; optimized
+  runs took 58.054/54.747/53.818s, including two additional regression tests
+  (64 total). Median improvement was 28.6%. Baseline native schema compilation
+  alone took 88.4s for MD and 107.4s for AI; this work is not optimized or skipped.
+- WORKFLOW: `check` keeps all controller tests and fast/static/UI checks, while
+  `check-release` adds Git integration and remains the release tool's gate.
+  `check-full` adds native schemas through `schema-only`, avoiding repeated
+  controller tests. `schema` retains its original scope. `plans-verify` avoids
+  the focused plan/construction tests already covered by normal discovery.
+  `just validate --timings` reports stages, modules and slowest tests on success
+  or failure. These tooling changes need neither restart nor /reloadui.
+- VALIDATED: final `just check-full` passed in 299.880s, including 277 controller/
+  tooling tests, 64 release-suite tests, translations, generated plans and Lua.
+  Native MD/AI schemas compiled in 91.7/110.6s and merged AI patches introduced
+  no errors. `just test-tooling` passed all 14 focused regression tests.

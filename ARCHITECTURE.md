@@ -762,6 +762,35 @@ the combined ware-name/time column. Buying uses native `ConvertIntegerString`.
 
 ## Test support and configured paths
 
+`just check` is the everyday gate: translations, generated plan verification,
+all discovered controller/tooling tests, XML/reference checks and Lua contracts.
+`plans-verify` only checks generated artifacts; standalone `plans-check` also
+runs the focused geometry and construction tests. The everyday gate relies on
+normal discovery for those tests instead of executing them twice.
+
+`just check-release` adds the real local Git release/archive integration suites;
+the release tool uses this gate. `just check-full` additionally runs `schema-only`.
+`just schema` retains controller tests plus native schemas; `schema-only` passes
+`--skip-tests`, explicitly announces the omission, and retains static validation
+and merged AI checks. Full checking therefore executes controller tests once.
+`just validate --timings` (also supported by schema/schema-only) reports stage,
+module and slow-test wall times through `tools/check_timings.py`, including on
+failure. Test timings include per-test setup and cleanup, but not class fixtures.
+
+`tools/md_expressions.py` owns process-local 8,192-entry LRU caches for normalized
+paths and compiled ordinary expressions. Cache keys are original source strings;
+only immutable strings/code are shared. Every evaluation uses the current Runner
+environment, with fresh literal values. Special expressions, validation and native
+effects stay in `md_test_runtime.py`. XML trees and profile fixtures remain private
+to each runner, so tests can modify shipped action trees without stale node caches.
+
+Release fixtures lazily prepare a pristine working repository and bare remote
+once per process, then copy both into each test's temporary directory and repoint
+origin. Copies use independent files, not hardlinks or object alternates. Tests
+still execute real Git operations, including rejection hooks and rollback paths.
+`just test-tooling` exercises interpreter/check-runner contracts; Git fixture
+isolation is exercised by `just test-release`.
+
 `tests/support.py` owns fixture data, reference resolution and the reusable
 profile fixture. `support_construction.py`, `support_startup.py`,
 `support_unrest.py` and `support_sales_tax.py` own focused shared fixtures;

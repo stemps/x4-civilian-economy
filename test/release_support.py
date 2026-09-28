@@ -1,7 +1,10 @@
 """Disposable local Git repositories shared by release-tooling tests."""
 import importlib.util
+import atexit
+from functools import lru_cache
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -15,6 +18,22 @@ release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
 
 
+@lru_cache(maxsize=1)
+def seed_repository():
+    """One pristine seed per process; tests receive independent ordinary copies."""
+    temp = tempfile.TemporaryDirectory(prefix='ce-release-seed-')
+    fixture = ReleaseFixture()
+    fixture.root = Path(temp.name) / 'mod'
+    fixture.remote = Path(temp.name) / 'origin.git'
+    try:
+        fixture.initialize_repository()
+    except BaseException:
+        temp.cleanup()
+        raise
+    atexit.register(temp.cleanup)
+    return Path(temp.name)
+
+
 class ReleaseFixture(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -22,11 +41,20 @@ class ReleaseFixture(unittest.TestCase):
         base = Path(self.temp.name)
         self.root = base / "mod"
         self.remote = base / "origin.git"
-        self.root.mkdir()
         self.env = patch.dict(os.environ, {"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull,
                                            "GIT_TERMINAL_PROMPT": "0"})
         self.env.start()
         self.addCleanup(self.env.stop)
+        seed = seed_repository()
+        # copytree copies file contents, including Git objects; no shared mutable
+        # state, alternates or hardlinks survive into a test's repositories.
+        shutil.copytree(seed / 'mod', self.root)
+        shutil.copytree(seed / 'origin.git', self.remote)
+        self.cmd('remote', 'set-url', 'origin', str(self.remote))
+        self.runner = release.Release(self.root)
+
+    def initialize_repository(self):
+        self.root.mkdir()
         self.cmd("init", "--bare", str(self.remote))
         self.cmd("init", "-b", "main")
         self.cmd("config", "user.name", "Release Test")
@@ -48,7 +76,6 @@ class ReleaseFixture(unittest.TestCase):
         self.cmd("commit", "-m", "Initial mod")
         self.cmd("remote", "add", "origin", str(self.remote))
         self.cmd("push", "-u", "origin", "main")
-        self.runner = release.Release(self.root)
 
     def cmd(self, *args):
         result = subprocess.run(["git", *args], cwd=self.root, capture_output=True, check=True)

@@ -173,7 +173,7 @@ class Release:
             if check:
                 check()
             else:
-                subprocess.run(["just", "check"], cwd=self.root, check=True)
+                subprocess.run(["just", "check-release"], cwd=self.root, check=True)
             self.check_unchanged(head, written)
             files = self.runtime_files()
             with tempfile.TemporaryDirectory(prefix="ce-release-") as directory:

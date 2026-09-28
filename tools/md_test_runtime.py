@@ -4,6 +4,7 @@ Only arithmetic/state/list actions are supported; engine actions fail unless exp
 import re
 from pathlib import Path
 from lxml import etree as E
+from md_expressions import compile_expression, normalize_path
 
 class Missing:
     def __deepcopy__(self, memo): return self
@@ -133,11 +134,7 @@ class Runner:
         self.continue_on_invalid_key=False
         self.engine_errors=[]
     def path(self,s):
-        # Variable sigils are syntax; sigils inside string keys are data.
-        s=''.join(part if i % 2 else part.replace('$','').replace('@','')
-                  for i,part in enumerate(re.split(r"('(?:[^'\\]|\\.)*')",s)))
-        while '.{' in s: s=re.sub(r'\.\{([^{}]+)\}',r'[\1]',s)
-        return s
+        return normalize_path(s)
     def expr(self,s):
         s=s.strip()
         if re.search(r'@\$?\w+(?:\.\$?\w+|\.\{[^{}]*\})*\?', s):
@@ -161,25 +158,7 @@ class Runner:
         if textref:
             return (int(textref[1]), self.expr(textref[2]),
                     tuple(self.expr(arg) for arg in split(textref[3] or '')))
-        s=self.path(s)
-        s=re.sub(r'typeof (\w+(?:\.[\w]+|\[[^\]]+\])*)',r'datatype_of(\1)',s)
-        s=re.sub(r'(\w+(?:\.[\w]+|\[[^\]]+\])*)\?',r'defined(\1)',s)
-        s=re.sub(r'\(([^()]*)\)(LF|f|L|i)\b', lambda m: ('float' if m[2] in ('LF','f') else 'int') + '(' + m[1] + ')', s)
-        s=re.sub(r'(\d+(?:\.\d+)?)(?:LF|f|L)\b',r'\1',s)
-        s=re.sub(r'(\d+(?:\.\d+)?)deg\b',r'Angle(\1)',s)
-        for unit,scale in [('min',60),('km',1000),('m',1),('Cr',100),('h',3600),('s',1)]:
-            s=re.sub(r'(\d+(?:\.\d+)?)'+unit+r'\b',lambda m:str(float(m[1])*scale),s)
-        for md,py in [(' ge ',' >= '),(' le ',' <= '),(' gt ',' > '),(' lt ',' < ')]: s=s.replace(md,py)
-        while re.search(r'\[([^\[\]]+)\]\.(min|max)',s):
-            s=re.sub(r'\[([^\[\]]+)\]\.(min|max)',r'\2(\1)',s)
-        # Native literal lists support one-based indexing and .indexof before
-        # assignment as well as after it. Convert AST literals, not string text.
-        import ast
-        class NativeLists(ast.NodeTransformer):
-            def visit_List(self, node):
-                self.generic_visit(node)
-                return ast.copy_location(ast.Call(func=ast.Name(id='List', ctx=ast.Load()), args=[node], keywords=[]), node)
-        code = compile(ast.fix_missing_locations(NativeLists().visit(ast.parse(s, mode='eval'))), '<md expression>', 'eval')
+        code = compile_expression(s)
         return wrap(eval(code, {'__builtins__':{},'Angle':Angle,'List':List,'min':min,'max':max,'abs':abs,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
     def set(self,path,v,remove=False):
         if isinstance(v, PseudoValue):

@@ -8,6 +8,25 @@ from release_support import ReleaseFixture, release
 
 
 class ReleaseTests(ReleaseFixture):
+    def test_default_gate_keeps_release_integration_and_rolls_back_on_failure(self):
+        original_run = subprocess.run
+        original_manifest = (self.root / 'content.xml').read_bytes()
+        gates = []
+
+        def run(command, **kwargs):
+            if command[0] == 'just':
+                gates.append(command)
+                raise subprocess.CalledProcessError(1, command)
+            return original_run(command, **kwargs)
+
+        with patch.object(release.subprocess, 'run', side_effect=run):
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.runner.run(ask=lambda _: '0.1.0')
+        self.assertEqual(gates, [['just', 'check-release']])
+        self.assertEqual((self.root / 'content.xml').read_bytes(), original_manifest)
+        self.assertEqual(self.cmd('status', '--porcelain'), '')
+        self.assertEqual(self.cmd('tag', '--list'), '')
+
     def test_first_and_subsequent_release(self):
         archive = self.run_release()
         self.assertEqual(archive.name, "Civilian-Economy-0.1.0.zip")

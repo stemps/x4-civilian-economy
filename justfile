@@ -5,10 +5,11 @@ default:
     @just --list
 
 # Read-only production plan reproducibility, snap geometry and construction contracts.
-plans-check:
+plans-check: plans-verify plans-tests construction-tests
+
+# Artifact verification only; validate already discovers the focused plan tests.
+plans-verify:
     if ('{{python}}') { & '{{python}}' tools/generate_plans.py; exit $LASTEXITCODE } else { uv run --offline --with lxml python tools/generate_plans.py; exit $LASTEXITCODE }
-    @just plans-tests
-    @just construction-tests
 
 # Focused geometry, native-stage and recovery contracts against generated artifacts.
 plans-tests:
@@ -23,12 +24,16 @@ plans-generate:
     if ('{{python}}') { & '{{python}}' tools/generate_plans.py --write; exit $LASTEXITCODE } else { uv run --offline --with lxml python tools/generate_plans.py --write; exit $LASTEXITCODE }
 
 # Controller tests, XML parsing and x4validate (uses the configured Python).
-validate:
-    if ('{{python}}') { & '{{python}}' tools/check.py; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py; exit $LASTEXITCODE }
+validate *args:
+    if ('{{python}}') { & '{{python}}' tools/check.py {{args}}; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py {{args}}; exit $LASTEXITCODE }
 
 # Full native schemas, including the merged AI patch.
-schema:
-    if ('{{python}}') { & '{{python}}' tools/check.py --schema; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py --schema; exit $LASTEXITCODE }
+schema *args:
+    if ('{{python}}') { & '{{python}}' tools/check.py --schema {{args}}; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py --schema {{args}}; exit $LASTEXITCODE }
+
+# Full static/native schema validation without repeating controller tests.
+schema-only *args:
+    if ('{{python}}') { & '{{python}}' tools/check.py --schema --skip-tests {{args}}; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py --schema --skip-tests {{args}}; exit $LASTEXITCODE }
 
 lua:
     if ('{{python}}') { & '{{python}}' tools/test_initial_construction.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_initial_construction.py; exit $LASTEXITCODE }
@@ -36,7 +41,18 @@ lua:
     if ('{{python}}') { & '{{python}}' tools/test_population_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_population_bridge.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_map_status.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_map_status.py; exit $LASTEXITCODE }
 
-check: translations plans-check validate lua test-release
+# Everyday gate: all controller tests, generated plans, static checks and UI.
+check: translations plans-verify validate lua
+
+# Preserve the release gate's integration coverage.
+check-release: check test-release
+
+# Comprehensive gate; controller tests execute once, schemas in a fresh process.
+check-full: check-release schema-only
+
+# Focused test-tooling contracts, independent of game execution.
+test-tooling:
+    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests -p 'test_tooling*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests -p 'test_tooling*.py'; exit $LASTEXITCODE }
 
 # Require every English entry in all game locales, including format contracts.
 translations:
@@ -73,6 +89,7 @@ test-release:
     if ('{{python}}') { & '{{python}}' test/test_manual_bbcode.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_manual_bbcode.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' test/test_nexus.py; exit $LASTEXITCODE } else { uv run python test/test_nexus.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' test/test_archive.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_archive.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' test/test_release_support.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_release_support.py; exit $LASTEXITCODE }
 
 # Exercise the optional installed VTL source without redistributing it.
 vtl moddir:
