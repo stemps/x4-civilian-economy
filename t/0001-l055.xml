@@ -247,5 +247,8 @@
     <t id="370">Estado: crescendo</t>
     <t id="371">Pausado: faltam suprimentos</t>
     <t id="372">Construção em andamento</t>
+    <t id="157">Vídeos de notícias</t>
+    <t id="158">Reproduzir vídeos de notícias sobre incidentes civis. Quando desativado, as mensagens de notificação e as entradas do diário de bordo continuam sendo exibidas.</t>
+    <t id="159">Exibição</t>
   </page>
 </language>

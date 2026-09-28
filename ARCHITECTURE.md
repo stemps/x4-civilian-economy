@@ -381,11 +381,11 @@ are selected by exact hub identity.
 
 ## Player settings
 
-`CE_Settings.State` stores five values per save: Debug=false,
+`CE_Settings.State` stores six values per save: Debug=false, NewsVideos=true,
 DemandMultiplier=1.0, TimeMultiplier=1.0, TaxNotifications=true and TaxPercent=15.
 Ensure fills only absent fields; Read provides defaults even before initialization.
 No UI userdata is written and loading another save restores that save's settings.
-`CE_Options` registers its two-section page whenever `Simple_Menu_API.Reloaded`
+`CE_Options` registers its three-section page whenever `Simple_Menu_API.Reloaded`
 signals. It uses the installed Mod Support APIs manifest ID `ws_2042901274`.
 Checkboxes use equal width and height from Helper.standardTextHeight and update
 on click. Sliders update on confirmation, with multipliers ranging from 0.1 to
@@ -406,6 +406,13 @@ empty-placeholder fallback. Hiding the menu does not revoke already-authorized
 asynchronous debug construction. It leaves the read-only map panel visible.
 TaxNotifications suppresses both the ticker and logbook entry, without changing
 payouts. TaxPercent=0 skips the native tax transfer entirely.
+NewsVideos controls the shared raid, sabotage and hacking broadcast playback.
+Broadcast reads the setting each time; disabling it retains the ticker and one
+logbook entry without a replacement popup. Enabled playback still falls back to
+the interactive popup if the engine returns no cutscene handle. Critical warnings
+are independent. The Display checkbox affects future broadcasts only.
+Sections are ordered Debug, Gameplay, Display, with an unselectable 8-pixel
+text spacer before Gameplay and Display; native UI scaling applies.
 
 ## Local demand profiles
 

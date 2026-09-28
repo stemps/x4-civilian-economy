@@ -23,13 +23,17 @@
     <!-- Callers explicitly supply BroadcastKey/Caption; critical warnings use Popup. -->
     <library name="Broadcast">
       <actions>
+        <include_actions ref="md.CE_Settings.Read"/>
         <show_notification text="$IncidentText" timeout="12s"/>
         <set_value name="$IncidentCutscene" exact="null"/>
-        <play_cutscene key="$BroadcastKey" result="$IncidentCutscene" targetmonitor="true" timeout="12s" caption="$BroadcastCaption" sound="'notification_warning'">
-          <interaction text="{974201,209}" param="[$IncidentObject,$IncidentSector]" param2="'ce_unrest_broadcast_map'"/>
-        </play_cutscene>
-        <do_if value="$IncidentCutscene"><include_actions ref="md.CE_UnrestNotifications.Log"/></do_if>
-        <do_else><include_actions ref="md.CE_UnrestNotifications.Popup"/></do_else>
+        <do_if value="$CENewsVideos">
+          <play_cutscene key="$BroadcastKey" result="$IncidentCutscene" targetmonitor="true" timeout="12s" caption="$BroadcastCaption" sound="'notification_warning'">
+            <interaction text="{974201,209}" param="[$IncidentObject,$IncidentSector]" param2="'ce_unrest_broadcast_map'"/>
+          </play_cutscene>
+          <do_if value="$IncidentCutscene"><include_actions ref="md.CE_UnrestNotifications.Log"/></do_if>
+          <do_else><include_actions ref="md.CE_UnrestNotifications.Popup"/></do_else>
+        </do_if>
+        <do_else><include_actions ref="md.CE_UnrestNotifications.Log"/></do_else>
       </actions>
     </library>
     <library name="Popup">

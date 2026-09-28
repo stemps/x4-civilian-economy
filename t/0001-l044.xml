@@ -234,5 +234,8 @@
     <t id="370">Status: Growing</t>
     <t id="371">Paused: missing supplies</t>
     <t id="372">Construction in progress</t>
+    <t id="157">News videos</t>
+    <t id="158">Play news videos for civilian incidents. When disabled, ticker messages and logbook entries are still shown.</t>
+    <t id="159">Display</t>
   </page>
 </language>

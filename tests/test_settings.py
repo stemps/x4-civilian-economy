@@ -33,9 +33,9 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
 
     def test_defaults_save_reload_and_no_cross_save_leak(self):
         self.run.library('md.CE_Settings.Ensure')
-        self.assertEqual(dict(self.state), dict(Debug=False, DemandMultiplier=1.0,
+        self.assertEqual(dict(self.state), dict(Debug=False, NewsVideos=True, DemandMultiplier=1.0,
                          TimeMultiplier=1.0, TaxNotifications=True, TaxPercent=15))
-        for key, value in [('Debug', 1), ('TaxNotifications', 0), ('DemandMultiplier', .3),
+        for key, value in [('Debug', 1), ('NewsVideos', 0), ('TaxNotifications', 0), ('DemandMultiplier', .3),
                            ('TimeMultiplier', .2), ('TaxPercent', 0)]:
             self.change(key, value)
         saved = copy.deepcopy(self.state)
@@ -47,6 +47,28 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
         another.library('md.CE_Settings.Read')
         self.assertEqual(another.env['CEDemandMultiplier'], 1)
         self.assertEqual(another.env['CETaxPercent'], 15)
+        self.assertTrue(another.env['CENewsVideos'])
+
+    def test_news_videos_existing_save_and_boolean_validation(self):
+        self.state.update(Debug=True, DemandMultiplier=.3, TimeMultiplier=.2,
+                          TaxNotifications=False, TaxPercent=0)
+        previous = copy.deepcopy(self.state)
+        self.run.library('md.CE_Settings.Ensure')
+        self.assertEqual(dict(self.state), dict(previous, NewsVideos=True))
+        for value, expected in ((False, False), (1, True), (0, False), (True, True)):
+            self.change('NewsVideos', value)
+            self.assertTrue(self.run.env['SettingValid'])
+            self.assertEqual(self.state.NewsVideos, expected)
+            self.assertFalse(self.run.env['EconomicChange'])
+        self.change('NewsVideos', False)
+        for value in (2, -1, .5, 'true', '0', NIL):
+            self.change('NewsVideos', value)
+            self.assertFalse(self.run.env['SettingValid'])
+            self.assertFalse(self.state.NewsVideos)
+        self.run.library('md.CE_Settings.Ensure')
+        self.run.library('md.CE_Settings.Read')
+        self.assertFalse(self.run.env['CENewsVideos'])
+        self.assertEqual(dict(self.state), dict(previous, NewsVideos=False))
 
     def test_validation_and_rounding(self):
         for key, value in [('DemandMultiplier', 0), ('DemandMultiplier', 10.1),
@@ -152,13 +174,15 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
             if cue.endswith(('Make_Slider', 'Make_CheckBox')):
                 self.assertTrue(selectable)
                 controls.append(args)
-        self.assertEqual(len(controls), 5)
-        debug, demand, time, tax, notifications = controls
+        self.assertEqual(len(controls), 6)
+        debug, demand, time, tax, notifications, news = controls
         self.assertFalse(debug.checked)
+        self.assertTrue(news.checked)
+        self.assertEqual((news.id, news.echo), ('ce_news_videos', '$NewsVideos'))
         self.assertTrue(notifications.checked)
         for slider in (demand, time):
             self.assertEqual((slider.min, slider.max, slider.step, slider.start), (.1, 10, .1, 1))
-        for checkbox in (debug, notifications):
+        for checkbox in (debug, news, notifications):
             self.assertEqual(checkbox.width, 'Helper.standardTextHeight')
             self.assertEqual(checkbox.height, checkbox.width)
         self.assertEqual((tax.min, tax.max, tax.step, tax.start), (0, 50, 1, 15))
@@ -173,6 +197,15 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
         self.run.env['event'] = Table(param=Table(echo='$Debug', checked=1))
         self.run.actions(tree.xpath('//cue[@name="Checkbox"]/actions')[0])
         self.assertTrue(self.state.Debug)
+        for checked in (0, 1, 0):
+            self.run.env['event'] = Table(param=Table(echo=news.echo, checked=checked))
+            self.run.actions(tree.xpath('//cue[@name="Checkbox"]/actions')[0])
+            self.assertEqual(self.state.NewsVideos, bool(checked))
+        calls.clear()
+        self.run.library('md.CE_Options.Build')
+        reopened = next(args for cue, args in calls
+                        if cue.endswith('Make_CheckBox') and args.id == 'ce_news_videos')
+        self.assertFalse(reopened.checked)
 
 
 if __name__ == '__main__':

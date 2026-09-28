@@ -247,5 +247,8 @@
     <t id="370">État : croissance</t>
     <t id="371">En pause : marchandises manquantes</t>
     <t id="372">Construction en cours</t>
+    <t id="157">Vidéos d’actualité</t>
+    <t id="158">Lire les vidéos d’actualité sur les incidents civils. Si cette option est désactivée, les messages du fil d’actualité et les entrées du journal restent affichés.</t>
+    <t id="159">Affichage</t>
   </page>
 </language>

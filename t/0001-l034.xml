@@ -247,5 +247,8 @@
     <t id="370">Estado: creciendo</t>
     <t id="371">En pausa: faltan suministros</t>
     <t id="372">Construcción en curso</t>
+    <t id="157">Vídeos de noticias</t>
+    <t id="158">Reproducir vídeos de noticias sobre incidentes civiles. Si se desactiva esta opción, se seguirán mostrando los mensajes de notificación y las entradas del diario.</t>
+    <t id="159">Visualización</t>
   </page>
 </language>

@@ -7,6 +7,7 @@ from lxml import etree as E
 class NewsNotifications(unittest.TestCase):
     def setUp(self):
         self.run = Runner()
+        self.run.env['player'].entity = Table()
         self.tree = self.run.scripts['CE_UnrestNotifications']
         self.object = Component(exists=True)
         self.sector = Component(exists=True)
@@ -53,9 +54,29 @@ class NewsNotifications(unittest.TestCase):
         self.assertEqual([e[0] for e in self.events], ['ticker', 'play', 'popup', 'log'])
         self.assertIs(self.run.env['IncidentCutscene'], NIL)
 
+    def test_disabled_broadcasts_keep_ticker_and_log_and_can_be_reenabled(self):
+        for key in ('ce_news_raid', 'ce_news_sabotage', 'ce_news_hacking'):
+            with self.subTest(key=key):
+                self.run.env['BroadcastKey'] = key
+                # Exercise the actual settings callback path between broadcasts.
+                for enabled in (True, False, True):
+                    self.run.env.update(SettingKey='$NewsVideos', SettingValue=enabled)
+                    self.run.library('md.CE_Settings.Change')
+                    self.events.clear()
+                    self.run.library('md.CE_UnrestNotifications.Broadcast')
+                    expected = ['ticker', 'play', 'log'] if enabled else ['ticker', 'log']
+                    self.assertEqual([e[0] for e in self.events], expected)
+                    self.assertEqual(self.events[0], ('ticker', 'Full incident details'))
+                    self.assertEqual(self.events[-1], ('log', 'Full incident details', self.object))
+                    if not enabled:
+                        self.assertIs(self.run.env['IncidentCutscene'], NIL)
+
     def test_critical_popup_does_not_reuse_previous_broadcast_inputs(self):
-        self.run.library('md.CE_UnrestNotifications.Popup')
-        self.assertEqual([e[0] for e in self.events], ['popup', 'log'])
+        for enabled in (False, True):
+            self.events.clear()
+            self.run.env['md'].CE_Settings.State.NewsVideos = enabled
+            self.run.library('md.CE_UnrestNotifications.Popup')
+            self.assertEqual([e[0] for e in self.events], ['popup', 'log'])
 
     def test_broadcast_interaction_stops_its_own_clip_before_map_and_falls_back_to_sector(self):
         self.run.env['event'] = Table(param=List([self.object,self.sector]), param3=91)

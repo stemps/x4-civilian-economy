@@ -1721,3 +1721,36 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - Full restart is required for the MD handler. Live timing and cancellation
   acceptance still require in-game verification; mocked tests are not engine
   timing measurements.
+
+## 2026-09-28 - news-video-setting
+
+- IMPLEMENTED: per-save NewsVideos defaults to true, including saves without the
+  field. Ensure preserves explicit false; Read supplies true before initialization.
+  The general-settings checkbox uses the existing validated boolean callback.
+- IMPLEMENTED: the shared Broadcast handler reads the setting for each incident.
+  Off retains the ticker and exactly one log entry, clears the local clip handle,
+  and skips both playback and the replacement popup. On retains the native-playback
+  failure popup. Critical warnings and already playing clips are unaffected.
+- New localized label/tooltip IDs 157-158 are synchronized across all 16 languages.
+  Native checkbox rendering and notification playback remain unverified in-game.
+  Installation requires a full restart; subsequent setting changes apply live.
+- MOCKED/VALIDATED: all 15 focused settings/news tests pass, including default-on,
+  saved false, invalid values, checkbox callbacks, all three video routes, live
+  re-enabling, playback failure fallback and independent critical warnings.
+  just validate, just schema and just translations pass using the toolkit Python
+  via CE_PYTHON. Native schema checks report no introduced errors; translation
+  coverage is 248 keys in each of 16 locales in this working tree.
+
+## 2026-09-28 - display-options-section
+
+- IMPLEMENTED: CE_Options now groups controls under Debug, Gameplay and Display.
+  NewsVideos is under Display. Gameplay retains its existing controls. Two
+  unselectable space-text rows, fontsize 1 and height 8, separate the sections.
+  This follows vanilla gameoptions.lua's explicit small-text spacer pattern;
+  actual in-game spacing still requires visual confirmation.
+- Display heading ID 159 is translated into all 16 locales. This supersedes the
+  earlier placement of NewsVideos under Debug. MD menu changes require a full
+  restart; /reloadui alone cannot load this edit.
+- VALIDATED: just validate and just translations pass after moving the control;
+  existing settings callback coverage follows the new control order. In-game
+  visual confirmation remains pending.

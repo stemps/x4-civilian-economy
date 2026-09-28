@@ -247,5 +247,8 @@
     <t id="370">Stato: in crescita</t>
     <t id="371">In pausa: rifornimenti mancanti</t>
     <t id="372">Costruzione in corso</t>
+    <t id="157">Video delle notizie</t>
+    <t id="158">Riproduci video delle notizie sugli incidenti civili. Se disattivato, i messaggi di notifica e le voci del registro vengono comunque mostrati.</t>
+    <t id="159">Visualizzazione</t>
   </page>
 </language>

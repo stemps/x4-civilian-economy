@@ -247,5 +247,8 @@
     <t id="370">Status: rozwój</t>
     <t id="371">Wstrzymano: brak zaopatrzenia</t>
     <t id="372">Budowa w toku</t>
+    <t id="157">Filmy z wiadomościami</t>
+    <t id="158">Odtwarzaj filmy z wiadomościami o incydentach cywilnych. Po wyłączeniu tej opcji nadal będą wyświetlane powiadomienia tekstowe i wpisy w dzienniku.</t>
+    <t id="159">Wyświetlanie</t>
   </page>
 </language>

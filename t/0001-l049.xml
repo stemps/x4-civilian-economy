@@ -247,5 +247,8 @@
     <t id="370">Status: Wachstum</t>
     <t id="371">Pausiert: fehlende Waren</t>
     <t id="372">Bau läuft</t>
+    <t id="157">Nachrichtenvideos</t>
+    <t id="158">Nachrichtenvideos zu zivilen Zwischenfällen abspielen. Bei deaktivierter Option werden Tickermeldungen und Logbucheinträge weiterhin angezeigt.</t>
+    <t id="159">Anzeige</t>
   </page>
 </language>
