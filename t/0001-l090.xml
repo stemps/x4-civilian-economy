@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="90">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Sivil Ticaret Merkezi</t>
     <t id="2">Sektörün sivil nüfusuna hizmet veren kamu teslimat merkezi. İnşaatı gezegen ekonomisi finanse eder. Tamamlandığında sivil stokları korumak için mal satın alır.</t>
     <t id="10">Civilian Economy - Test</t>
@@ -115,7 +115,7 @@
     <t id="136">Merkez oluşturulamadı: sektör profilinde veya yedek Argon profilinde geçerli talep ve inşaat bileşenleri yok.</t>
     <t id="137">Test istasyonu oluşturulamadı. Sabit nüfus kaydedildi; normal durum uzlaştırması yeniden deneyecek. Hata ayıklama kaydına bakın.</t>
     <t id="138">Sivil merkez oluştur \(5 milyar\)</t>
-    <t id="139">Sabit 5 milyar nüfuslu sahipsiz sivil merkez oluşturur. Geçerli plan hazır olduğunda ilk inşaatı bitirir. Geçerli sivil sektör profili yoksa Argon kullanır. Yerleştirme zaman alabilir.</t>
+    <t id="139">Sabit 5 milyar nüfuslu sivil merkez oluşturur. Geçerli plan hazır olduğunda ilk inşaatı bitirir. Geçerli sivil sektör profili yoksa Argon kullanır. Yerleştirme zaman alabilir.</t>
     <t id="140">Sabit test nüfusu: 5 milyar</t>
     <t id="141">Test profili: yedek Argon</t>
     <t id="142">Civilian Economy</t>

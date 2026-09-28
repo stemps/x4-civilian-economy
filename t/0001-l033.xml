@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="33">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Centre commercial civil</t>
     <t id="2">Centre de livraison public desservant la population civile du secteur. L'économie planétaire finance sa construction. Une fois achevé, il achète des marchandises pour entretenir les réserves civiles.</t>
     <t id="10">Civilian Economy - Tests</t>
@@ -115,7 +115,7 @@
     <t id="136">Échec de création du centre civil de débogage : ni le profil du secteur ni le profil argon de secours n'ont de composants valides pour la demande et la construction.</t>
     <t id="137">Création de la station impossible. La population fixe est enregistrée ; le rapprochement normal réessaiera. Consultez le journal de débogage.</t>
     <t id="138">Créer un centre civil \(5 milliards\)</t>
-    <t id="139">Crée un centre civil sans propriétaire avec 5 milliards d'habitants fixes. Termine sa construction initiale dès qu'un plan valide est prêt. Utilise un profil argon si le secteur n'a pas de profil civil valide. Le placement peut prendre du temps.</t>
+    <t id="139">Crée un centre civil avec 5 milliards d'habitants fixes. Termine sa construction initiale dès qu'un plan valide est prêt. Utilise un profil argon si le secteur n'a pas de profil civil valide. Le placement peut prendre du temps.</t>
     <t id="140">Population fixe de débogage : 5 milliards</t>
     <t id="141">Profil de débogage : secours argon</t>
     <t id="142">Civilian Economy</t>

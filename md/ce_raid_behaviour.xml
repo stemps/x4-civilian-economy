@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mdscript name="CE_RaidBehaviour" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
   <cues>
-    <!-- Version 2 groups only. Persistent state stays on CE_Raids.State.Groups. -->
+    <!-- Prepared raids only. Persistent state stays on CE_Raids.State.Groups. -->
     <library name="Prepare">
       <actions>
-        <set_value name="$RaidGroup.$Version" exact="2"/>
         <set_value name="$RaidGroup.$Phase" exact="'departing'"/>
         <set_value name="$RaidGroup.$Deadline" exact="player.age + 10min"/>
         <set_value name="$RaidGroup.$Announced" exact="false"/>
@@ -119,9 +118,6 @@
     </library>
     <library name="Tick">
       <actions>
-        <!-- In old v2 saves Announced meant piracy had begun. Migrate once before
-             using it as the earlier mobilisation-warning guard. -->
-        <do_if value="not $RaidGroup.$CombatStarted?"><set_value name="$RaidGroup.$CombatStarted" exact="$RaidGroup.$Announced"/></do_if>
         <set_value name="$RaidReady" exact="true"/><set_value name="$RaidBoarding" exact="false"/>
         <set_value name="$RaidReplan" exact="false"/><set_value name="$RaidAnchor" exact="$RaidGroup.$Hub"/>
         <do_for_each name="$RaidShip" in="$RaidGroup.$Ships" counter="$RaidIndex" reverse="true">

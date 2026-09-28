@@ -103,11 +103,10 @@ local function decode(id, s)
     result.populationOverride, result.debugFallback = number(s[17]), yes(s[18])
     result.debugInitial = yes(s[19]) and not yes(s[15])
     result.layoutPhase = s[22]
-    if type(s[21]) == 'table' then
+    if type(s[21]) == 'table' and s[21][1] == 2 and type(s[21][2]) == 'table' then
         local payload, events, seen = s[21], {}, {}
-        local modern = payload[1] == 2 and type(payload[2]) == 'table'
-        local rows = modern and payload[2] or (payload[1] == 0 and {} or {payload})
-        local eligible, token = modern and payload[3] or payload[5], number(modern and payload[4] or payload[6])
+        local rows = payload[2]
+        local eligible, token = payload[3], number(payload[4])
         local valid = type(eligible) == 'table' and token and token == math.floor(token)
         for _, e in ipairs(rows) do
             if type(e) ~= 'table' then valid = false; break end
@@ -120,7 +119,7 @@ local function decode(id, s)
         end
         if valid then
             table.sort(events, function(a,b) return a.id < b.id end)
-            result.demandEvents = {events=events, eligible=eligible, token=token, version=modern and 2 or 1}
+            result.demandEvents = {events=events, eligible=eligible, token=token, version=2}
         end
     end
     if type(s[20]) == 'table' then

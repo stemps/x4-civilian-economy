@@ -142,7 +142,7 @@ class RefreshSafetyTests(unittest.TestCase):
         self.assertEqual(len(self.r.Snapshot[9]),2)
 
     def request_status(self, target=None):
-        self.run.env['md'].CE_OwnerlessHub.Init['Registry']=self.run.env['Registry']
+        self.run.env['md'].CE_CivilianHub.Init['Registry']=self.run.env['Registry']
         self.run.env['event']=Table(param3=self.r.Hub if target is None else target)
         actions=self.run.scripts['CE_Diagnostics'].xpath('//cue[@name="RefreshSelectedHub"]/actions')[0]
         self.run.actions(actions)

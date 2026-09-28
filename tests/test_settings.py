@@ -25,7 +25,7 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
         self.run.env['R'] = record
         self.run.library('md.CE_Demand.ApplyLevel')
         record.Wares[ware].Reserve = 10000.0
-        registry = self.run.env['md'].CE_OwnerlessHub.Init
+        registry = self.run.env['md'].CE_CivilianHub.Init
         if 'Registry' not in registry:
             registry.Registry = Table()
         registry.Registry[sector] = record

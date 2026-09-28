@@ -12,11 +12,11 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
         self.r.update(Level=1, Definitions=List(), DisplayOrder=List(), Factor=1,
                       Transfers=Table(), PlotReady=True, TestUpgrade=False)
         self.run.env.update(Sector=self.sector, readtext=Table({974201:Table({i:str(i) for i in range(321,332)})}))
-        self.run.env['md'].CE_OwnerlessHub.Init.Registry = Table({self.sector:self.r})
+        self.run.env['md'].CE_CivilianHub.Init.Registry = Table({self.sector:self.r})
         self.run.env['md'].CE_Settings.State.Debug = True
         self.run.env['event'] = Table(param3=self.hub)
         self.offers=[]
-        self.run.stubs['md.CE_OwnerlessHub.UpdateOffers']=lambda:self.offers.append(True)
+        self.run.stubs['md.CE_CivilianHub.UpdateOffers']=lambda:self.offers.append(True)
         self.run.stubs['md.CE_Diagnostics.PublishAllDiagnostics']=lambda:None
         self.run.env['player'].entity=Table()
         self.run.library('md.CE_DemandEvents.Ensure')
@@ -91,19 +91,18 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
                 for ware,w in self.r.Wares.items():
                     self.assertAlmostEqual(w.Rate,100+percent if ware in selected else 100)
 
-    def test_migration_preserves_deadline_and_basket_without_reannouncement(self):
+    def test_ensure_preserves_current_events_without_reannouncement(self):
         food=self.add_good('food')
-        self.r.pop('DemandEvents')
-        legacy=Table(ID=1,Percent=50,End=7200,Wares=List([food]),Names='food',Sector=self.sector,Token=4,Next=30000)
-        self.r.DemandEvent=legacy
+        event=Table(ID=1,Percent=50,End=7200,Wares=List([food]),Names='food')
+        self.r.DemandEvents.Active[1]=event
+        self.r.DemandEvents.Token=5
         self.run.env['player'].age=1200
         self.run.library('md.CE_DemandEvents.Ensure')
         state=self.r.DemandEvents
         self.assertEqual(state.Version,2)
         self.assertEqual(state.Token,5)
         self.assertEqual(state.Active[1].End,7200)
-        self.assertIs(state.Active[1].Wares,legacy.Wares)
-        self.assertNotIn('DemandEvent',self.r)
+        self.assertIs(state.Active[1].Wares,event.Wares)
         self.assertNotIn('Next',state)
         self.run.library('md.CE_DemandEvents.Ensure')
         self.assertIs(self.r.DemandEvents,state)
@@ -398,10 +397,9 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
         self.assertEqual(self.r.Wares[water].Rate,100)
         self.assertEqual(self.r.Wares[energy].Rate,200)
 
-    def test_migrated_expired_event_is_settled_before_delivery(self):
+    def test_current_expired_event_is_settled_before_delivery(self):
         food=self.add_good('food',reserve=1000)
-        self.r.pop('DemandEvents')
-        self.r.DemandEvent=Table(ID=1,Percent=100,End=7200,Wares=List([food]),Names='food',Sector=self.sector,Token=2,Next=99999)
+        self.r.DemandEvents.Active[1]=Table(ID=1,Percent=100,End=7200,Wares=List([food]),Names='food')
         self.r.Wares[food].Rate=200
         self.advance(9000)
         self.assertEqual(self.r.Wares[food].Reserve,550)

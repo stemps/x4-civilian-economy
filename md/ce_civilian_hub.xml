@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<mdscript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="CE_OwnerlessHub" xsi:noNamespaceSchemaLocation="md.xsd">
+<mdscript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="CE_CivilianHub" xsi:noNamespaceSchemaLocation="md.xsd">
   <cues>
     <cue name="Init" checkinterval="1s">
       <conditions>
@@ -29,7 +29,7 @@
             <do_for_each name="$Sector" in="$Registry.keys.list">
               <set_value name="$R" exact="$Registry.{$Sector}"/>
               <do_if value="$R.$Hub.exists and @$R.$WatchingHub != $R.$Hub">
-                <signal_cue_instantly cue="md.CE_OwnerlessHub.WatchSectorHub" param="[$Sector,$R,$R.$Hub]"/>
+                <signal_cue_instantly cue="md.CE_CivilianHub.WatchSectorHub" param="[$Sector,$R,$R.$Hub]"/>
                 <set_value name="$R.$WatchingHub" exact="$R.$Hub"/>
               </do_if>
               <include_actions ref="UpdateHub"/>
@@ -133,7 +133,7 @@
             <event_cue_signalled/>
           </conditions>
           <actions>
-            <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+            <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
             <set_value name="$Sector" exact="event.param.{1}"/>
             <set_value name="$R" exact="event.param.{2}"/>
             <set_value name="$Hub" exact="event.param.{3}"/>
@@ -219,10 +219,6 @@
     <library name="Reconcile">
       <actions>
         <do_if value="not @md.CE_DebugReset.State.$Busy or @md.CE_DebugReset.State.$Phase == 'initializing'">
-        <do_for_each name="$MigrationSector" in="$Registry.keys.list">
-          <set_value name="$R" exact="$Registry.{$MigrationSector}"/>
-          <include_actions ref="MigrateHubOwnership"/>
-        </do_for_each>
         <set_value name="$NextReconcile" exact="player.age + 5min"/>
         <include_actions ref="md.CE_DebugCreate.ReconcileOverrides"/>
         <find_sector name="$PopulationSectors" space="player.galaxy" multiple="true"/>
@@ -233,27 +229,6 @@
         <set_value name="player.entity.$ce_population_request" exact="[$PopulationRequest,$PopulationSectors]"/>
         <raise_lua_event name="'CEPopulationRequest'"/>
 
-        </do_if>
-      </actions>
-    </library>
-    <!-- Registered legacy hubs only; retain their objects and all sector state. -->
-    <library name="MigrateHubOwnership">
-      <actions>
-        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and ($R.$Hub.owner == faction.ownerless or $R.$Hub.owner == faction.civilian)">
-          <do_if value="$R.$Hub.owner == faction.ownerless">
-            <set_owner object="$R.$Hub" faction="faction.civilian" overridenpc="true"/>
-          </do_if>
-          <do_if value="$R.$Hub.tradenpc.exists and $R.$Hub.tradenpc.owner == faction.ownerless">
-            <set_owner object="$R.$Hub.tradenpc" faction="faction.civilian"/>
-          </do_if>
-          <do_if value="$R.$Hub.buildstorage.exists">
-            <do_if value="$R.$Hub.buildstorage.owner == faction.ownerless">
-              <set_owner object="$R.$Hub.buildstorage" faction="faction.civilian" overridenpc="true"/>
-            </do_if>
-            <do_if value="$R.$Hub.buildstorage.tradenpc.exists and $R.$Hub.buildstorage.tradenpc.owner == faction.ownerless">
-              <set_owner object="$R.$Hub.buildstorage.tradenpc" faction="faction.civilian"/>
-            </do_if>
-          </do_if>
         </do_if>
       </actions>
     </library>
@@ -306,10 +281,6 @@
         <include_actions ref="md.CE_Reserves.Rebase"/>
       </actions>
     </library>
-    <!-- Compatibility entry point: rebases the clock, never clears growth. -->
-    <library name="ResetHistory">
-      <actions><include_actions ref="RebaseAccrual"/></actions>
-    </library>
     <library name="AccrueAll">
       <actions>
         <include_actions ref="md.CE_Reserves.Accrue"/>
@@ -332,7 +303,7 @@
         <include_actions ref="md.CE_Construction.Readiness"/>
         <do_if value="$Ready">
           <do_if value="not $R.$Operational">
-            <include_actions ref="md.CE_OwnerlessHub.RebaseAccrual"/>
+            <include_actions ref="md.CE_CivilianHub.RebaseAccrual"/>
             <set_value name="$R.$Operational" exact="true"/>
             <do_if value="$R.$InitializedHub != $Hub">
               <signal_objects object="player.galaxy" param="'init station'" param2="$Hub" param3="false"/>
@@ -340,7 +311,7 @@
             </do_if>
             <debug_text text="'[CE] Completed-level modules operational: level=%s'.[$R.$Level]"/>
           </do_if>
-          <include_actions ref="md.CE_OwnerlessHub.AccrueAll"/>
+          <include_actions ref="md.CE_CivilianHub.AccrueAll"/>
           <do_if value="$TargetReady">
             <set_value name="$PreviousLevel" exact="$R.$Level"/>
             <set_value name="$UpgradeCompleted" exact="true"/>
@@ -352,18 +323,18 @@
             <set_value name="$R.$Build" exact="null"/>
             <debug_text text="'[CE] Upgrade completed: level=%s qualification_bypassed=%s'.[$R.$Level,$R.$TestUpgrade]"/>
             <set_value name="$R.$TestUpgrade" exact="false"/>
-            <include_actions ref="md.CE_OwnerlessHub.ApplyLevel"/>
-            <include_actions ref="md.CE_OwnerlessHub.RenameHub"/>
+            <include_actions ref="md.CE_CivilianHub.ApplyLevel"/>
+            <include_actions ref="md.CE_CivilianHub.RenameHub"/>
           </do_if>
           <set_value name="$ManagedObject" exact="$Hub"/>
-          <include_actions ref="md.CE_OwnerlessHub.EnsureManager"/>
-          <include_actions ref="md.CE_OwnerlessHub.FundAccounts"/>
-          <include_actions ref="md.CE_OwnerlessHub.EvaluateQualification"/>
+          <include_actions ref="md.CE_CivilianHub.EnsureManager"/>
+          <include_actions ref="md.CE_CivilianHub.FundAccounts"/>
+          <include_actions ref="md.CE_CivilianHub.EvaluateQualification"/>
           <do_if value="$R.$Qualified">
             <set_value name="$R.$Target" exact="$R.$Level + 1"/>
             <set_value name="$R.$TestUpgrade" exact="false"/>
             <debug_text text="'[CE] Naturally qualified for level %s'.[$R.$Target]"/>
-            <include_actions ref="md.CE_OwnerlessHub.QueueExpansion"/>
+            <include_actions ref="md.CE_CivilianHub.QueueExpansion"/>
           </do_if>
         </do_if>
         <do_else>
@@ -371,20 +342,16 @@
             <debug_text text="'[CE] Required modules unavailable: consumption and growth paused; progress preserved'"/>
           </do_if>
           <set_value name="$R.$Operational" exact="false"/>
-          <include_actions ref="md.CE_OwnerlessHub.RebaseAccrual"/>
+          <include_actions ref="md.CE_CivilianHub.RebaseAccrual"/>
           <do_if value="$Hub.exists and not $Hub.iswreck">
-            <include_actions ref="md.CE_OwnerlessHub.FundAccounts"/>
+            <include_actions ref="md.CE_CivilianHub.FundAccounts"/>
           </do_if>
         </do_else>
-        <include_actions ref="md.CE_OwnerlessHub.UpdateOffers"/>
+        <include_actions ref="md.CE_CivilianHub.UpdateOffers"/>
         <do_if value="$UpgradeCompleted">
           <include_actions ref="md.CE_Notifications.UpgradeCompleted"/>
         </do_if>
       </actions>
-    </library>
-    <!-- Compatibility entry point; preparation now uses the current plot first. -->
-    <library name="ReserveGrowthPlot">
-      <actions><include_actions ref="md.CE_Placement.Prepare"/></actions>
     </library>
     <library name="QueueExpansion">
       <actions>
@@ -398,7 +365,7 @@
       <actions><include_actions ref="md.CE_Trade.UpdateOffers"/></actions>
     </library>
     <library name="FundAccounts">
-      <actions><include_actions ref="md.CE_Trade.FundAccounts"/></actions>
+      <actions><include_actions ref="md.CE_Accounts.FundAccounts"/></actions>
     </library>
     <library name="RenameHub">
       <actions>
@@ -447,7 +414,7 @@
       </actions>
     </library>
     <library name="EnsureManager">
-      <actions><include_actions ref="md.CE_Trade.EnsureManager"/></actions>
+      <actions><include_actions ref="md.CE_Accounts.EnsureManager"/></actions>
     </library>
     <library name="EnsureRecord">
       <actions>
@@ -465,7 +432,6 @@
         <include_actions ref="CaptureSectorProfile"/>
         <do_if value="$Sector and ($Population ge 100000000 or $Registry.{$Sector}?)">
           <include_actions ref="EnsureRecord"/>
-          <include_actions ref="MigrateHubOwnership"/>
           <include_actions ref="UpdatePopulation"/>
           <include_actions ref="RefreshProfile"/>
           <do_if value="(not $R.$Hub.exists or $R.$Hub.iswreck) and $Population ge 100000000">

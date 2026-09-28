@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="42">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Civilní obchodní centrum</t>
     <t id="2">Veřejné zásobovací centrum pro civilní obyvatelstvo sektoru. Výstavbu financuje planetární ekonomika. Po dokončení nakupuje zboží pro udržování civilních zásob.</t>
     <t id="10">Civilian Economy - Testování</t>
@@ -115,7 +115,7 @@
     <t id="136">Vytvoření selhalo: profil sektoru ani záložní argonský profil nemají platné komponenty poptávky a stavby.</t>
     <t id="137">Ladicí stanici nelze vytvořit. Pevná populace uložena; běžné vyrovnání stavu pokus zopakuje. Viz ladicí protokol.</t>
     <t id="138">Vytvořit civilní centrum \(5 miliard\)</t>
-    <t id="139">Vytvoří civilní centrum bez vlastníka s pevnou populací 5 miliard. Po získání platného plánu dokončí počáteční stavbu. Bez platného civilního profilu použije argonský profil. Umístění může trvat.</t>
+    <t id="139">Vytvoří civilní centrum s pevnou populací 5 miliard. Po získání platného plánu dokončí počáteční stavbu. Bez platného civilního profilu použije argonský profil. Umístění může trvat.</t>
     <t id="140">Pevná ladicí populace: 5 miliard</t>
     <t id="141">Ladicí profil: záložní Argon</t>
     <t id="142">Civilian Economy</t>

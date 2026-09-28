@@ -15,12 +15,11 @@ in-game reset/upgrade check after a full restart.
 
 ## Hub ownership and reconstruction
 
-Hubs and their managers belong to `faction.civilian`. The historical
-`CE_OwnerlessHub` script/cue names remain stable. Construction-plan IDs now use the
-production ce_hub_<race> catalogue. `MigrateHubOwnership` transfers registered, live legacy
-ownerless hubs in place, repairing ownerless managers and build storage as needed.
-It runs at the start of `Reconcile` (including game load) and in `ReconcileSector`.
-It does not reset sector records or convert objects owned by other factions.
+Hubs and their managers belong to `faction.civilian`. The controller is
+`CE_CivilianHub` in `md/ce_civilian_hub.xml`. Construction-plan IDs use the
+production ce_hub_<race> catalogue. Older mod saves are unsupported; start with
+a save that has never loaded the mod. There are no ownership or old-state
+migrations. Saves made with the current implementation retain normal continuity.
 
 `ReconcileSector` gates creation, including replacement and debug creation, on the
 sector owner's enemy relation toward civilians. Unowned and non-hostile sectors
@@ -28,10 +27,10 @@ qualify; nearby enemies do not affect eligibility. Existing hubs keep operating
 after hostile conquest. Destruction retains earned progress under the existing
 loss policy; reconstruction resumes when the sector qualifies again. Funding
 continues to use the ownerless faction account. Unrest fleets still switch to
-`ce_unrest`, explicitly neutral toward both civilian and ownerless hubs.
+`ce_unrest`, explicitly neutral toward both civilians and ownerless objects.
 
-These MD ownership changes require a full restart and save load. Native ownership
-propagation and continuity of an active construction need in-game verification.
+These MD changes require a full restart and save load. Continuity of active
+construction needs in-game verification.
 
 ## Localization
 
@@ -62,10 +61,8 @@ police behaviour or native production.
 Each registry record lazily gains version-2 `DemandEvents`, containing an `Active`
 table keyed by event ID, sector identity and a command token. Each active entry
 holds its ID, signed percentage, expiry, frozen affected ware list and ware names.
-Migration copies an old `DemandEvent` without changing its deadline or replaying
-its start, advances the token and removes the obsolete single-event state and
-cooldown. Accrual, demand preparation and diagnostics can migrate before the
-first minute tick. Repeated migration preserves the new collection.
+Initialization creates the current collection only; obsolete single-event state
+is unsupported.
 
 Candidates use active positive-rate wares and racial categories. Water, medicine
 and energy are excluded from staples; festivals use imported foods and drugs.
@@ -98,8 +95,8 @@ other events may still be active. Tickers can wait for the next minute tick.
 
 Snapshot v3 optional slot 21 is `[2, eventRows, eligibleIDs, commandToken]`, with
 rows `[eventID, signedPercent, remainingSeconds, wareNames]` ordered by ID. The
-UI also accepts the legacy six-field single-event payload for display, but only
-the new format authorizes debug commands. Stale snapshots retain event display
+UI accepts only this collection format for display and debug commands.
+Stale snapshots retain event display
 and cannot authorize commands. With active events, the map fixes only its five
 hub summary rows; events, ware heading and wares scroll in the same table. With
 no events the ware heading remains the sixth fixed row. Changing the event list
@@ -205,10 +202,11 @@ reserve cooldowns; failed departures restore them only if no newer reservation
 replaced them. A single news broadcast commits when departure is accepted;
 the 45-minute lifetime starts only when piracy begins. Separate saved `Announced`
 and `CombatStarted` guards prevent repeat warnings/lifetime resets on regrouping.
-Old version-2 groups initialize `CombatStarted` from their former `Announced`
-flag before any warning is sent; departing groups receive a warning on their next
-eligible lifecycle tick, while active groups retain their existing end time.
-Pre-version-2 groups retain their legacy cleanup and are not upgraded.
+Groups start in `launching` phase; successful preparation changes the phase to
+`departing`. Failed partial launches remain in `launching` and use the dedicated
+`CleanupFailedLaunch` library, preserving boarding, capture and safe-despawn
+checks. Prepared groups use the current raid behavior; no historical group
+versions or announcement flags are migrated.
 
 CE AI hooks require true ownership plus versioned pilot blackboard markers.
 `move.seekenemies` preserves the cargo-carrying player-flown ship exception and
@@ -284,9 +282,9 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | --- | --- |
 | `md/ce_settings.xml` | Per-save settings, defaults, validation, live economic transitions and shared growth-time calculation. Publishes the debug-menu visibility flag. |
 | `md/ce_options.xml` | Civilian Economy page in Mod Support APIs Extension Options; checkbox and stepped-slider callbacks. |
-| `md/ce_ownerless_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
+| `md/ce_civilian_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
 | `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
-| `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers and pricing. Retains payment watcher cue identities and compatibility provisioning entry points. |
+| `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers and pricing. Retains payment watcher cues; provisioning belongs to CE_Accounts. |
 | `md/ce_accounts.xml` | Synchronous station/build-storage funding and manager provisioning, behind the existing trade/controller entry points. |
 | `md/ce_transaction_log.xml` | Synchronous optional payment-label integration: capture requests, tax labels and receipt publication. Owns no persistent cue state. |
 | `md/ce_notifications.xml` | Upgrade-start and completion ticker/logbook messages, with saved per-target start deduplication. |
@@ -673,8 +671,8 @@ concurrent-trade acceptance tests.
 
 `CE_Reserves` libraries run synchronously in the controller/listener namespace
 with explicit `$R`. `RebaseAccrual`, `AccrueAll` and `EvaluateQualification` delegate
-to reserve rebasing, accrual and qualification respectively. `ResetHistory` remains
-a compatibility alias for rebasing; neither name clears earned growth.
+to reserve rebasing, accrual and qualification respectively. Rebasing preserves
+earned growth; the obsolete `ResetHistory` alias has been removed.
 
 `ReconcileSector` initializes growth to zero and last accrual to the current
 simulation age when creating each record. `CommitRates` initializes new wares

@@ -243,8 +243,9 @@ status[15]=true;open();assert(not trigger(5).active)
 status[15]=false;status[4]=false;open();assert(not trigger(5).active)
 status[4]=true;open();old=trigger(5);debugEnabled=false;count=#commands
 old.script();assert(#commands==count);debugEnabled=true
--- Old cached single-event data may display, but cannot authorize new commands.
+-- Obsolete single-event payloads provide no event data or commands.
 status[21]={1,50,7200,'Food',{1,2},13};open();assert(not groups.actions_ce_debug_events)
+assert(CEHubStatus.getFresh(42).demandEvents == nil)
 status[21]=nil
 ''')
 lua.execute('''

@@ -5,7 +5,7 @@ from support_startup import StartupHarness
 class StagedConstructionTests(StartupHarness):
     def test_initial_build_retries_until_native_ready_then_revokes_permission(self):
         record=self.start();record.InitialHub=record.Hub
-        self.run.env['md'].CE_OwnerlessHub.Init.Registry=self.run.env['Registry']
+        self.run.env['md'].CE_CivilianHub.Init.Registry=self.run.env['Registry']
         attempts=[]
         self.run.native['raise_lua_event']=lambda n:attempts.append(n.get('name'))
         self.complete()

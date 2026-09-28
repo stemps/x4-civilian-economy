@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="88">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">民用貿易中心</t>
     <t id="2">為星區平民人口服務的公共交貨中心。建設由行星經濟出資。建成後購買商品以維持民用儲備。</t>
     <t id="10">Civilian Economy - 測試</t>
@@ -115,7 +115,7 @@
     <t id="136">建立偵錯民用中心失敗：星區設定與備用Argon設定均無有效需求及建設元件。</t>
     <t id="137">偵錯民用中心未能建立太空站。固定人口已儲存；例行狀態協調會重試。請檢查偵錯記錄。</t>
     <t id="138">建立民用中心（50億）</t>
-    <t id="139">建立固定50億人口的無主民用中心。有效配置就緒後自動完成初始建設。星區沒有有效民用設定時使用Argon設定。選址可能需要時間。</t>
+    <t id="139">建立固定50億人口的民用中心。有效配置就緒後自動完成初始建設。星區沒有有效民用設定時使用Argon設定。選址可能需要時間。</t>
     <t id="140">固定偵錯人口：50億</t>
     <t id="141">偵錯設定：備用Argon</t>
     <t id="142">Civilian Economy</t>

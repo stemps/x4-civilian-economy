@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="55">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Centro de comércio civil</t>
     <t id="2">Centro público de entregas para a população civil do setor. A economia planetária financia a construção. Quando concluído, compra mercadorias para manter as reservas civis.</t>
     <t id="10">Civilian Economy - Testes</t>
@@ -115,7 +115,7 @@
     <t id="136">Falha na criação: nem o perfil do setor nem o perfil Argon alternativo têm componentes válidos de demanda e construção.</t>
     <t id="137">Não foi possível criar a estação de depuração. População fixa salva; a reconciliação normal tentará novamente. Veja o registro de depuração.</t>
     <t id="138">Criar centro civil \(5 bilhões\)</t>
-    <t id="139">Cria um centro civil sem proprietário com 5 bilhões de habitantes fixos. Conclui a construção inicial quando houver projeto válido. Usa perfil Argon se o setor não tiver perfil civil válido. O posicionamento pode demorar.</t>
+    <t id="139">Cria um centro civil com 5 bilhões de habitantes fixos. Conclui a construção inicial quando houver projeto válido. Usa perfil Argon se o setor não tiver perfil civil válido. O posicionamento pode demorar.</t>
     <t id="140">População fixa de depuração: 5 bilhões</t>
     <t id="141">Perfil de depuração: Argon alternativo</t>
     <t id="142">Civilian Economy</t>

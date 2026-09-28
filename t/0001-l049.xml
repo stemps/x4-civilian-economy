@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="49">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Ziviles Handelszentrum</t>
     <t id="2">Öffentliches Lieferzentrum für die Zivilbevölkerung des Sektors. Die planetare Wirtschaft finanziert den Bau. Nach Fertigstellung kauft es Waren zur Versorgung der zivilen Vorräte.</t>
     <t id="10">Civilian Economy - Tests</t>
@@ -115,7 +115,7 @@
     <t id="136">Ziviles Debugzentrum konnte nicht erstellt werden: Weder Sektorprofil noch Argonen-Ersatzprofil haben gültige Bedarfs- und Baukomponenten.</t>
     <t id="137">Ziviles Debugzentrum konnte keine Station erstellen. Feste Bevölkerung gespeichert; regulärer Abgleich versucht es erneut. Debugprotokoll prüfen.</t>
     <t id="138">Ziviles Zentrum erstellen \(5 Mrd.\)</t>
-    <t id="139">Erstellt ein herrenloses ziviles Zentrum mit 5 Milliarden Einwohnern. Schließt den Anfangsbau automatisch ab, sobald ein gültiger Bauplan vorliegt. Ohne gültiges ziviles Sektorprofil wird ein Argonen-Profil genutzt. Platzierung kann dauern.</t>
+    <t id="139">Erstellt ein ziviles Zentrum mit 5 Milliarden Einwohnern. Schließt den Anfangsbau automatisch ab, sobald ein gültiger Bauplan vorliegt. Ohne gültiges ziviles Sektorprofil wird ein Argonen-Profil genutzt. Platzierung kann dauern.</t>
     <t id="140">Feste Debugbevölkerung: 5 Mrd.</t>
     <t id="141">Debugprofil: Argonen-Ersatzprofil</t>
     <t id="142">Civilian Economy</t>

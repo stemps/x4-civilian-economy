@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="39">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Centro commerciale civile</t>
     <t id="2">Centro pubblico di consegna per la popolazione civile del settore. L'economia planetaria finanzia la costruzione. Una volta completato, acquista merci per mantenere le scorte civili.</t>
     <t id="10">Civilian Economy - Test</t>
@@ -115,7 +115,7 @@
     <t id="136">Creazione fallita: né il profilo del settore né quello Argon di riserva hanno componenti validi di domanda e costruzione.</t>
     <t id="137">Impossibile creare la stazione di debug. Popolazione fissa salvata; la riconciliazione normale riproverà. Consulta il registro di debug.</t>
     <t id="138">Crea centro civile \(5 miliardi\)</t>
-    <t id="139">Crea un centro civile senza proprietario con 5 miliardi di abitanti fissi. Completa la costruzione iniziale quando il progetto è valido. Usa un profilo Argon se manca un profilo civile valido del settore. Il posizionamento può richiedere tempo.</t>
+    <t id="139">Crea un centro civile con 5 miliardi di abitanti fissi. Completa la costruzione iniziale quando il progetto è valido. Usa un profilo Argon se manca un profilo civile valido del settore. Il posizionamento può richiedere tempo.</t>
     <t id="140">Popolazione fissa di debug: 5 miliardi</t>
     <t id="141">Profilo di debug: riserva Argon</t>
     <t id="142">Civilian Economy</t>

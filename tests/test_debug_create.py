@@ -7,7 +7,7 @@ from support_startup import StartupHarness
 class DebugCreateTests(StartupHarness):
     def setUp(self):
         super().setUp()
-        self.run.env['md'].CE_OwnerlessHub.Init.Registry = self.run.env['Registry']
+        self.run.env['md'].CE_CivilianHub.Init.Registry = self.run.env['Registry']
         self.raised = []
         self.feedback = []
         self.run.native['raise_lua_event'] = lambda n: self.raised.append(

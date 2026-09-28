@@ -1,3 +1,22 @@
+## 2026-09-28 - civilian-hub-current-state-only
+
+- The controller is `CE_CivilianHub` (`md/ce_civilian_hub.xml`). Older mod saves
+  are explicitly unsupported; test from a save that never loaded the mod.
+- Removed ownership repair, singular demand-event migration, old event UI decoding,
+  hub-keyed raid conversion, old announcement-flag repair and obsolete aliases.
+- Failed partial raid launches are CURRENT behavior, not legacy saves. Their
+  explicit `launching` phase routes to safe cleanup; prepared raids retain their
+  lifecycle, pilot AI markers, and current-version save/load continuity.
+- Genuine `faction.ownerless` funding and native faction checks remain unchanged.
+- VALIDATED: `just validate` passes 274 controller tests and static references;
+  `just lua`, `just test-tooling` (14 tests), translations (249 entries in each
+  of 16 locales), and `just schema-only` pass. All six merged AI patches have
+  no introduced schema errors.
+- `just check` stops at pre-existing stale generated construction data/manifest
+  fingerprints. Those artifacts and their generators were not changed here.
+- Historical entries below describe earlier implementations, not compatibility
+  guarantees. Full restart required; native acceptance remains unverified.
+
 # Mod-local Knowledgebase
 
 ## 2026-09-28 - measured fit and native staged expansion revision

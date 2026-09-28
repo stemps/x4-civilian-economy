@@ -18,7 +18,7 @@
         </do_if>
         <do_if value="$Hub.buildstorage.exists">
           <set_value name="$ManagedObject" exact="$Hub.buildstorage"/>
-          <include_actions ref="md.CE_OwnerlessHub.EnsureManager"/>
+          <include_actions ref="md.CE_CivilianHub.EnsureManager"/>
           <set_object_account object="$Hub.buildstorage"/>
           <set_value name="$BuildBudget" exact="$Hub.buildstorage.wantedmoney"/>
           <do_if value="$BuildBudget gt $Hub.buildstorage.money">
@@ -32,13 +32,13 @@
       <actions>
         <do_if value="$ManagedObject.isoperational and not $ManagedObject.tradenpc.exists">
           <!-- Civilians have no primary race; select manager appearance explicitly. -->
-          <create_cue_actor name="$Manager" cue="md.CE_OwnerlessHub.Init">
+          <create_cue_actor name="$Manager" cue="md.CE_CivilianHub.Init">
             <select faction="faction.argon" tags="controlpost.manager.tag"/>
             <owner exact="faction.civilian"/>
           </create_cue_actor>
           <do_if value="$Manager">
             <assign_control_entity object="$ManagedObject" actor="$Manager" post="controlpost.manager" transfer="true"/>
-            <remove_cue_actor actor="$Manager" cue="md.CE_OwnerlessHub.Init"/>
+            <remove_cue_actor actor="$Manager" cue="md.CE_CivilianHub.Init"/>
             <create_ai_unit object="$ManagedObject"/>
             <debug_text text="'[CE] Civilian manager initialised on %s'.[$ManagedObject]"/>
           </do_if>

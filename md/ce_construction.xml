@@ -4,13 +4,13 @@
 <cue name="InitialBuilds" instantiate="true" checkinterval="1s" namespace="this">
   <conditions><check_value value="@player.entity.$ce_initial_build_hubs.count gt 0"/></conditions>
   <actions>
-    <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+    <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
     <do_if value="not @md.CE_DebugReset.State.$Busy or @md.CE_DebugReset.State.$Phase == 'initializing'">
       <do_for_each name="$Sector" in="$Registry.keys.list">
         <set_value name="$R" exact="$Registry.{$Sector}"/>
         <do_if value="@$R.$InitialHub != null and $R.$InitialHub == $R.$Hub and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian">
           <include_actions ref="md.CE_Construction.InitialTick"/>
-          <include_actions ref="md.CE_OwnerlessHub.UpdateHub"/>
+          <include_actions ref="md.CE_CivilianHub.UpdateHub"/>
         </do_if>
       </do_for_each>
     </do_if>
@@ -93,7 +93,7 @@
   <!-- Only first-generation level-1 seeds/reset hubs may bypass resource delivery. -->
   <do_if value="@$R.$InitialHub == $R.$Hub and $R.$Hub.exists and $R.$Hub.owner == faction.civilian and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0 and $R.$Build.exists and @$R.$TargetSequence and (not @md.CE_DebugReset.State.$Busy or @md.CE_DebugReset.State.$Phase == 'initializing')">
     <do_if value="not @$R.$InitialForceAt or player.age ge $R.$InitialForceAt">
-      <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+      <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
       <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
       <raise_lua_event name="'CEInitialHubBuildReady'" param="$R.$Hub"/>
       <set_value name="$R.$InitialForceAt" exact="player.age + 2s"/>
@@ -112,9 +112,9 @@
           <process_build build="$R.$Build" object="$Hub.buildstorage" buildmodule="$Hub.buildstorage.buildmodule"/>
           <include_actions ref="md.CE_Notifications.UpgradeStarted"/>
           <debug_text text="'[CE] Build started: hub=%s build=%s'.[$Hub,$R.$Build]"/>
-          <include_actions ref="md.CE_OwnerlessHub.FundAccounts"/>
+          <include_actions ref="md.CE_CivilianHub.FundAccounts"/>
           <debug_text text="'[CE] Build funding checked: hub=%s balance=%s wanted=%s'.[$Hub,$Hub.buildstorage.money,$Hub.buildstorage.wantedmoney]"/>
-          <include_actions ref="md.CE_OwnerlessHub.AssignBuilder"/>
+          <include_actions ref="md.CE_CivilianHub.AssignBuilder"/>
           <include_actions ref="md.CE_DebugAdvance.Tick"/>
           <include_actions ref="md.CE_DebugCreate.Tick"/>
         </do_if>
@@ -143,7 +143,7 @@
             <do_if value="not @$R.$CompletedSequence and $R.$Target == 0">
               <do_if value="@$R.$InitialHub == $Hub">
                 <set_value name="$R.$InitialHub" exact="null"/>
-                <set_value name="$Registry" exact="md.CE_OwnerlessHub.Init.$Registry"/>
+                <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
                 <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
               </do_if><set_value name="$R.$CompletedSequence" exact="$R.$TargetSequence"/>
               <set_value name="$R.$TargetSequence" exact="null"/>

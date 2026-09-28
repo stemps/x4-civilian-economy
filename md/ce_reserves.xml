@@ -29,7 +29,6 @@
     </library>
     <library name="Accrue">
       <actions>
-        <do_if value="$R.$DemandEvent?"><include_actions ref="md.CE_DemandEvents.Ensure"/></do_if>
         <include_actions ref="md.CE_DemandEvents.NextExpiry"/>
         <do_while value="$DEDeadline ge 0 and player.age / 1s ge $DEDeadline">
           <set_value name="$DEBoundary" exact="[$R.$Last,$DEDeadline].max"/>

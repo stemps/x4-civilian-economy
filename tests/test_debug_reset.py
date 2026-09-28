@@ -22,7 +22,7 @@ class ResetTests(unittest.TestCase):
         r.env.update(player=Table(age=100, money=12345, entity=Table(hascontext=Table())),
             faction=Table(civilian='civilian', ownerless='ownerless', ce_unrest='raid'),
             **{'class':Table(ship_s='s',ship_m='m',ship_l='l',ship_xl='xl')})
-        self.controller = r.env['md'].CE_OwnerlessHub.Init
+        self.controller = r.env['md'].CE_CivilianHub.Init
         self.controller.update(Registry=Table({self.sector:self.record}),PopulationRequest=7,
             SectorProfiles=Table(old=True),RaceProfiles=Table(old=True),Hubs=List([self.hub]))
         r.env['md'].CE_Settings.State.update(Debug=True,DemandMultiplier=2,TimeMultiplier=3)
@@ -94,7 +94,7 @@ class ResetTests(unittest.TestCase):
         self.assertTrue(self.state.Blocked);self.assertEqual(self.signals,[])
         for obj in self.sent:obj.exists=False
         self.pump();self.assertEqual(self.state.Phase,'initializing')
-        self.assertEqual(self.signals,['md.CE_OwnerlessHub.ResetRebuild'])
+        self.assertEqual(self.signals,['md.CE_CivilianHub.ResetRebuild'])
         self.assertTrue(self.state.Busy)
         self.call('Finish');self.assertFalse(self.state.Busy)
         self.assertEqual(self.state.Phase,'complete')
@@ -133,7 +133,7 @@ class ResetTests(unittest.TestCase):
         self.r.actions(actions);self.assertEqual(len(self.sent),3)
         for obj in self.sent:obj.exists=False
         self.pump();self.r.actions(actions)
-        self.assertEqual(self.signals,['md.CE_OwnerlessHub.ResetRebuild']*2)
+        self.assertEqual(self.signals,['md.CE_CivilianHub.ResetRebuild']*2)
         self.assertTrue(self.state.Busy)
 
     def test_old_population_response_and_debug_cues_cannot_mutate_during_removal(self):
@@ -151,7 +151,7 @@ class ResetTests(unittest.TestCase):
         for obj in self.sent:obj.exists=False
         self.pump()
         r=self.r;definitions(r)
-        r.env['md'].CE_OwnerlessHub.Init=self.controller
+        r.env['md'].CE_CivilianHub.Init=self.controller
         self.sector.owner=Table(primaryrace=r.env['lookup'].race.list[1])
         empty=Component(exists=True,isclass=Table(sector=True),owner=self.sector.owner)
         r.env.update(Registry=self.controller.Registry, SectorProfiles=self.controller.SectorProfiles,

@@ -9,7 +9,7 @@
           <!-- Requires R and Sector. Preparation has no writes to R. -->
           <set_value name="$CandidateComplete" exact="false"/>
           <set_value name="$CandidateStage" exact="'start'"/>
-          <include_actions ref="md.CE_OwnerlessHub.CaptureSectorProfile"/>
+          <include_actions ref="md.CE_CivilianHub.CaptureSectorProfile"/>
           <set_value name="$FrozenProfile" exact="if $R.$DebugProfile? then $R.$DebugProfile else $SectorProfiles.{$Sector}"/>
           <set_value name="$CandidateRace" exact="$FrozenProfile.$Race"/>
           <set_value name="$CandidateDefinitions" exact="$FrozenProfile.$Definitions"/>
@@ -18,13 +18,13 @@
           <set_value name="$R.$Construction" exact="$FrozenProfile.$Construction"/>
           <do_if value="$CandidateComplete and $CandidateValid">
             <set_value name="$CandidateRatesComplete" exact="false"/>
-            <include_actions ref="md.CE_OwnerlessHub.PrepareRates"/>
+            <include_actions ref="md.CE_CivilianHub.PrepareRates"/>
           </do_if>
           <do_if value="$CandidateComplete and $CandidateValid and $CandidateRatesComplete">
             <set_value name="$R.$Definitions" exact="$CandidateDefinitions"/>
             <set_value name="$R.$ProfileRace" exact="$CandidateRace"/>
             <do_if value="@$FrozenProfile.$Categories"><set_value name="$R.$Categories" exact="$FrozenProfile.$Categories"/></do_if>
-            <include_actions ref="md.CE_OwnerlessHub.CommitRates"/>
+            <include_actions ref="md.CE_CivilianHub.CommitRates"/>
             <do_if value="@$R.$ProfileError">
               <debug_text text="'[CE] Profile recovered: %s'.[$R.$Hub]"/>
             </do_if>
@@ -48,19 +48,18 @@
           <set_value name="$CandidateDefinitions" exact="$R.$Definitions"/>
           <set_value name="$CandidateValid" exact="true"/>
           <set_value name="$CandidateRatesComplete" exact="false"/>
-          <include_actions ref="md.CE_OwnerlessHub.PrepareRates"/>
+          <include_actions ref="md.CE_CivilianHub.PrepareRates"/>
           <do_if value="$CandidateValid and $CandidateRatesComplete">
-            <include_actions ref="md.CE_OwnerlessHub.CommitRates"/>
+            <include_actions ref="md.CE_CivilianHub.CommitRates"/>
           </do_if>
         </do_if>
         <do_else>
-          <include_actions ref="md.CE_OwnerlessHub.RefreshProfile"/>
+          <include_actions ref="md.CE_CivilianHub.RefreshProfile"/>
         </do_else>
       </actions>
     </library>
     <library name="PrepareRates">
       <actions>
-        <do_if value="$R.$DemandEvent?"><include_actions ref="md.CE_DemandEvents.Ensure"/></do_if>
         <include_actions ref="md.CE_Settings.Read"/>
         <set_value name="$CandidateStage" exact="'rates'"/>
         <set_value name="$CandidateRates" exact="[]"/>
@@ -92,7 +91,7 @@
               <set_value name="$CandidateValid" exact="false"/>
             </do_if>
             <set_value name="$W" exact="table[]"/>
-            <include_actions ref="md.CE_OwnerlessHub.UpdateWarePrice"/>
+            <include_actions ref="md.CE_CivilianHub.UpdateWarePrice"/>
             <do_if value="not $W.$Price? or not ($W.$Price ge 0Cr)">
               <set_value name="$CandidateValid" exact="false"/>
             </do_if>
@@ -125,7 +124,7 @@
           <set_value name="$W.$Price" exact="$Entry.{3}"/>
           <append_to_list name="$R.$DisplayOrder" exact="$Ware"/>
         </do_for_each>
-        <include_actions ref="md.CE_OwnerlessHub.RebaseAccrual"/>
+        <include_actions ref="md.CE_CivilianHub.RebaseAccrual"/>
       </actions>
     </library>
   </cues>

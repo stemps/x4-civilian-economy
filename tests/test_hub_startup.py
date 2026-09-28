@@ -8,7 +8,7 @@ class HubStartupTests(StartupHarness):
     def test_fresh_init_to_operational_with_real_startup_libraries(self):
         r=self.run; builder=self.builder()
         r.actions(r.tree.xpath('//cue[@name="Init"]/actions')[0])
-        r.env['md'].CE_OwnerlessHub.Init.Registry=r.env['Registry']
+        r.env['md'].CE_CivilianHub.Init.Registry=r.env['Registry']
         self.assertIn(self.sector,r.env['SectorProfiles'])
         r.env['player'].entity.ce_population_response=List([r.env['PopulationRequest'],List([List([self.sector,100000000])])])
         r.actions(r.tree.xpath('//cue[@name="PopulationReceived"]/actions')[0])

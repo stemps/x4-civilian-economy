@@ -45,7 +45,7 @@ class InitialHubTests(StartupHarness):
                         self.assertEqual(bool(r.expr(patch.text)),expected)
 
     def test_cross_script_initialization_helpers_are_explicit(self):
-        pending=['md.CE_OwnerlessHub.UpdateHub'];seen=set()
+        pending=['md.CE_CivilianHub.UpdateHub'];seen=set()
         while pending:
             ref=pending.pop()
             if ref in seen:continue
@@ -59,14 +59,14 @@ class InitialHubTests(StartupHarness):
 
     def initial(self, reset=False):
         r=self.run
-        r.env['md'].CE_OwnerlessHub.Init.Registry=r.env['Registry']
+        r.env['md'].CE_CivilianHub.Init.Registry=r.env['Registry']
         if reset:
             r.env['md'].CE_DebugReset.State.update(Busy=True,Phase='initializing',Token=1,
                 Pending=List(),Total=0,Blocked=False)
             r.actions(r.tree.xpath('//cue[@name="ResetRebuild"]/actions')[0])
         else:
             r.actions(r.tree.xpath('//cue[@name="Init"]/actions')[0])
-            r.env['md'].CE_OwnerlessHub.Init.Registry=r.env['Registry']
+            r.env['md'].CE_CivilianHub.Init.Registry=r.env['Registry']
         r.env['player'].entity.ce_population_response=List([r.env['PopulationRequest'],List([List([self.sector,100000000])])])
         r.actions(r.tree.xpath('//cue[@name="PopulationReceived"]/actions')[0])
         return r.env['Registry'][self.sector]
@@ -126,7 +126,7 @@ class InitialHubTests(StartupHarness):
         self.assertTrue(record.Operational)
         self.assertEqual(sum(k=='materialize' for k,_ in self.events),1)
 
-    def test_later_discovery_and_legacy_records_use_regular_construction(self):
+    def test_later_discovery_uses_regular_construction(self):
         record=self.start();self.complete()
         self.assertFalse(record.Operational)
         self.assertTrue(record.Build.exists)

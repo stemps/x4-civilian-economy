@@ -10,7 +10,7 @@ class ControllerTests(unittest.TestCase):
         self.run.env['R']=self.r
         self.w=Table(Reserve=0.0,Active=True,Rate=2000.,Cap=4000.,Demand=0.,Delivered=0,Paid=0,Offer=NIL)
         self.r.Wares[Ware('food')]=self.w
-        self.run.library('ResetHistory')
+        self.run.library('RebaseAccrual')
     def advance(self, seconds):
         self.run.env['player']['age']+=seconds;self.run.library('AccrueAll')
     def evaluate(self): self.run.library('EvaluateQualification')

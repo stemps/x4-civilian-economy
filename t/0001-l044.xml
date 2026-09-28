@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="44">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Civilian Trade Hub</t>
     <t id="2">A public delivery hub serving the sector's civilian population. Construction is funded by the planetary economy. Once completed, it purchases goods to maintain civilian reserves.</t>
     <t id="10">Civilian Economy - Testing</t>
@@ -115,7 +115,7 @@
     <t id="136">Civilian debug hub creation failed: neither the sector profile nor the Argon fallback has valid demand and construction components.</t>
     <t id="137">Civilian debug hub creation could not create a station. The fixed population is saved; normal reconciliation will retry. Check the debug log.</t>
     <t id="138">Create civilian hub \(5B\)</t>
-    <t id="139">Create an ownerless civilian hub with a fixed population of 5 billion. Automatically finish its initial construction after a valid layout is ready. Use an Argon profile if this sector has no valid civilian profile. Placement may take time.</t>
+    <t id="139">Create a civilian hub with a fixed population of 5 billion. Automatically finish its initial construction after a valid layout is ready. Use an Argon profile if this sector has no valid civilian profile. Placement may take time.</t>
     <t id="140">Fixed debug population: 5B</t>
     <t id="141">Debug profile: Argon fallback</t>
     <t id="142">Civilian Economy</t>

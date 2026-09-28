@@ -120,7 +120,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.assertEqual(self.u.NextDestruction,14400)
 
     def test_debug_dispatch_rejects_replays_wrong_hub_and_disabled_debug(self):
-        self.run.env['md'].CE_OwnerlessHub.Init.Registry=Table({self.sector:self.r})
+        self.run.env['md'].CE_CivilianHub.Init.Registry=Table({self.sector:self.r})
         self.run.env['md'].CE_Settings.State.Debug=True
         self.run.env['event']=Table(param2='raid_1:0',param3=self.hub)
         self.run.stubs.update({'md.CE_Reserves.Accrue':lambda:None,
@@ -293,17 +293,17 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
             if ship is not group.Leader:ship.dock=NIL;group.Moves[ship].exists=False
         self.tick();self.assertEqual(group.Phase,'departing');self.assertEqual(len(self.messages),1)
         # Reparse shipped code with the same persisted MD state/order references.
-        self.run.scripts=Runner().scripts
+        self.run.scripts=type(self.run)().scripts
         self.run.env['player'].age=180
         self.depart();self.assertEqual(group.Phase,'raiding');self.assertEqual(len(self.messages),1)
-        self.run.scripts=Runner().scripts;self.tick();self.assertEqual(len(self.messages),1)
+        self.run.scripts=type(self.run)().scripts;self.tick();self.assertEqual(len(self.messages),1)
         self.assertEqual(group.End,self.run.env['player'].age+2700)
 
-    def test_old_v2_flags_migrate_without_replay_or_lifetime_extension(self):
+    def test_current_raid_resumes_without_replay_or_lifetime_extension(self):
         self.setup_raids(1);self.run.library('md.CE_Raids.Request');self.depart()
         group=self.run.env['md'].CE_Raids.State.Groups[1]
         end=group.End
-        group.pop('CombatStarted')  # Old Announced=true meant piracy already started.
+        self.run.scripts=type(self.run)().scripts
         self.run.env['player'].age=120
         self.tick()
         self.assertTrue(group.CombatStarted)
@@ -314,11 +314,11 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.assertEqual(group.End,end)
         self.assertEqual(len(self.messages),1)
 
-    def test_old_v2_departing_save_announces_once_and_still_refunds_failure(self):
+    def test_current_departing_save_announces_once_and_still_refunds_failure(self):
         self.setup_raids(3);self.u.NextRaid=23;self.u.NextCapital=47
         self.run.library('md.CE_Raids.Request')
         group=self.run.env['md'].CE_Raids.State.Groups[1]
-        group.pop('CombatStarted');group.Announced=False;self.messages.clear()
+        self.run.scripts=type(self.run)().scripts
         self.tick();self.tick()
         self.assertFalse(group.CombatStarted)
         self.assertTrue(group.Announced)
@@ -363,6 +363,38 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.assertFalse(any(m[0]=='popup' for m in self.messages))
         self.assertEqual(self.u.NextRaid,0)
 
+    def test_failed_launch_cleanup_survives_reload_and_respects_safety_guards(self):
+        self.setup_raids(3,failure_at=2)
+        self.run.library('md.CE_Raids.Request')
+        groups=self.run.env['md'].CE_Raids.State.Groups
+        group=groups[1];ship=group.Ships[1]
+        self.assertEqual(group.Phase,'launching')
+        self.run.scripts=type(self.run)().scripts
+        ship.boardingoperations=List([Component()]);self.tick()
+        self.assertEqual(self.orders,[])
+        ship.boardingoperations=List();self.tick()
+        self.assertEqual([order for _,order in self.orders],['Wait','MoveWait'])
+        self.assertEqual(ship.trueowner,'civilian')
+        self.run.env['player'].age=300
+        for guard in ('visible','attacked','context','boarding'):
+            ship.attention=1 if guard=='visible' else 0
+            ship.lastattacktime=299 if guard=='attacked' else -1
+            self.run.env['player'].entity.hascontext[ship]=guard=='context'
+            ship.boardingoperations=List([Component()]) if guard=='boarding' else List()
+            self.tick();self.assertTrue(ship.exists)
+        ship.boardingoperations=List();self.tick()
+        self.assertFalse(ship.exists)
+        self.tick();self.assertEqual(len(groups),0)
+
+    def test_failed_launch_cleanup_releases_captured_ship(self):
+        self.setup_raids(3,failure_at=2)
+        self.run.library('md.CE_Raids.Request');self.tick()
+        ship=self.created[0];ship.isplayerowned=True
+        self.tick()
+        self.assertTrue(ship.exists)
+        self.assertNotIn('ce_unrest_withdraw',ship.pilot)
+        self.assertEqual(len(self.run.env['md'].CE_Raids.State.Groups),0)
+
     def test_capital_launch_uses_seven_distinct_free_berths(self):
         self.setup_raids(3)
         self.docks={size:self.docks[size][:count] for size,count in [('M',2),('S',4),('L',1)]}
@@ -384,18 +416,6 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
             self.assertEqual(self.run.env['IncidentFailure'],(974201,232,()))
             self.assertEqual(self.run.env['IncidentKind'],'raid_3')
             self.assertEqual(self.u.NextRaid,0)
-
-    def test_old_raid_markers_are_repaired_without_replaying_popup(self):
-        self.setup_raids(1);self.run.library('md.CE_Raids.Request')
-        ship=self.created[0]
-        self.depart()
-        self.run.env['md'].CE_Raids.State.Groups[1].pop('Version')
-        ship.pilot.clear()  # Saved raid from before the pilot-blackboard fix.
-        actions=self.run.scripts['CE_Raids'].xpath('//cue[@name="Lifecycle"]/actions')[0]
-        self.run.actions(actions)
-        self.assertIs(ship.pilot.ce_unrest_sector,self.sector)
-        self.assertFalse(ship.pilot.ce_unrest_withdraw)
-        self.assertEqual(len(self.messages),1)
 
     def test_harness_rejects_reported_native_failures(self):
         self.setup_raids(1);self.run.library('md.CE_Raids.Request')
@@ -453,13 +473,12 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.assertEqual(len(groups),10)
         self.assertEqual(len(self.created),70)
 
-    def test_legacy_group_migrates_and_clear_withdraws_all_local_groups(self):
+    def test_clear_withdraws_all_current_local_groups(self):
         self.setup_raids(1);self.run.library('md.CE_Raids.Request')
         state=self.run.env['md'].CE_Raids.State
-        legacy=state.Groups.pop(1);legacy.pop('Hub')
-        state.Groups[self.hub]=legacy;state.pop('NextGroupId')
+        first=state.Groups[1]
         self.run.library('md.CE_Raids.Ensure')
-        self.assertIs(legacy.Hub,self.hub)
+        self.assertIs(first.Hub,self.hub)
         for _ in range(4):self.run.library('md.CE_Raids.Request')
         self.assertEqual(len(state.Groups),5)
         self.run.library('md.CE_Raids.Request')
@@ -470,7 +489,7 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.run.library('md.CE_DebugUnrest.Dispatch')
         self.assertTrue(all(group.Withdraw for group in state.Groups.values() if group is not other))
         self.assertFalse(other.Withdraw)
-        self.assertIs(state.Groups[self.hub],legacy)
+        self.assertIs(state.Groups[1],first)
 
     def test_normal_capital_cooldown_still_falls_back_to_strong(self):
         self.setup_raids(3);self.run.env['IncidentDebug']=False

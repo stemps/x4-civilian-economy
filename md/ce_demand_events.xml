@@ -6,17 +6,7 @@
       <actions>
         <do_if value="not $R.$DemandEvents?">
           <set_value name="$R.$DemandEvents" exact="table[$Version=2,$Active=table[],$Sector=if $R.$Hub.exists then $R.$Hub.sector else @$Sector,$Token=0]"/>
-          <do_if value="$R.$DemandEvent?">
-            <set_value name="$R.$DemandEvents.$Sector" exact="$R.$DemandEvent.$Sector"/>
-            <set_value name="$R.$DemandEvents.$Token" exact="$R.$DemandEvent.$Token + 1"/>
-            <do_if value="$R.$DemandEvent.$ID gt 0">
-              <set_value name="$DELegacy" exact="$R.$DemandEvent"/>
-              <set_value name="$R.$DemandEvents.$Active.{$DELegacy.$ID}" exact="table[$ID=$DELegacy.$ID,$Percent=$DELegacy.$Percent,$End=$DELegacy.$End,$Wares=$DELegacy.$Wares,$Names=$DELegacy.$Names]"/>
-            </do_if>
-          </do_if>
         </do_if>
-        <!-- Never replay migration, extend a deadline or retain the former cooldown. -->
-        <do_if value="$R.$DemandEvent?"><remove_value name="$R.$DemandEvent"/></do_if>
       </actions>
     </library>
     <library name="Candidates">
@@ -179,14 +169,13 @@
         </do_if>
         <do_if value="$DETickChanged">
           <include_actions ref="md.CE_Reserves.Qualify"/>
-          <include_actions ref="md.CE_OwnerlessHub.UpdateOffers"/>
+          <include_actions ref="md.CE_CivilianHub.UpdateOffers"/>
         </do_if>
       </actions>
     </library>
     <library name="Snapshot">
       <actions>
         <set_value name="$DEPayload" exact="[2,[],[],0]"/>
-        <do_if value="$R.$DemandEvent?"><include_actions ref="md.CE_DemandEvents.Ensure"/></do_if>
         <do_if value="$R.$DemandEvents?">
           <include_actions ref="md.CE_DemandEvents.Candidates"/>
           <set_value name="$DERows" exact="[]"/>

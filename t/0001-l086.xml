@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="86">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">民用贸易中心</t>
     <t id="2">为星区平民人口服务的公共交货中心。建设由行星经济出资。建成后购买商品以维持民用储备。</t>
     <t id="10">Civilian Economy - 测试</t>
@@ -115,7 +115,7 @@
     <t id="136">创建调试民用中心失败：星区配置和备用Argon配置均无有效需求及建设组件。</t>
     <t id="137">调试民用中心未能创建空间站。固定人口已保存；常规状态协调会重试。请检查调试日志。</t>
     <t id="138">创建民用中心（50亿）</t>
-    <t id="139">创建固定50亿人口的无主民用中心。有效布局就绪后自动完成初始建设。星区没有有效民用配置时使用Argon配置。选址可能需要时间。</t>
+    <t id="139">创建固定50亿人口的民用中心。有效布局就绪后自动完成初始建设。星区没有有效民用配置时使用Argon配置。选址可能需要时间。</t>
     <t id="140">固定调试人口：50亿</t>
     <t id="141">调试配置：备用Argon</t>
     <t id="142">Civilian Economy</t>

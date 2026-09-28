@@ -120,5 +120,5 @@ The following rules stay fixed across levels:
 - Economy updates run every game minute; population reconciliation runs every
   five game minutes. These intervals do not shorten at higher levels.
 
-Source files: `md/ce_population_profiles.xml`, `md/ce_ownerless_hub.xml`,
+Source files: `md/ce_population_profiles.xml`, `md/ce_civilian_hub.xml`,
 `md/ce_construction.xml`, and `md/ce_reserves.xml`.

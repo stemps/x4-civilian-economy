@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <language id="48">
-  <page id="974201" title="Civilian Economy" descr="Ownerless civilian hub prototype" voice="no">
+  <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Cywilne centrum handlowe</t>
     <t id="2">Publiczne centrum dostaw dla ludności cywilnej sektora. Budowę finansuje gospodarka planetarna. Po ukończeniu kupuje towary, aby utrzymywać cywilne zapasy.</t>
     <t id="10">Civilian Economy - Testy</t>
@@ -115,7 +115,7 @@
     <t id="136">Nie utworzono centrum: profil sektora i zapasowy profil Argonów nie mają prawidłowych komponentów popytu i budowy.</t>
     <t id="137">Nie utworzono stacji testowej. Stała populacja zapisana; zwykłe uzgadnianie stanu ponowi próbę. Sprawdź dziennik debugowania.</t>
     <t id="138">Utwórz centrum cywilne \(5 mld\)</t>
-    <t id="139">Tworzy centrum bez właściciela ze stałą populacją 5 miliardów. Kończy początkową budowę po przygotowaniu poprawnego układu. Bez poprawnego profilu cywilnego sektora używa Argonów. Umieszczanie może potrwać.</t>
+    <t id="139">Tworzy centrum cywilne ze stałą populacją 5 miliardów. Kończy początkową budowę po przygotowaniu poprawnego układu. Bez poprawnego profilu cywilnego sektora używa Argonów. Umieszczanie może potrwać.</t>
     <t id="140">Stała populacja testowa: 5 mld</t>
     <t id="141">Profil testowy: zapasowy profil Argonów</t>
     <t id="142">Civilian Economy</t>

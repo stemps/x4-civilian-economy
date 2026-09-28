@@ -9,12 +9,12 @@ class DebugStockTests(UnrestFixture, unittest.TestCase):
         super().setUp()
         self.ware = self.add('food', reserve=100, rate=100)
         self.other = self.add('water', reserve=50, rate=100)
-        self.run.env['md'].CE_OwnerlessHub.Init.Registry = Table({self.sector:self.r})
+        self.run.env['md'].CE_CivilianHub.Init.Registry = Table({self.sector:self.r})
         self.run.env['md'].CE_Settings.State.Debug = True
         self.run.env['event'] = Table(param2='', param3=self.hub)
         self.updates = []
         self.run.stubs.update({
-            'md.CE_OwnerlessHub.UpdateOffers':lambda:self.updates.append('offers'),
+            'md.CE_CivilianHub.UpdateOffers':lambda:self.updates.append('offers'),
             'md.CE_Diagnostics.PublishDiagnostics':lambda:None,
             'md.CE_Diagnostics.PublishAllDiagnostics':lambda:None})
 

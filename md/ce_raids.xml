@@ -6,13 +6,6 @@
       <actions>
         <do_if value="not md.CE_Raids.State.$Groups?"><set_value name="md.CE_Raids.State.$Groups" exact="table[]"/></do_if>
         <do_if value="not md.CE_Raids.State.$NextGroupId?"><set_value name="md.CE_Raids.State.$NextGroupId" exact="0"/></do_if>
-        <!-- Older saves key one group by its hub. Retain that entry and add its origin;
-             new groups use monotonically increasing numeric IDs. -->
-        <do_for_each name="$RaidLegacyKey" in="md.CE_Raids.State.$Groups.keys.list">
-          <do_if value="not md.CE_Raids.State.$Groups.{$RaidLegacyKey}.$Hub?">
-            <set_value name="md.CE_Raids.State.$Groups.{$RaidLegacyKey}.$Hub" exact="$RaidLegacyKey"/>
-          </do_if>
-        </do_for_each>
       </actions>
     </library>
     <library name="Request">
@@ -56,7 +49,7 @@
           </do_for_each>
           <set_value name="$IncidentFailure" exact="{974201,232}"/>
           <do_if value="$RaidValid">
-            <set_value name="$RaidGroup" exact="table[$Hub=$R.$Hub,$Ships=[],$Tier=$RaidTier,$Sector=$R.$Hub.sector,$Record=$R,$End=player.age + 45min,$Withdraw=false,$Debug=$IncidentDebug]"/>
+            <set_value name="$RaidGroup" exact="table[$Hub=$R.$Hub,$Ships=[],$Tier=$RaidTier,$Sector=$R.$Hub.sector,$Record=$R,$End=player.age + 45min,$Withdraw=false,$Debug=$IncidentDebug,$Phase='launching']"/>
             <!-- Register before creation, including failed partial launches, so no ships escape caps/cleanup. -->
             <set_value name="md.CE_Raids.State.$NextGroupId" operation="add"/>
             <set_value name="$RaidGroup.$Id" exact="md.CE_Raids.State.$NextGroupId"/>
@@ -111,6 +104,33 @@
         <do_if value="not $IncidentSuccess"><include_actions ref="md.CE_UnrestNotifications.Failure"/></do_if>
       </actions>
     </library>
+    <!-- Partial launches remain tracked until safe cleanup. -->
+    <library name="CleanupFailedLaunch">
+      <actions>
+        <do_for_each name="$RaidShip" in="$RaidGroup.$Ships" counter="$RaidIndex" reverse="true">
+          <do_if value="not $RaidShip.exists or $RaidShip.iswreck or $RaidShip.isplayerowned">
+            <do_if value="$RaidShip.exists and $RaidShip.isplayerowned and $RaidShip.pilot"><do_if value="$RaidShip.pilot.$ce_unrest_withdraw?"><remove_value name="$RaidShip.pilot.$ce_unrest_withdraw"/></do_if></do_if>
+            <remove_value name="$RaidGroup.$Ships.{$RaidIndex}"/>
+          </do_if>
+          <do_elseif value="$RaidGroup.$Withdraw and $RaidShip.pilot and not $RaidShip.boardingoperations.count">
+            <do_if value="not @$RaidShip.pilot.$ce_unrest_withdraw">
+              <set_value name="$RaidShip.pilot.$ce_unrest_withdraw" exact="true"/>
+              <remove_object_commander object="$RaidShip"/>
+              <do_for_each name="$RaidOrder" in="$RaidShip.orders"><cancel_order order="$RaidOrder"/></do_for_each>
+              <create_order object="$RaidShip" id="'Wait'" default="true"><param name="holdfire" value="true"/></create_order>
+              <create_order object="$RaidShip" id="'MoveWait'" immediate="true">
+                <param name="destination" value="[$RaidGroup.$Sector,position.[150km,0m,150km]]"/>
+                <param name="withdraw" value="true"/>
+              </create_order>
+            </do_if>
+            <do_elseif value="$RaidShip.attention lt attention.visible and player.age gt $RaidShip.lastattacktime + 2min and not player.entity.hascontext.{$RaidShip}">
+              <destroy_object object="$RaidShip" explosion="false"/>
+            </do_elseif>
+          </do_elseif>
+        </do_for_each>
+        <do_if value="$RaidGroup.$Ships.count == 0"><remove_value name="md.CE_Raids.State.$Groups.{$RaidKey}"/></do_if>
+      </actions>
+    </library>
     <cue name="Lifecycle" instantiate="true" checkinterval="5s">
       <conditions><check_value value="true"/></conditions>
       <actions>
@@ -118,40 +138,8 @@
         <include_actions ref="md.CE_Raids.Ensure"/>
         <do_for_each name="$RaidKey" in="md.CE_Raids.State.$Groups.keys.list">
           <set_value name="$RaidGroup" exact="md.CE_Raids.State.$Groups.{$RaidKey}"/>
-          <do_if value="@$RaidGroup.$Version == 2"><include_actions ref="md.CE_RaidBehaviour.Tick"/></do_if>
-          <do_else>
-          <do_if value="player.age ge $RaidGroup.$End or not $RaidGroup.$Hub.exists or $RaidGroup.$Hub.iswreck or (not $RaidGroup.$Debug and $RaidGroup.$Record.$Unrest.$Stage lt 2)"><set_value name="$RaidGroup.$Withdraw" exact="true"/></do_if>
-          <do_for_each name="$RaidShip" in="$RaidGroup.$Ships" counter="$RaidIndex" reverse="true">
-            <!-- Repair tracked raids from older saves and initialize a replacement pilot.
-                 Ship components have no MD blackboard; only the pilot entity does. -->
-            <do_if value="$RaidShip.exists and not $RaidShip.iswreck and not $RaidShip.isplayerowned and $RaidShip.pilot">
-              <do_if value="not $RaidShip.pilot.$ce_unrest_sector?">
-                <set_value name="$RaidShip.pilot.$ce_unrest_sector" exact="$RaidGroup.$Sector"/>
-                <set_value name="$RaidShip.pilot.$ce_unrest_withdraw" exact="false"/>
-              </do_if>
-            </do_if>
-            <do_if value="not $RaidShip.exists or $RaidShip.iswreck or $RaidShip.isplayerowned">
-              <do_if value="$RaidShip.exists and $RaidShip.isplayerowned and $RaidShip.pilot"><remove_value name="$RaidShip.pilot.$ce_unrest_sector"/><remove_value name="$RaidShip.pilot.$ce_unrest_withdraw"/></do_if>
-              <remove_value name="$RaidGroup.$Ships.{$RaidIndex}"/>
-            </do_if>
-            <do_elseif value="$RaidGroup.$Withdraw and $RaidShip.pilot and not $RaidShip.boardingoperations.count">
-              <do_if value="not @$RaidShip.pilot.$ce_unrest_withdraw">
-                <set_value name="$RaidShip.pilot.$ce_unrest_withdraw" exact="true"/>
-                <remove_object_commander object="$RaidShip"/>
-                <do_for_each name="$RaidOrder" in="$RaidShip.orders"><cancel_order order="$RaidOrder"/></do_for_each>
-                <create_order object="$RaidShip" id="'Wait'" default="true"><param name="holdfire" value="true"/></create_order>
-                <create_order object="$RaidShip" id="'MoveWait'" immediate="true">
-                  <param name="destination" value="[$RaidGroup.$Sector,position.[150km,0m,150km]]"/>
-                  <param name="withdraw" value="true"/>
-                </create_order>
-              </do_if>
-              <do_elseif value="$RaidShip.attention lt attention.visible and player.age gt $RaidShip.lastattacktime + 2min and not player.entity.hascontext.{$RaidShip}">
-                <destroy_object object="$RaidShip" explosion="false"/>
-              </do_elseif>
-            </do_elseif>
-          </do_for_each>
-          <do_if value="$RaidGroup.$Ships.count == 0"><remove_value name="md.CE_Raids.State.$Groups.{$RaidKey}"/></do_if>
-          </do_else>
+          <do_if value="$RaidGroup.$Phase == 'launching'"><include_actions ref="md.CE_Raids.CleanupFailedLaunch"/></do_if>
+          <do_else><include_actions ref="md.CE_RaidBehaviour.Tick"/></do_else>
         </do_for_each>
 
         </do_if>

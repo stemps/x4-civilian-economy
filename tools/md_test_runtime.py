@@ -120,7 +120,7 @@ class Runner:
         for path in sorted(root.glob('*.xml')):
             tree = E.parse(str(path))
             self.scripts[tree.getroot().get('name')] = tree
-        self.tree = self.scripts['CE_OwnerlessHub']
+        self.tree = self.scripts['CE_CivilianHub']
         self.profiles = self.scripts['CE_PopulationProfiles']
         self.construction = self.scripts['CE_Construction']
         self.reserves = self.scripts['CE_Reserves']
@@ -180,10 +180,10 @@ class Runner:
         if remove: del obj[key]
         else: obj[key]=wrap(v)
     def library(self,name):
-        local_name = name.removeprefix('md.CE_OwnerlessHub.')
+        local_name = name.removeprefix('md.CE_CivilianHub.')
         if name in self.stubs: return self.stubs[name]()
         if local_name in self.stubs: return self.stubs[local_name]()
-        script = name.split('.')[1] if name.startswith('md.') else 'CE_OwnerlessHub'
+        script = name.split('.')[1] if name.startswith('md.') else 'CE_CivilianHub'
         tree = self.scripts[script]
         nodes=tree.xpath('//library[@name=$n]/actions',n=name.rsplit('.',1)[-1])
         if not nodes: raise ValueError(name)
