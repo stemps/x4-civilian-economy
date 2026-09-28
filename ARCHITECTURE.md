@@ -34,6 +34,16 @@ construction needs in-game verification.
 
 ## Localization
 
+`content.xml` supplies the extension-list description through 16 localized
+`text` entries, using SCV's language IDs. The root description and language 44
+are the English source; the mod name stays `Civilian Economy` in every locale.
+
+The manifest requires X4 9.00 and Mod Support APIs (`ws_2042901274`) for
+`CE_Options`. Named optional dependencies declare kuertee UI Extensions and HUD
+(`kuerteeUIExtensionsAndHUD`) for debug context actions and receipt details, and
+Mycu: Verbose Transaction Log (`VerboseTransactionLog`) for transaction labels.
+Both integrations retain their runtime guards when the optional mod is absent.
+
 `t/0001-l044.xml` is the canonical English source for page 974201. The other
 15 `0001-lNNN.xml` files carry the same page/text IDs for all locales shipped
 in the game reference, matching Supply Chain View's coverage. This includes
@@ -337,7 +347,8 @@ history classifies this as a generic mission reward (user-verified). Positive
 income also emits VTL 1.14's description-only `transfer_money` Lua event with
 actual cents and a localized sector label. Verbose Transaction Log optionally
 consumes it; without that listener the native label remains. No external cue or
-manifest dependency is required, and CE never invokes VTL's additional payment.
+hard dependency is required; the manifest declares VTL as optional. CE never
+invokes VTL's additional payment.
 Description events are independent of the ticker/logbook toggle. VTL owns tax matching
 and persistence; its time/amount matcher can confuse identical simultaneous payments.
 Completed paid deliveries from player-owned sellers capture their current order,

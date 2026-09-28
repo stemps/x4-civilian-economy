@@ -172,8 +172,21 @@
   including archive inclusion of the new clip. Full script schema compilation was
   not run for the single changed cutscene-key value.
 
+## 2026-09-28 - manifest-dependency-audit
+
+- READ: installed manifests identify `ws_2042901274` as `Mod Support APIs`,
+  `kuerteeUIExtensionsAndHUD` as `kuertee UI Extensions and HUD`, and
+  `VerboseTransactionLog` as `Mycu: Verbose Transaction Log`.
+- READ: `CE_Options` directly references `md.Simple_Menu_API`; UIX debug actions
+  and receipt details guard callback availability, while VTL receipt updates
+  check extension enablement and its data contract. The manifest declares the
+  first required and the latter two optional, with their installed display names.
+
 ## 2026-09-27 - complete-language-coverage
 
+- IMPLEMENTED (2026-09-28): `content.xml` uses SCV's 16-language `text`
+  entry pattern for extension descriptions, separately from the runtime `t/`
+  strings. Keep language 44 identical to the root English description.
 - READ: `reference/t` contains 16 locale files. The matching SCV set is
   7, 33, 34, 39, 42, 44, 48, 49, 55, 81, 82, 86, 88, 90, 359, 380. The reference
   language registry enables 13: Turkish/Ukrainian are commented out and Bulgarian

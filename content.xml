@@ -7,6 +7,24 @@
   date="2026-09-28"
   save="true"
   enabled="true">
-  <dependency version="900" />
-  <dependency id="ws_2042901274" />
+  <text language="44" name="Civilian Economy" description="People have desires too. Trade with the civilian population, get bonuses or upset them." />
+  <text language="7" name="Civilian Economy" description="У людей тоже есть желания. Торгуйте с гражданским населением, получайте бонусы или вызывайте его недовольство." />
+  <text language="33" name="Civilian Economy" description="Les gens ont aussi des envies. Faites du commerce avec la population civile, obtenez des bonus ou provoquez son mécontentement." />
+  <text language="34" name="Civilian Economy" description="La gente también tiene deseos. Comercia con la población civil, consigue bonificaciones o provoca su descontento." />
+  <text language="39" name="Civilian Economy" description="Anche le persone hanno desideri. Commercia con la popolazione civile, ottieni bonus o suscita il suo malcontento." />
+  <text language="42" name="Civilian Economy" description="I lidé mají svá přání. Obchodujte s civilním obyvatelstvem, získávejte bonusy nebo vyvolejte jeho nespokojenost." />
+  <text language="48" name="Civilian Economy" description="Ludzie też mają swoje pragnienia. Handluj z ludnością cywilną, zdobywaj premie lub wzbudzaj jej niezadowolenie." />
+  <text language="49" name="Civilian Economy" description="Auch Menschen haben Wünsche. Handle mit der Zivilbevölkerung, erhalte Boni oder verärgere sie." />
+  <text language="55" name="Civilian Economy" description="As pessoas também têm desejos. Negocie com a população civil, ganhe bônus ou provoque sua insatisfação." />
+  <text language="81" name="Civilian Economy" description="人々にも欲しいものがあります。民間人と交易してボーナスを得ることもあれば、不満を招くこともあります。" />
+  <text language="82" name="Civilian Economy" description="사람들에게도 원하는 것이 있습니다. 민간인들과 교역하여 보너스를 얻거나 그들의 불만을 살 수도 있습니다." />
+  <text language="86" name="Civilian Economy" description="人们也有自己的愿望。与平民交易，获得加成，或惹得他们不满。" />
+  <text language="88" name="Civilian Economy" description="人們也有自己的願望。與平民交易，獲得加成，或惹得他們不滿。" />
+  <text language="90" name="Civilian Economy" description="İnsanların da istekleri var. Sivil halkla ticaret yapın, bonuslar kazanın veya onları hoşnutsuz edin." />
+  <text language="359" name="Civilian Economy" description="Хората също имат желания. Търгувайте с цивилното население, получавайте бонуси или предизвиквайте недоволството му." />
+  <text language="380" name="Civilian Economy" description="Люди теж мають бажання. Торгуйте з цивільним населенням, отримуйте бонуси або викликайте його невдоволення." />
+  <dependency version="900" name="X4: Foundations" />
+  <dependency id="ws_2042901274" optional="false" name="Mod Support APIs" />
+  <dependency id="kuerteeUIExtensionsAndHUD" optional="true" name="kuertee UI Extensions and HUD" />
+  <dependency id="VerboseTransactionLog" optional="true" name="Mycu: Verbose Transaction Log" />
 </content>

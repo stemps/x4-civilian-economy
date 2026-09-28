@@ -61,15 +61,14 @@ on the whole galaxy.
 
 1.
 [SirNukes Mod support APIs](https://www.nexusmods.com/x4foundations/mods/503)
-(optional) - if you want to use the debug menu for mod-testing
+(required)
 
-2. [Verbose transaction log](https://www.nexusmods.com/x4foundations/mods/1317)
-   (optional) - shows better transaction descriptions for civilian hib
-   deliveries in the transaction log
-
-## Q&A
-Q: Why should the player get sector bonuses for demand fulfilled by NPCs?
-
+2.
+[Kuertees UI Extensions and HUD](https://www.nexusmods.com/x4foundations/mods/552)
+and
+[Verbose transaction log](https://www.nexusmods.com/x4foundations/mods/1317)
+(optional) - shows better transaction descriptions for civilian hib deliveries
+in the transaction log
 
 ## Links
 
