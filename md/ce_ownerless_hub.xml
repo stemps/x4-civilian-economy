@@ -270,8 +270,8 @@
         <set_value name="$R.$LayoutPending" exact="false"/>
         <set_value name="$R.$CompletedSequence" exact="null"/>
         <set_value name="$R.$TargetSequence" exact="null"/>
-        <set_value name="$R.$LayoutPlans" exact="null"/>
-        <set_value name="$R.$LayoutPlanHub" exact="null"/>
+        <set_value name="$R.$FullSequence" exact="null"/>
+        <set_value name="$R.$PlanIDs" exact="[]"/>
         <set_value name="$R.$ConstructionFailure" exact="null"/>
         <!-- AccrueAll synchronizes before consuming the old reserves. -->
         <include_actions ref="AccrueAll"/>
@@ -478,6 +478,7 @@
               </create_station>
               <do_if value="$NewHub.exists">
                 <set_value name="$R.$Hub" exact="$NewHub"/>
+                <set_build_plot object="$NewHub" x="5km" y="5km" z="5km"/>
                 <set_value name="$R.$Generation" operation="add"/>
                 <set_value name="$R.$InitialHub" exact="if @$R.$InitialEligible and $R.$Generation == 1 and $R.$Level == 1 then $NewHub else null"/>
                 <set_value name="$R.$InitialEligible" exact="false"/>

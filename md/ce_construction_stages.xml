@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mdscript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="CE_ConstructionStages" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Modelled on vanilla factionlogic/economy prefab expansion: load once,
+         retain finalsequence, then advance bookmarks on that native sequence. -->
+    <library name="Queue">
+      <actions>
+        <set_value name="$R.$PlanIDs" exact="if $R.$PlanIDs? then $R.$PlanIDs else []"/>
+        <set_value name="$Valid" exact="true"/>
+        <set_value name="$ConstructionFailure" exact="'native_stage_contract_failed'"/>
+        <do_if value="not @$R.$FullSequence">
+          <set_value name="$PlanID" exact="$R.$Construction.$Plan"/>
+          <add_build_to_expand_station object="$R.$Hub.buildstorage" buildobject="$R.$Hub" constructionplan="$PlanID" result="$R.$Build"><stage exact="$BuildLevel"/></add_build_to_expand_station>
+          <set_value name="$R.$FullSequence" exact="@$R.$Build.constructionsequence.finalsequence"/>
+        </do_if>
+        <do_elseif value="$R.$FullSequence">
+          <add_build_to_expand_station object="$R.$Hub.buildstorage" buildobject="$R.$Hub" constructionplan="$R.$FullSequence" result="$R.$Build"><stage exact="$BuildLevel"/></add_build_to_expand_station>
+        </do_elseif>
+        <do_else><set_value name="$R.$Build" exact="null"/></do_else>
+        <set_value name="$Sequence" exact="@$R.$Build.constructionsequence"/>
+        <include_actions ref="md.CE_ConstructionStages.Validate"/>
+      </actions>
+    </library>
+    <library name="Validate">
+      <actions>
+        <set_value name="$Valid" exact="$R.$FullSequence != null and $Sequence != null"/>
+        <set_value name="$ConstructionFailure" exact="'native_stage_contract_failed'"/>
+        <do_if value="$Valid">
+          <set_value name="$Valid" exact="$R.$FullSequence.hasstages and $R.$FullSequence.stage.count == 10 and $R.$FullSequence.count == $R.$Construction.$Levels.{10}.count and $Sequence.hasstages and @$Sequence.finalsequence.count == $R.$Construction.$Levels.{10}.count and $Sequence.stage.current == $BuildLevel"/>
+          <!-- Measured ranges are zero-based. The final unbookmarked tail's
+               range properties reported count/count, so its actual queued
+               sequence is checked below instead of interpreting that range. -->
+          <do_all exact="9" counter="$StageIndex">
+            <set_value name="$ExpectedFirst" exact="if $StageIndex == 1 then 0 else $R.$Construction.$Levels.{$StageIndex - 1}.count"/>
+            <set_value name="$ExpectedLast" exact="$R.$Construction.$Levels.{$StageIndex}.count - 1"/>
+            <do_if value="$R.$FullSequence.stage.{$StageIndex}.first != $ExpectedFirst or $R.$FullSequence.stage.{$StageIndex}.last != $ExpectedLast">
+              <set_value name="$Valid" exact="false"/>
+              <debug_text text="'[CE] STAGE_BOUNDARY race=%s stage=%s expected_first=%s expected_last=%s actual_first=%s actual_last=%s'.[$R.$ProfileRace,$StageIndex,$ExpectedFirst,$ExpectedLast,$R.$FullSequence.stage.{$StageIndex}.first,$R.$FullSequence.stage.{$StageIndex}.last]"/>
+            </do_if>
+          </do_all>
+          <do_if value="$Sequence.count != $R.$Construction.$Levels.{$BuildLevel}.count">
+            <set_value name="$Valid" exact="false"/><set_value name="$ConstructionFailure" exact="'stage_prefix_count_mismatch'"/>
+          </do_if>
+          <do_if value="$BuildLevel == 10"><debug_text text="'[CE] FINAL_STAGE race=%s raw_first=%s raw_last=%s expected_entries=%s queued_entries=%s current=%s'.[$R.$ProfileRace,$R.$FullSequence.stage.{10}.first,$R.$FullSequence.stage.{10}.last,$R.$Construction.$Levels.{10}.count,$Sequence.count,$Sequence.stage.current]"/></do_if>
+          <debug_text text="'[CE] STAGE race=%s level=%s current=%s stages=%s active_entries=%s loaded_entries=%s valid=%s'.[$R.$ProfileRace,$BuildLevel,$Sequence.stage.current,$R.$FullSequence.stage.count,$R.$Construction.$Levels.{$BuildLevel}.count,$Sequence.count,$Valid]"/>
+        </do_if>
+        <do_if value="$Valid"><do_all exact="$Sequence.count" counter="$i"><do_if value="$Sequence.{$i}.macro.id != $R.$Construction.$Levels.{$BuildLevel}.{$i}"><set_value name="$Valid" exact="false"/><set_value name="$ConstructionFailure" exact="'stage_macro_mismatch'"/></do_if></do_all></do_if><do_if value="$Valid">
+          <!-- Only previously exposed entries have an identity contract.
+               Newly added entries establish their identity at this stage. -->
+          <do_all exact="$R.$PlanIDs.count" counter="$i">
+            <do_if value="$Sequence.{$i}.id != $R.$PlanIDs.{$i}">
+              <set_value name="$Valid" exact="false"/><set_value name="$ConstructionFailure" exact="'staged_entry_id_changed'"/>
+              <debug_text text="'[CE] STAGE_ID race=%s level=%s index=%s expected=%s actual=%s'.[$R.$ProfileRace,$BuildLevel,$i,$R.$PlanIDs.{$i},$Sequence.{$i}.id]"/>
+            </do_if>
+          </do_all>
+          <do_if value="$Valid">
+            <set_value name="$R.$PlanIDs" exact="[]"/>
+            <do_all exact="$R.$Construction.$Levels.{$BuildLevel}.count" counter="$i"><append_to_list name="$R.$PlanIDs" exact="$Sequence.{$i}.id"/></do_all>
+            <set_value name="$R.$FullSequence" exact="$Sequence.finalsequence"/>
+          </do_if>
+        </do_if>
+      </actions>
+    </library>
+    </cues>
+</mdscript>

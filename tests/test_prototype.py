@@ -3,7 +3,6 @@ import unittest, sys, copy, math
 from pathlib import Path
 from lxml import etree as E
 from support import ROOT, REF, Runner, Table, List, NIL, wrap, Component, Ware, definitions
-from generate_plans import plans
 
 class ControllerTests(unittest.TestCase):
     def setUp(self):
@@ -101,36 +100,6 @@ class ContentTests(unittest.TestCase):
                     self.assertAlmostEqual(w.Rate,d[3]*1.25**(level-d[2]))
                     self.assertAlmostEqual(w.Cap,math.ceil(2*w.Rate))
                     self.assertEqual(w.Price,1200)
-    def test_plans_cumulative_and_growth(self):
-        expected=plans(); actual=E.parse(str(ROOT/'libraries/constructionplans.xml')).xpath('//plan')
-        self.assertEqual(len(actual),10)
-        for i,p in enumerate(actual):
-            self.assertEqual(len(p),[4,6,8,11,13,16,19,21,23,27][i])
-            self.assertEqual([dict(e.attrib) for e in p],[dict(e.attrib) for e in expected[i]])
-            if i:
-                for a,b in zip(actual[i-1],p): self.assertEqual(E.tostring(a).strip(),E.tostring(b).strip())
-    def test_snap_positions_and_plot_bounds(self):
-        mi=E.parse(str(REF/'index/macros.xml'));ci=E.parse(str(REF/'index/components.xml'))
-        snaps={}
-        for e in plans()[-1]:
-            name=e.get('macro')
-            if name not in snaps:
-                m=E.parse(str(REF/(mi.xpath('//entry[@name=$n]/@value',n=name)[0]+'.xml')))
-                comp=m.find('macro/component').get('ref')
-                c=E.parse(str(REF/(ci.xpath('//entry[@name=$n]/@value',n=comp)[0]+'.xml')))
-                snaps[name]={n.get('name').lower():[float(n.find('offset/position').get(k,0)) for k in ('x','y','z')]
-                             for n in c.xpath('//component/connections/connection') if 'snap' in n.get('name','').lower()}
-                self.assertIn(m.find('macro').get('class'),['dockarea','pier','storage','connectionmodule'])
-        entries={int(e.get('index')):e for e in plans()[-1]}; used=set()
-        def point(e,snap):
-            pos=e.find('offset/position');return [float(pos.get(k))+v for k,v in zip(('x','y','z'),snaps[e.get('macro')][snap])]
-        for e in entries.values():
-            pos=e.find('offset/position')
-            for k,limit in [('x',6000),('y',4000),('z',16000)]: self.assertLess(abs(float(pos.get(k))),limit-1500)
-            p=e.find('predecessor')
-            if p is None:continue
-            key=(p.get('index'),p.get('connection'));self.assertNotIn(key,used);used.add(key)
-            for a,b in zip(point(e,e.get('connection')),point(entries[int(p.get('index'))],p.get('connection'))):self.assertAlmostEqual(a,b,places=4)
     def test_all_rates_and_unlocks(self):
         r=Runner();definitions(r)
         wares=E.parse(str(REF/'libraries/wares.xml'))
@@ -154,13 +123,6 @@ class ContentTests(unittest.TestCase):
         # Destruction is confined to explicit sabotage, tracked raid cleanup,
         # and the exact temporary shell created by the opt-in layout test.
         for name, tree in Runner().scripts.items():
-            if name == 'CE_LayoutTest':
-                destroy = tree.xpath('//destroy_object')
-                self.assertEqual(len(destroy), 1)
-                self.assertEqual(destroy[0].get('object'), '$Run.$Probe')
-                self.assertEqual(destroy[0].xpath('ancestor::library/@name'), ['Cleanup'])
-                self.assertFalse(tree.xpath('//create_station'))
-                continue
             if name == 'CE_DebugReset':
                 destroy = tree.xpath('//destroy_object')
                 self.assertEqual([n.get('object') for n in destroy], ['$ResetObject'])
@@ -196,6 +158,7 @@ class LifecycleTests(unittest.TestCase):
                      Wares=Table(),Transfers=Table(),PlotReady=True,PauseOffers=False,TestUpgrade=False,
                      CompletedSequence=List(self.hub.constructionsequence[:4]),TargetSequence=self.hub.constructionsequence)
         self.run.env['R']=self.r;self.run.library('ApplyLevel')
+        self.r.Construction=Table(Valid=True,Levels=List(List(['m']*n) for n in (4,6,8,11,13,16,19,21,23,27)))
         for name in ('RenameHub','UpdateOffers','PublishDiagnostics','AssignBuilder'):
             self.run.stubs[name]=lambda:None
         # Exercise the real provisioning libraries; mock only native side effects.
@@ -296,14 +259,15 @@ class LifecycleTests(unittest.TestCase):
     def test_table_keys_require_explicit_list(self):
         with self.assertRaises(ValueError): self.run.expr('$R.$Wares.keys')
         self.assertEqual(set(self.run.expr('$R.$Wares.keys.list')),{'foodrations','water'})
-    def test_pending_task_and_native_queue_prevent_duplicates(self):
+    def test_pending_request_and_native_queue_prevent_duplicates(self):
+        requested=[]
+        self.run.native['signal_cue_instantly']=lambda n:requested.append(n.get('cue'))
         self.run.library('QueueExpansion');self.run.library('QueueExpansion')
-        self.assertEqual(self.created,1)
-        self.run.env=copy.deepcopy(self.run.env)
-        self.run.library('QueueExpansion');self.assertEqual(self.created,1)
-        # Even if the stored reference is gone, native queue is authoritative.
-        self.run.env['R']['Build']=NIL
-        self.run.library('QueueExpansion');self.assertEqual(self.created,1)
+        self.assertEqual(requested,['md.CE_Construction.Generate'])
+        self.r.LayoutPending=False
+        self.hub.buildstorage.builds.queued.append(Table(exists=True))
+        self.run.library('QueueExpansion')
+        self.assertEqual(len(requested),1)
     def test_destruction_loses_reserves_but_keeps_level_progress_counters(self):
         self.r['Level']=3;self.r['Target']=4;self.r['GrowthSeconds']=987.25
         self.r.Wares['foodrations'].update(Reserve=432.5,Delivered=77,Paid=100100)

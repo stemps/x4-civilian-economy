@@ -23,7 +23,7 @@
     <t id="40">TEST : programmer l'amélioration suivante</t>
     <t id="41">TEST : suspendre les nouvelles offres</t>
     <t id="42">TEST : reprendre les nouvelles offres</t>
-    <t id="43">Le plan complet de niveau 10 nécessite un espace libre de 12 x 8 x 32 km. Le dernier contrôle a échoué. Améliorations bloquées, mais construction et consommation du niveau actuel continuent. Nouveau contrôle toutes les cinq minutes de jeu.</t>
+    <t id="43">Les plateformes utilisent une parcelle de 10 x 10 x 10 km. Le plan de construction n'est pas encore prêt. Une nouvelle tentative sera effectuée.</t>
     <t id="44">Population accessible</t>
     <t id="45">Population accessible : %.0f\nLa demande est proportionnelle à la population.\nRéférence : 8 524 100 000 habitants.</t>
     <t id="50">Marchandise civile</t>

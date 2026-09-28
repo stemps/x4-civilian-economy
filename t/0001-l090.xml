@@ -23,7 +23,7 @@
     <t id="40">TEST: sonraki yükseltmeyi sıraya al</t>
     <t id="41">TEST: yeni teklifleri duraklat</t>
     <t id="42">TEST: yeni teklifleri sürdür</t>
-    <t id="43">Tam seviye 10 planı 12 x 8 x 32 km boş alan ister. Son kontrol başarısız. Yükseltmeler engelli; mevcut seviyenin inşaatı ve tüketimi sürebilir. Her beş oyun dakikasında yeniden denenir.</t>
+    <t id="43">Merkezler 10 x 10 x 10 km alan kullanır. İnşaat planı henüz hazır değil. İnşaat yeniden denenecek.</t>
     <t id="44">Erişilebilir nüfus</t>
     <t id="45">Erişilebilir nüfus: %.0f\nTalep nüfusla orantılıdır.\nTemel: 8.524.100.000 kişi.</t>
     <t id="50">Sivil mal</t>

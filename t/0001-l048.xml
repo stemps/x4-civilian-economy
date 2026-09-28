@@ -23,7 +23,7 @@
     <t id="40">TEST: zaplanuj następną rozbudowę</t>
     <t id="41">TEST: wstrzymaj nowe oferty</t>
     <t id="42">TEST: wznów nowe oferty</t>
-    <t id="43">Pełny układ poziomu 10 wymaga wolnej działki 12 x 8 x 32 km. Ostatnia kontrola nie powiodła się. Rozbudowa zablokowana, obecna budowa i zużycie mogą trwać. Ponowna kontrola co pięć minut gry.</t>
+    <t id="43">Centra korzystają z działki 10 x 10 x 10 km. Plan budowy nie jest jeszcze gotowy. Budowa zostanie ponowiona.</t>
     <t id="44">Dostępna populacja</t>
     <t id="45">Dostępna populacja: %.0f\nPopyt proporcjonalny do populacji.\nPodstawa: 8 524 100 000 mieszkańców.</t>
     <t id="50">Towar cywilny</t>

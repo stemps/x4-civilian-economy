@@ -1,5 +1,94 @@
 # Mod-local Knowledgebase
 
+## 2026-09-28 - measured fit and native staged expansion revision
+
+- MEASURED diagnostic smoke, token 1, game time 241625.87-241628.44,
+  fingerprint `cbea8c9f618be334d35cd685c1fad754f61ce0dc9a7085adb430acbede086844`:
+  finished with six failed races, two successful level checks and no bulk or
+  docking runs. Calibration yielded 55 distinct native module AABBs across all
+  six races; the imported numeric fixture records the log hash. Saved first-entry
+  IDs changed from Boron `0x2175` to `0x2183` and Terran `0x26cc` to `0x26da`
+  when loading the level-2 named plan. All 14 prior IDs were absent for each race.
+- READ: vanilla constructionplans.xml `arg_advancedcomposites_prefab_04` uses
+  `bookmark="1"` at entries 15, 23 and 37, with an unmarked final tail. Vanilla
+  factionlogic.xml and factionlogic_economy.xml expand prefab stations using
+  their existing sequence's `finalsequence` and an incremented stage number.
+- IMPLEMENTED: CE now uses a bookmarked master plan per race and retains one
+  native sequence per site. Stage boundaries, current stage and entry IDs are
+  checked before construction; readiness uses only the active prefix. Future
+  operational modules fail acceptance. This follows the native source pattern;
+  successful CE stage expansion is still pending the next smoke run.
+- MEASURED offline from imported native bounds: all six fitted layouts satisfy
+  a 50 m plot margin and 50 m conservative functional-AABB separation in 10 km
+  cubes at all ten levels. Deck spacing now varies by racial fit; a single
+  extra downward connector at Split level 6 separates storage from the pier.
+  These checks do not establish connector collision or approach clearance.
+  Existing production layouts and selected functional capacity tiers are unchanged.
+- MEASURED validation: fitted generation is reproducible; all 27 focused tests
+  pass. `just validate` and `just schema` each pass 310 repository tests, with
+  no introduced MD or merged AI schema errors. Lua and 264 translation keys
+  in all 16 languages pass. Full restart and a new native smoke run are required;
+  the revised native stage/geometry acceptance is not yet measured.
+
+## 2026-09-28 - first connector-spine native smoke and diagnostic revision
+
+- MEASURED in debug.txt, token 1, game time 242352.55-242356.31, template
+  `39cc7d0870d040bab1fa89faea68c735f4c201b19b5a55f88cc5db2141c9f175`:
+  all six smoke cases failed, two level checks passed, zero bulk/sample/docking
+  cases ran. Argon/Teladi level-1 pier bounds reached x=6188.5 m; Paranid
+  x=5788.5 m; Split x=5095.2 m, beyond the +5000 m plot edge. Boron/Terran
+  level 1 became operational, then level-2 sequence validation failed before
+  bounds checking. Their exact mismatch was not logged and remains unresolved.
+- READ: the initial generator centres module origins, not full native bounds,
+  and uses fixed branch lengths. Its static passes never established containment
+  of full modules. New native calibration exports all selected level-10 macros,
+  regardless of how early construction fails. Geometry dimensions/partial corner
+  logs from the first run cannot reconstruct a complete native bounds catalogue.
+- IMPLEMENTED: finite deterministic fitting from measured AABBs, immutable
+  cumulative centring, exact native sequence diagnostics, independent ID/transform
+  snapshots, and a smoke-only action with explicit passed/failed/skipped summary.
+  Fitting uses conservative functional AABB separation and assumed 50 m margins;
+  it does not validate connector collisions or docking approach volumes.
+- PENDING: run the diagnostic smoke after a full restart, import its complete
+  calibration, regenerate fitted plans, and diagnose native expansion identities.
+  No fitted layout or revised native smoke result is claimed yet. The first
+  failing geometry remains provisional until measured input is available.
+- MEASURED revision checks: `just spine-check` passes 24 focused tests;
+  `just validate` and `just schema` pass 307 repository tests with no introduced
+  schema errors, including merged AI patches. `just lua` and `just translations`
+  pass; all 16 locales contain the same 264 keys. These checks do not resolve
+  the native geometry or expansion failures described above.
+
+## 2026-09-28 - connector-spine prototype
+
+- READ: native Boron and Split cross junctions have three horizontal arms, not
+  four orthogonal arms. Boron, Paranid, Split, Terran and Teladi storage examples
+  attach vertically; a universal horizontal attachment rule fails on their snaps.
+  Snap names are case-normalized in native plans. IMPLEMENTED: this prototype
+  also enforces matching tangent/up directions on `snap_aligned` ports, not just
+  coincident positions/opposing normals; native attachment remains a runtime gate.
+- IMPLEMENTED: isolated CE_SpineExperiment plans use three branches per deck,
+  actual racial snap transforms, larger capacity tiers at levels 4 and 7, and
+  immutable cumulative entry prefixes. Their source is base+DLC reference XML,
+  not an installed effective-tree merge. Runtime availability, native bounds,
+  identities, construction and docking are separate acceptance gates.
+- MEASURED: the six generated racial plan sets pass static snap/graph/origin
+  checks at all 60 levels. Level-10 total entries including connectors are Argon
+  98, Boron 84, Paranid 89, Split 84, Terran 85 and Teladi 98. These figures do
+  not establish mesh clearance, actual native loading, construction or docking.
+- READ: construction-plan entry pseudo-values expose IDs/macros but not geometry.
+  The experiment validates generated XML transforms statically, uses native
+  macro bounding boxes for plot containment, and logs actual built module
+  transforms/dimensions. Mocked lifecycle tests are not engine measurements.
+- HISTORICAL pre-smoke status: the new 600-site experiment had not yet run. The earlier
+  600/600 native result below belongs to the previous randomized forward planner
+  and must not be attributed to this connector-spine prototype.
+- MEASURED: `just spine-check` passes reproducibility plus 17 focused tests;
+  `just validate` and `just schema` each pass all 300 repository tests. Native
+  schemas report no introduced errors, including the separately merged AI
+  patches. `just lua` and `just translations` pass, with 261 keys in each of
+  16 locales. Native runtime acceptance remains pending a restarted scratch save.
+
 ### 2026-09-28 - status-only-level-tooltip
 
 - The level-progress tooltip is composed by `CEHubStatus.progressHint`, not by
@@ -1721,6 +1810,284 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - Full restart is required for the MD handler. Live timing and cancellation
   acceptance still require in-game verification; mocked tests are not engine
   timing measurements.
+
+## 2026-09-28 - spine-stage-indexing-and-preflight
+
+- MEASURED: smoke token 1 at game times 241581.25-241582.99 failed all six
+  races at level 1 before construction. The harness incorrectly assumed
+  one-based stage boundaries. Recorded stages 1-9 are zero-based inclusive;
+  stage 10 reports full entry count for both first and last. The queued level-1
+  sequence exposes only the active prefix. The numeric observation fixture
+  retains all six races and the source-log hash; it does not measure later
+  queued sequences or establish the meaning of the final range properties.
+- IMPLEMENTED: validate the first nine ranges and require the exact queued
+  prefix count, macro basket, active stage and previously exposed entry IDs.
+  Validate final-stage contents directly instead of guessing tail boundaries.
+- IMPLEMENTED: CE_SpinePreflight queues all ten stages before any smoke/sample
+  construction, cancels each build and waits up to 30 game seconds for its
+  queue to drain. It retains the native full sequence when returning to level 1.
+  Failures block construction; preflight checks are separate from physical
+  passes. Geometry and module selections are unchanged.
+- MOCKED: recorded range regressions and queue lifecycle tests cover a bad
+  final basket, no preflight processing/force completion, retained sequence,
+  queue drain timeout and construction bypass prevention. Revised native
+  preflight, expansion, docking and appearance acceptance remain pending.
+- VALIDATED: just validate and just schema pass (315 tests); just spine-check
+  passes all generated plans and 32 focused tests; just lua and just translations
+  pass. Native schemas report no introduced errors; six diff-rooted scripts
+  lack direct bundled schemas, with affected merged AI scripts checked separately.
+  Full game restart required; /reloadui cannot load this MD change.
+
+## 2026-09-28 - spine-angle-types-and-repeat-initialization
+
+- MEASURED: smoke token 1 at game times 242112.80-242131.10 completed all 60
+  queue preflight checks and passed physical level 1 for all six races. Every
+  race failed its level-2 physical validation. No bulk or docking cases ran.
+- NAMED CHECKER DEFECT: native MD rejected angle modulo (9.42478rad %
+  6.28319rad), producing 63 TRANSFORM_CHANGED rows even with identical printed
+  old/new transforms. Previous numeric-only mocks incorrectly accepted modulo.
+  The old operational=0 field represented aggregate validation failure, not a
+  measured count of operational modules. Level-2 physical acceptance is unresolved.
+- READ/MEASURED: build.buildstorage's built-station event sends init station for
+  non-player, non-ownerless stations. Each racial level-2 event asserted that a
+  trade NPC already existed. CE's existing guard covered registered hubs only.
+- IMPLEMENTED: typed angular differences with both one-turn wraparound
+  equivalents replace modulo. The test runtime preserves angle addition,
+  subtraction and absolute values and rejects modulo; it is still not a complete
+  native units emulator. BUILT now labels its aggregate result validation_passed.
+- IMPLEMENTED: explicitly mark created experimental stations; extend the existing
+  initialization guard to marked civilian stations with a trade NPC. Their first
+  initialization and unmarked non-CE stations retain native behavior.
+- MOCKED: regressions exercise all rotation axes, wraparound, tolerance and real
+  changes; initialization cases vary ownership, registration, marker and manager.
+  Native corrected expansion/initialization acceptance remains pending. Geometry
+  and module baskets are unchanged. Full game restart required, not /reloadui.
+- VALIDATED: just validate and just schema pass with 316 tests; just spine-tests
+  passes 33 focused cases; just lua and just translations pass. Merged native AI
+  schemas report no introduced errors. Backup snapshots use .bak suffixes so the
+  toolkit does not mistake an archived diff for a live game-path patch.
+
+## 2026-09-28 - spine-five-race-smoke-and-blackboard-scope
+
+- MEASURED: token 1 at game times 241557.54-241590.52 finished with five smoke
+  races passed and one failure. Argon, Paranid, Split, Terran and Teladi passed
+  all ten physical stages. Boron passed stages 1-5 then failed at 6. All 60
+  preflight checks passed; no bulk or docking cases ran. No angle arithmetic or
+  transform-change errors remained. Physical level checks passed 55 of 56 attempted.
+- MEASURED: 50 existing-trade-NPC assertions remained. The log also reports six
+  failed set_value writes to station.$ce_spine_experiment. NAMED ROOT CAUSE:
+  the station component cannot hold that entity blackboard variable. WITHDRAWN:
+  the previous station marker implementation could protect experimental hubs;
+  its numeric/table mock did not model the failed native assignment.
+- IMPLEMENTED: publish a separate union of tracked current and retained objects
+  on player.entity.$ce_spine_objects. AI checks this membership plus civilian
+  ownership and an existing manager; first initialization remains native. Publish
+  refreshes after cleanup and clears absent-run membership. INIT_GUARD logs native
+  inputs. The regression station fixture rejects MD variable storage on stations.
+- INFERRED: Boron's aggregate station-span guard caused level-6 failure. All 38
+  module geometry rows were emitted, with positions matching generated coordinates
+  within tolerance and no preceding transform/identity errors. Actual station
+  dimensions were not logged, so the physical extent and its cause are unresolved.
+- IMPLEMENTED: STATION_BOUNDS logs all three native spans; STATION_BOUNDS_EXCEEDED
+  logs excess metres by axis. Position, missing/operational module and transform
+  failures retain distinct reasons. These aggregate spans are not plot-relative
+  corner coordinates; macro corner checks remain independent. No geometry,
+  thresholds, module tiers or production records changed. Native acceptance of
+  the registry guard and Boron diagnosis requires another smoke run after a full
+  game restart; /reloadui is insufficient.
+- MEASURED distinction: Boron's level-6 pier reports live width 2118.313 m,
+  while its calibration max.x=1059.156 and center.x=859.153 reconstruct a
+  400.006 m macro interval. Native component size and reconstructed macro
+  intervals therefore differ; their semantics must not be treated as equivalent.
+  This does not by itself establish a collision or justify shrinking the pier.
+- VALIDATED: just validate and just schema pass (318 tests), just spine-tests
+  passes 35 focused cases, and just lua / just translations pass. Merged native
+  AI schemas report no introduced errors. These checks do not establish native
+  membership publication or resolve Boron's aggregate span discrepancy.
+
+## 2026-09-28 - corrected-native-half-extents-and-boron-refit
+
+- MEASURED: smoke token 1 at 241764.74-241798.52 finished with five races passed,
+  Boron failed at level 6, and no trade-NPC assertions or experiment MD errors.
+  INIT_GUARD saw null managers initially and stable existing managers thereafter.
+  This verifies the player-entity membership fix for this smoke run.
+- MEASURED: Boron level 6 spans were 10192.055 x 3999.997 x 8475.701 m, exceeding
+  width by 192.055 m. MODEL RECONCILIATION: native boundingbox.max acts as
+  half-extents around boundingbox.center. Corners center +/- max reproduce all
+  46 recorded non-Terran station spans within 0.002 m, including Boron's failure.
+  Terran differs by up to 83.27 m; its native-size discrepancy remains unresolved.
+- WITHDRAWN: v1's endpoint interpretation (min=2*center-max) and resulting claims
+  that its macro-corner checks established containment. V2 retains raw max/center
+  values plus derived corners and source-log hash. Generator rejects v1; native
+  MD corner checks now also use center +/- max. Collision/docking remain untested.
+- IMPLEMENTED: freeze five passing racial candidate parameters, original offsets
+  and cumulative geometry hashes. Corrected bounds and 50 m functional-AABB gaps
+  still pass without changing any of their entries. Only Boron is refitted.
+- MODELLED Boron level 10: 8580.25319 x 8399.99772 x 7373.74660 m, 77 entries
+  (previously 73). Inner/dock/pier target lengths 400/800/1600 m, snap variant 1,
+  five vertical connectors per deck and a level-6 storage drop. Functional module
+  choices and milestones are unchanged; all levels retain cumulative entries.
+  This is a predicted envelope, not a measured new station or docking pass.
+- MOCKED/STATIC: regression reproduces the old Boron level-6 native dimensions,
+  checks nonzero-center native corner logic, and preserves historical stage-range
+  observations independently of the new plans. Numeric observations/constraints
+  contain no copied game assets. Full restart and a fresh smoke run are required;
+  existing experimental specimens must not expand using regenerated identities.
+- VALIDATED: just validate and just schema pass with 319 tests; just spine-check
+  verifies reproducible artifacts and 36 focused tests; just lua and just
+  translations pass. All 55 non-Boron experimental plan XML nodes are byte-identical
+  to the pre-fix snapshot, and production XML outside the experimental block is
+  unchanged. Native acceptance of regenerated Boron remains pending.
+
+## 2026-09-28 - all-six-races-native-smoke-passed
+
+- MEASURED: token 1, game times 241728.39-241763.20, finished with smoke=6,
+  checks=60, failures=0. All 60 preflight and 60 physical stage checks passed.
+  All six races reached level 10. No experiment MD errors or repeat trade-NPC
+  assertions were present. The log and corresponding manifest are preserved in
+  .snapshots/spine-smoke-passed (ignored local evidence).
+- MEASURED: refitted Boron level-10 native spans are 8580.254 x 8399.998 x
+  7373.746 m, matching the model within 0.002 m. This verifies construction,
+  expected operational modules, identity/transform preservation and the checked
+  bounds for this smoke run; force completion does not validate deliveries.
+- NOT RUN: bulk sites=0, docking=0, reviewed samples=0. Proceed to the full debug
+  experiment only, not production integration. Finished smoke state must be
+  returned to idle using Clean up experiment objects before Start spine experiment.
+  Full start repeats its smoke gate, then bulk and physical/docking/visual gates.
+
+## 2026-09-28 - bulk-pass-and-docking-monitor-repair
+
+- MEASURED: full run token 3 completed 600 bulk sites and 6000 level checks
+  with zero failures after six smoke passes. The first physical sample was Argon
+  level 1. Its later in_sector_docking_interrupted result did not identify which
+  prerequisite failed. Boron's S probe subsequently docked at 243234.09, then
+  departure hit MoveWait's unsupported position parameter at 243251.57.
+- MEASURED/READ: repeated dock.container errors occurred while ship.dock was
+  null. Native move.gate guards dock presence; order.move.wait defines destination
+  as [sector, position], not separate destination and position params. WITHDRAWN:
+  null-dock errors entirely prevented approach; Boron's recorded docking disproves
+  that. No complete docking cycles or reviewed physical samples passed this run.
+- IMPLEMENTED: guard nullable dock before dereferencing; issue the documented
+  MoveWait tuple once per departure; retain the undocked and >8 km exit gate.
+  Distinct interruption reasons now identify sector/range/probe failures.
+  Named map-visible probes, PROBE_START/PROBE_DEPART and status on observation,
+  docking and review transitions expose progress without claiming completion.
+- IMPLEMENTED: debug physical-samples-only start requires clean idle state,
+  repeats smoke, skips bulk, then runs existing physical/docking/visual gates.
+  Smoke-failed races remain blocked. Its summary reports sample/docking/failure
+  counts and explicitly excludes bulk; no historical counters are synthesized.
+- MOCKED: null and wrong-station docks, four ordered docking/departure cycles,
+  native order parameter declarations, one departure order per cycle, precise
+  interruption reasons, guarded rerun admission and distinct completion summary.
+  New keys 398-401 translated across all 16 languages. Runtime docking and review
+  still require native verification after a full restart; /reloadui is insufficient.
+- VALIDATED: just validate and just schema pass (322 tests); just spine-tests
+  passes 39 focused cases; just lua and just translations pass (268 keys in all
+  16 languages). Merged native AI schemas report no introduced errors. Native
+  repaired docking/departure and visual-review acceptance remain pending.
+
+## 2026-09-28 - visible-observation-gate-and-bounded-retry
+
+- MEASURED: the subsequent samples-only run passed all six smoke races. Argon
+  and Boron level-1 probes failed the old attention.inzone gate while the station
+  reported visible and the player remained in the test sector. Boron's S probe
+  docked at 241895.14 and received a departure order at 241912.49 without the
+  earlier nullable-dock or MoveWait parameter errors. No full docking cycle was
+  established by these observations. Evidence: .snapshots/spine-observation-fix.
+- WITHDRAWN interpretation: old observer_out_of_range meant the player had flown
+  away. That gate measured attention, not distance; visible alone triggered it.
+- READ: vanilla MD/AI use attention ge attention.visible for visible simulation;
+  player.entity.distanceto.{object} supplies an explicit distance. The new helper
+  separates wrong sector, measured range and insufficient attention diagnostics.
+- DESIGN: 20 km, 30 game seconds to return and two retries per checkpoint are
+  experimental limits, not measured engine thresholds. Recovery removes the old
+  tracked probe before repeating its ship class; unseen activity earns no credit.
+  Exhausted retries and expired recovery remain failures. Native acceptance is
+  pending a full restart and another physical-samples-only run.
+- MOCKED: visible attention admission, exact range boundary, low attention,
+  wrong sector, recovery expiry, same-class restart without unseen credit,
+  retry exhaustion and cancellation during recovery. All 42 focused cases pass.
+- VALIDATED: just validate and just schema pass with 325 tests; just lua and
+  just translations pass, with 270 keys in each of 16 languages. Native schema
+  validation reports no introduced errors. Runtime acceptance remains pending.
+
+## 2026-09-28 - visual-inspection-batch
+
+- USER DECISION: skip docking tests and keep multiple completed stations available
+  together for manual inspection of dock/pier access. This supersedes docking
+  acceptance as a prerequisite for this inspection workflow, not as evidence of
+  functional docking or production readiness.
+- IMPLEMENTED: `visual` command/phase builds one station per race through all ten
+  levels with one worker, preserving preflight and physical validation. Successful
+  and failed specimens stay tracked and retained. No proximity gate, probe orders,
+  intermediate review prompts or automatic visual acceptance. Summary reports
+  completed/6 and failure counts; bulk, smoke and docking counters remain zero.
+  Standard cancel, occupied cleanup, token guards and cleanup on reload remain.
+- MOCKED: all 60 build-stage transitions advance without an observer; six completed
+  stations coexist, failures remain incomplete and retained, clean-idle admission
+  and cleanup cover the batch. All 44 focused checks pass. Native run pending.
+- VALIDATED: just validate and just schema pass (327 tests), just lua passes,
+  and just translations passes with 273 keys in all 16 languages. Merged native
+  AI schemas report no introduced errors. Full restart required for the new mode.
+
+## 2026-09-28 - six-race-visual-approval
+
+- MEASURED: visual batch token 1, game times 241584.45-241617.82, completed all
+  six racial stations through level 10 with 60 physical stage checks, 60 preflight
+  passes and zero failures. Final counters: checks=60, samples=6, docking=0.
+  Log and corresponding manifest preserved in .snapshots/spine-visual-approved.
+  This supersedes the visual batch's earlier native-run-pending status.
+- USER OBSERVED: all six finished layouts look good; all docks and piers look
+  accessible. Record this as visual approval of the completed level-10 layouts.
+  Actual docking/undocking remains untested by the user's decision. Force-completed
+  construction does not establish resource delivery. Earlier 600-site/6000-check
+  bulk evidence is separate from this visual run.
+- SCOPE: prototype construction and visual review succeeded. Ordinary station
+  construction, existing hubs and production profiles remain unchanged; integration
+  is a separate implementation task, not performed by recording this approval.
+
+## 2026-09-28 - production-spine-integration
+
+- USER DECISION: replace ordinary construction with the visually approved racial
+  spine layouts; remove all debug experiment code/options. The mod is unreleased:
+  resetting all existing hubs is acceptable and no old-plan migration is required.
+- IMPLEMENTED: six ce_hub_<race> bookmarked master plans replace the old static
+  Argon catalogue and random runtime planner. Geometry and tier selections match
+  the approved manifest. Production resolves required native macros and blocks
+  unavailable layouts, then uses one retained finalsequence for stages 1-10.
+  Active prefix counts, macro order and IDs are checked before processing.
+- IMPLEMENTED: fixed 10 km plots; five-minute retry backoff without random direction,
+  plot growth or relocation. Lost builds reuse master/stage; destroyed hubs get a
+  new master at their earned replacement level. First-generation level-1 seeds and
+  reset hubs complete their validated native first stage through a narrowly scoped
+  Lua bridge; readiness revokes exact-object permission before upgrades.
+- REMOVED: CE_Spine* MD scripts, probe orders, observation/review gates, experiment
+  Lua/menu and translation keys, CE_LayoutTest tombstone, random forward planner
+  and obsolete lifecycle tests. Numeric calibration, approved manifests and static
+  geometry checks remain development evidence. Production reset targets registered
+  CE hubs only; old standalone specimens need cleanup using the old running build,
+  or a fresh test save. No new legacy cleanup/migration code is added.
+- EVIDENCE LIMIT: earlier native geometry/bulk/visual results still apply to the
+  unchanged layouts. Controller/reset integration is new and needs an in-game
+  reset plus upgrade check after a full restart; mocked checks do not prove it.
+- MEASURED OFFLINE: all ten levels and selections compare equal to the preserved
+  visually approved manifest for every race. Plan reproducibility, static geometry,
+  Lua authorization and 246 translation keys across all 16 languages pass.
+- TOOLING: x4validate scans XML under ignored snapshot folders too. Historical
+  snapshots with live .xml suffixes caused false missing-text references after
+  experiment removal. Preserve backups as .xml.bak or ZIP files; all existing
+  snapshot XML files were renamed without changing their contents.
+- MOCKED: initial completion can arrive before native readiness. A one-second
+  authorized-initial-build tick retries at most every two seconds, then revokes
+  permission on readiness. Delayed completion and no replay after completion pass
+  alongside the other 11 focused construction/profile cases.
+- VALIDATED: final just validate passes 263 tests and XML/reference checks;
+  just schema passes native MD/data schemas and merged AI patches with no
+  introduced errors. just plans-check verifies reproducibility/geometry;
+  just lua and just translations pass (248 keys in all 16 languages, including
+  separate concurrent settings additions). README/docs remain untouched.
+  Full restart and explicit Reset all CE hubs are required for old development
+  saves. Production reset/upgrade verification remains pending in-game.
 
 ## 2026-09-28 - news-video-setting
 

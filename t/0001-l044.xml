@@ -23,7 +23,7 @@
     <t id="40">TEST: Queue next upgrade</t>
     <t id="41">TEST: Pause new offers</t>
     <t id="42">TEST: Resume new offers</t>
-    <t id="43">The full level-10 layout needs a clear 12 x 8 x 32 km plot. The last clearance check failed. Upgrades are blocked, but current-level construction and consumption can continue. Retried every five game minutes.</t>
+    <t id="43">Hubs use a 10 x 10 x 10 km plot. The construction plan is not ready yet. Construction will retry.</t>
     <t id="44">Accessible population</t>
     <t id="45">Accessible population: %.0f\nDemand is proportional to population.\nBaseline: 8,524,100,000 inhabitants.</t>
     <t id="50">Civilian good</t>

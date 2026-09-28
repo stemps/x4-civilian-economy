@@ -6,142 +6,22 @@ import unittest
 
 
 class ConstructionTests(unittest.TestCase):
-    def setUp(self):
-        self.run = r = Runner()
-        self.components = Table(Dock=module('dockarea'), Storage=module('storage'),
-                                Pier=module('pier'), Connectors=List([module('connectionmodule')]), Valid=True)
-        self.hub = Component(exists=True, iswreck=False, owner='civilian',
-                             buildstorage=Table(exists=True, builds=Table(queued=List(), inprogress=List())))
-        self.record = Table(Hub=self.hub, Construction=self.components, ProfileRace='terran',
-                            Level=1, Target=0, Build=NIL, PlotReady=True)
-        r.env.update(R=self.record, Hub=self.hub, Station=self.hub, Base=NIL, PlanAhead=False, PlansRejected=False,
-                     faction=Table(ownerless='ownerless',civilian='civilian'),
-                     tag=Table({s:s for s in ('dockarea','storage','pier','base','connection','module','dock_s','dock_m')}))
-        self.calls = []
-        r.stubs.update(FundAccounts=lambda:None, AssignBuilder=lambda:None)
-        def build(node):
-            self.calls.append(r.expr(node.get('constructionplan')))
-            r.set(node.get('result'), Table(exists=True))
-        r.native.update(add_build_to_expand_station=build, process_build=lambda n:None,
-                        write_to_logbook=lambda n:None, signal_cue_instantly=lambda n:self.calls.append('generate'))
-
-    def test_native_selection_uses_race_and_smallest_functional_modules(self):
-        r = self.run
-        for race in ('argon','paranid','teladi','split','boron','terran','conversion_race'):
-            r.env['ProfileRace'] = Table(id=race)
-            groups = {'dockarea':List([module('dockarea',4),self.components.Dock]),
-                      'storage':List([module('storage',0),module('storage',100),self.components.Storage]),
-                      'pier':List([module('pier',4),self.components.Pier]),
-                      'connection':self.components.Connectors}
-            def query(n):
-                self.assertEqual(r.expr(n.get('race')).id, race)
-                self.assertIsNone(n.get('faction'))
-                tags = r.expr(n.get('tags'))
-                # Native add-category single piers disappear under the old base filter.
-                choices = groups[tags[1]]
-                if tags[1] == 'pier' and 'base' in tags:
-                    choices = List([choices[1]])
-                r.set(n.get('macro'), choices)
-            r.native['get_module_definition'] = query
+    def test_supported_racial_profiles_require_every_native_macro(self):
+        for race in ('argon','boron','paranid','split','terran','teladi'):
+            r=Runner();r.env.update(ProfileRace=Table(id=race),tag=Table(module='module'))
+            names=E.parse(str(__import__('support').ROOT/'libraries/constructionplans.xml')).xpath('//plan[@id=$id]/entry/@macro',id='ce_hub_'+race)
+            r.native['get_module_definition']=lambda n:r.set(n.get('macro'),List(Component(id=x) for x in sorted(set(names))))
             r.library('md.CE_Construction.Resolve')
-            self.assertTrue(r.env['Construction'].Valid)
-            for key in ('Dock','Storage','Pier'):
-                self.assertIs(r.env['Construction'][key], self.components[key])
+            profile=r.env['Construction']
+            self.assertTrue(profile.Valid);self.assertEqual(profile.Plan,'ce_hub_'+race)
+            self.assertEqual(profile.Levels.count,10)
+            r.native['get_module_definition']=lambda n:r.set(n.get('macro'),List())
+            r.library('md.CE_Construction.Resolve');self.assertFalse(r.env['Construction'].Valid)
 
-    def test_missing_components_block_without_replacement(self):
-        self.components.Pier = NIL
-        self.run.library('md.CE_Construction.Queue')
-        self.assertTrue(self.record.ConstructionError)
-        self.assertEqual(self.calls, [])
-
-    def test_conversion_can_replace_each_native_role(self):
-        r=self.run
-        r.env['ProfileRace']=Table(id='custom')
-        r.native['get_module_definition']=lambda n:r.set(n.get('macro'),List())
-        r.stubs['md.CE_Construction.Configure']=lambda:r.env.update(ConstructionOverrides=Table({'$custom':self.components}))
+    def test_unsupported_race_has_no_silent_argon_fallback(self):
+        r=Runner();r.env['ProfileRace']=Table(id='conversion_race')
         r.library('md.CE_Construction.Resolve')
-        self.assertTrue(r.env['Construction'].Valid)
-        self.assertIs(r.env['Construction'].Dock,self.components.Dock)
-        self.assertIs(r.env['Construction'].Connectors,self.components.Connectors)
-
-    def test_requirements_all_levels(self):
-        for level, total in enumerate((3,4,5,7,8,10,12,13,14,17), 1):
-            self.run.env['BuildLevel'] = level
-            self.run.library('md.CE_Construction.Requirements')
-            required = self.run.env['RequiredMacros']
-            self.assertEqual(len(required), total)
-            self.assertEqual(sum(m is self.components.Storage for m in required), level)
-
-    def test_pending_layout_does_not_duplicate_request(self):
-        self.run.library('md.CE_Construction.Queue')
-        self.run.library('md.CE_Construction.Queue')
-        self.assertEqual(self.calls, ['generate'])
-        self.assertEqual(self.record.LayoutToken, 1)
-
-    def accept(self, macros, base=NIL):
-        r = self.run
-        r.env['BuildLevel'] = 1
-        r.library('md.CE_Construction.Requirements')
-        r.env.update(Sequence=sequence(macros) if macros is not None else NIL, Base=base)
-        self.record.LayoutPending = True
-        r.library('md.CE_Construction.Accept')
-
-    def test_result_requires_exact_functional_basket_and_permitted_connectors(self):
-        valid = [self.components.Storage,self.components.Dock,self.components.Pier]
-        for invalid in (None, valid[:-1], valid + [module('storage')], valid + [self.components.Dock]):
-            self.accept(invalid)
-            self.assertFalse(self.run.env['ValidSequence'])
-            self.assertEqual(self.calls, [])
-        self.accept(valid + list(self.components.Connectors) * 3)
-        self.assertTrue(self.run.env['ValidSequence'])
-        self.assertEqual(len(self.calls), 1)
-        self.assertIs(self.record.TargetSequence, self.calls[0])
-
-    def test_result_must_preserve_base_entry_ids(self):
-        base = sequence([self.components.Storage])
-        base[1].id = 'existing-storage'
-        self.accept([self.components.Storage,self.components.Dock,self.components.Pier], base)
-        self.assertFalse(self.run.env['ValidSequence'])
-        self.assertEqual(self.calls, [])
-
-    def test_valid_result_preserves_completed_base(self):
-        self.accept([self.components.Storage,self.components.Dock,self.components.Pier],
-                    sequence([self.components.Storage]))
-        self.assertTrue(self.run.env['ValidSequence'])
-        self.assertEqual(len(self.calls),1)
-
-    def test_initial_completion_preserves_earned_level(self):
-        self.record.Level = 7
-        self.record.Growth = 123
-        self.record.TargetSequence = sequence([self.components.Dock])
-        self.hub.constructionsequence = self.record.TargetSequence
-        self.hub.planmodule = Table({'0':Table(exists=True,isoperational=True)})
-        self.run.library('md.CE_Construction.Readiness')
-        self.assertTrue(self.run.env['Ready'])
-        self.assertFalse(self.run.env['TargetReady'])
-        self.assertEqual((self.record.Level,self.record.Growth), (7,123))
-        self.assertIs(self.record.TargetSequence, NIL)
-
-    def test_generation_is_async_and_completion_checks_identity(self):
-        r = self.run
-        class EmptySequence:
-            def __bool__(self): return False
-            @property
-            def count(self): raise AssertionError('Fresh shell has no construction sequence')
-        self.hub.constructionsequence = EmptySequence()
-        r.env.update(event=Table(param=List([self.record,self.hub,1,2])),this='cue')
-        r.native['create_construction_sequence'] = lambda n:self.calls.append((r.expr(n.get('macros')),n.find('immediate')))
-        r.actions(r.construction.xpath('//cue[@name="Generate"]/actions')[0])
-        self.assertEqual(len(self.calls[0][0]), 3)
-        self.assertIsNone(self.calls[0][1])
-        guard = r.construction.xpath('//cue[@name="Completed"]/actions/do_if')[0]
-        self.record.update(LayoutToken=2,LayoutPending=True)
-        self.assertFalse(r.expr(guard.get('value')))
-        self.record.LayoutToken = 1
-        self.assertTrue(r.expr(guard.get('value')))
-        self.record.Hub = Component(exists=True)
-        self.assertFalse(r.expr(guard.get('value')))
-
+        self.assertFalse(r.env['Construction'].Valid)
 
 class StartupProfileTests(unittest.TestCase):
     def test_all_sectors_are_captured_before_population_response(self):

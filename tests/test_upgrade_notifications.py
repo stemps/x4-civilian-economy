@@ -41,7 +41,6 @@ class UpgradeNotificationTests(StartupHarness):
         self.complete()
         self.finish(record)
         self.assertEqual(self.messages, [])  # Initial build is not an upgrade.
-        record.LayoutPlans=NIL;record.LayoutPlanHub=NIL
         return record
 
     def request(self, record, target):

@@ -1,0 +1,91 @@
+{
+  "evidence": "Preserve five native smoke-passed geometries; collision/docking acceptance pending",
+  "log_sha256": "b895c15e9ca58f4833aac02493c08aebd1fb4925019b758d7f7e43ecd3398ac8",
+  "races": {
+    "argon": {
+      "candidate": [
+        400,
+        400,
+        400,
+        false,
+        2,
+        6,
+        false
+      ],
+      "shift": [
+        -0.00013576041237683967,
+        19.86349999999993,
+        334.40177267111585
+      ],
+      "levels_sha256": "705c6f0d3511dba536b8a7f0811b7f5271b3fd1c53bbf133d5f14d4941fce1e9"
+    },
+    "paranid": {
+      "candidate": [
+        400,
+        400,
+        1200,
+        true,
+        0,
+        5,
+        false
+      ],
+      "shift": [
+        -729.742837277217,
+        -460.4694999999999,
+        734.3822675720237
+      ],
+      "levels_sha256": "89b8b02f4f718adf82f41ed9b422d9fae093f9b1274cbe4f4bb528062ff71c0f"
+    },
+    "split": {
+      "candidate": [
+        400,
+        400,
+        1600,
+        true,
+        0,
+        5,
+        true
+      ],
+      "shift": [
+        -610.502597721824,
+        -51.50659999999971,
+        -333.6868304161203
+      ],
+      "levels_sha256": "dfa64edc6e26d8da13abde9c52f0dd20fd34f943cf30d0792ad188495d7fba14"
+    },
+    "teladi": {
+      "candidate": [
+        400,
+        400,
+        800,
+        true,
+        0,
+        3,
+        false
+      ],
+      "shift": [
+        -929.7660122839425,
+        -8.004599999999982,
+        734.3819675620455
+      ],
+      "levels_sha256": "c23be92c09d36cd7564251e7684977707241ba0145f987fd1ef8e6cb9d5d711b"
+    },
+    "terran": {
+      "candidate": [
+        400,
+        400,
+        800,
+        false,
+        0,
+        4,
+        false
+      ],
+      "shift": [
+        -1089.7153560741936,
+        -177.1001643069999,
+        334.40270667112486
+      ],
+      "levels_sha256": "49c758173fccfe2ffd5fea142cb65215131b117ac06b63d5775ebe3abb7220c4"
+    }
+  }
+}

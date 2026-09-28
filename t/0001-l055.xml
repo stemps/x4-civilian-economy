@@ -23,7 +23,7 @@
     <t id="40">TESTE: agendar próxima melhoria</t>
     <t id="41">TESTE: pausar novas ofertas</t>
     <t id="42">TESTE: retomar novas ofertas</t>
-    <t id="43">O projeto completo de nível 10 precisa de 12 x 8 x 32 km livres. A última verificação falhou. Melhorias bloqueadas; construção e consumo atuais continuam. Nova tentativa a cada cinco minutos de jogo.</t>
+    <t id="43">Os centros usam um terreno de 10 x 10 x 10 km. O plano de construção ainda não está pronto. A construção será tentada novamente.</t>
     <t id="44">População acessível</t>
     <t id="45">População acessível: %.0f\nDemanda proporcional à população.\nBase: 8.524.100.000 habitantes.</t>
     <t id="50">Mercadoria civil</t>

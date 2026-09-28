@@ -23,7 +23,7 @@
     <t id="40">TEST: Nächsten Ausbau einreihen</t>
     <t id="41">TEST: Neue Angebote pausieren</t>
     <t id="42">TEST: Neue Angebote fortsetzen</t>
-    <t id="43">Der vollständige Ausbau auf Stufe 10 benötigt eine freie Baufläche von 12 x 8 x 32 km. Die letzte Prüfung scheiterte. Ausbauten sind blockiert, Bau und Verbrauch der aktuellen Stufe laufen weiter. Erneute Prüfung alle fünf Spielminuten.</t>
+    <t id="43">Zentren nutzen ein Grundstück von 10 x 10 x 10 km. Der Bauplan ist noch nicht bereit. Der Bau wird erneut versucht.</t>
     <t id="44">Erreichbare Bevölkerung</t>
     <t id="45">Erreichbare Bevölkerung: %.0f\nDer Bedarf ist proportional zur Bevölkerung.\nBasis: 8.524.100.000 Einwohner.</t>
     <t id="50">Zivile Ware</t>

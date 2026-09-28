@@ -23,7 +23,7 @@
     <t id="40">TEST: accoda il prossimo ampliamento</t>
     <t id="41">TEST: sospendi nuove offerte</t>
     <t id="42">TEST: riprendi nuove offerte</t>
-    <t id="43">La struttura completa di livello 10 richiede un lotto libero di 12 x 8 x 32 km. Ultimo controllo fallito. Ampliamenti bloccati, ma costruzione e consumo attuali continuano. Nuovo controllo ogni cinque minuti di gioco.</t>
+    <t id="43">Gli hub usano un lotto di 10 x 10 x 10 km. Il piano di costruzione non è ancora pronto. Verrà effettuato un nuovo tentativo.</t>
     <t id="44">Popolazione accessibile</t>
     <t id="45">Popolazione accessibile: %.0f\nDomanda proporzionale alla popolazione.\nBase: 8.524.100.000 abitanti.</t>
     <t id="50">Merce civile</t>

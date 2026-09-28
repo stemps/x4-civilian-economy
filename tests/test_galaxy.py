@@ -15,6 +15,7 @@ class GalaxyTests(unittest.TestCase):
         for name in ('FundAccounts','QueueExpansion','AssignBuilder','RenameHub','ReserveGrowthPlot'):
             self.run.stubs[name]=lambda:None
         self.run.native['add_to_group']=lambda n:None
+        self.run.native['set_build_plot']=lambda n:None
         def create(n):
             hub=Object(exists=True,iswreck=False,owner=self.run.expr(n.get('owner')),sector=self.run.env['Sector'],
                        isclass=Table(container=False),buildstorage=NIL)

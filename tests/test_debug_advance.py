@@ -5,8 +5,6 @@ from support_startup import StartupHarness
 class DebugAdvanceTests(StartupHarness):
     def operational(self):
         record=self.start();self.complete();self.finish_modules(record)
-        # Exercise upgrades of existing saves without precomputed level layouts.
-        record.LayoutPlans=NIL;record.LayoutPlanHub=NIL
         return record
 
     def finish_modules(self, record):
@@ -27,8 +25,7 @@ class DebugAdvanceTests(StartupHarness):
         self.command(record,'advance_level_10')
         self.assertEqual((record.Level,record.Target),(1,10))
         self.assertTrue(record.TestUpgrade)
-        self.assertIs(self.pending[1]['Base'],base)
-        self.assertEqual(self.pending[1]['RequiredMacros'].count,17)
+        self.assertEqual(self.pending[1]['event'].param[4],10)
         self.command(record,'advance_level_10');self.assertEqual(len(self.pending),2)
         self.complete(index=1)
         self.assertEqual(raised,[('CEAdvanceBuildReady',record.Hub)])

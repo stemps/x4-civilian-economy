@@ -15,11 +15,11 @@ class HubStartupTests(StartupHarness):
         record=r.env['Registry'][self.sector]; hub=record.Hub
         self.assertFalse(record.Operational); self.assertIs(hub.constructionsequence,NIL)
         self.complete()
-        self.assertFalse(hub.buildstorage.exists)
+        self.assertTrue(hub.buildstorage.exists)
         self.assertEqual(sum(kind=='materialize' for kind,_ in self.events),1)
-        self.assertFalse(any(kind in ('queue','process','assign','order') for kind,_ in self.events))
-        self.assertEqual(record.LayoutPlans.count,10)
-        self.assertIs(hub.constructionsequence,record.LayoutPlans[1])
+        self.assertEqual(sum(kind=='queue' for kind,_ in self.events),1)
+        self.assertEqual(record.FullSequence.stage.count,10)
+        self.assertEqual(hub.constructionsequence.count,record.Construction.Levels[1].count)
         self.assertEqual(hub.owner,'civilian')
         self.assertTrue(record.Operational); self.assertIs(record.TargetSequence,NIL)
         self.assertEqual(hub.tradenpc.owner,'civilian')
@@ -37,7 +37,7 @@ class HubStartupTests(StartupHarness):
             with self.subTest(success=success):
                 self.setUp(); record=self.start(); self.complete(success=success,result=result)
                 self.assertFalse(record.LayoutPending); self.assertTrue(record.ConstructionError)
-                self.assertFalse(any(k=='queue' for k,_ in self.events))
+                self.assertFalse(any(k=='process' for k,_ in self.events))
                 self.start(); self.assertEqual(len(self.pending),1)
                 self.retry(); self.assertEqual(len(self.pending),2)
 
@@ -52,8 +52,9 @@ class HubStartupTests(StartupHarness):
         record=self.start(); self.complete(); original=record.TargetSequence
         record.Build.exists=False; record.Hub.buildstorage.builds.inprogress.clear()
         self.builder(); self.start(); self.start()
-        self.assertIs(record.TargetSequence,original)
-        self.assertEqual(len(self.pending),1)
+        self.assertEqual([e.id for e in record.TargetSequence],[e.id for e in original])
+        self.assertEqual(len(self.pending),2)
+        self.complete(index=1)
         self.assertEqual(sum(k=='queue' for k,_ in self.events),2)
         self.assertEqual(sum(k=='order' for k,_ in self.events),1)
 
@@ -80,12 +81,10 @@ class HubStartupTests(StartupHarness):
         r.env.update(R=record,Hub=hub); r.library('UpdateHub')
         base=record.CompletedSequence
         record.Target=2; r.library('QueueExpansion')
-        self.assertIs(self.pending[1]['Base'],base)
-        self.assertEqual(list(self.pending[1]['NewMacros']),[self.components['storage']])
         self.complete(index=1)
         self.assertEqual(record.Level,1)
         self.assertIs(record.CompletedSequence,base)
-        self.assertEqual(record.TargetSequence.count,4)
+        self.assertEqual(record.TargetSequence.count,record.Construction.Levels[2].count)
         for entry in base:
             self.assertIs(record.TargetSequence[entry.id].macro,entry.macro)
         self.assertEqual(sum(k=='queue' for k,_ in self.events),2)
@@ -107,7 +106,6 @@ class HubStartupTests(StartupHarness):
         record=self.start(); r=self.run
         r.actions(r.tree.xpath('//cue[@name="Reload"]/actions')[0])
         self.assertFalse(record.LayoutPending)
-        self.assertTrue(any(k=='cancel' for k,_ in self.events))
         self.start(); self.complete(index=0)
         self.assertFalse(record.Build.exists)
         self.complete(index=1); target=record.TargetSequence

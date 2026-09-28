@@ -23,7 +23,7 @@
     <t id="40">TEST: zařadit další rozšíření</t>
     <t id="41">TEST: pozastavit nové nabídky</t>
     <t id="42">TEST: obnovit nové nabídky</t>
-    <t id="43">Úplný plán úrovně 10 vyžaduje volný pozemek 12 x 8 x 32 km. Poslední kontrola selhala. Rozšíření jsou blokována, současná stavba a spotřeba pokračují. Opakuje se každých pět herních minut.</t>
+    <t id="43">Uzly používají pozemek 10 x 10 x 10 km. Plán stavby ještě není připraven. Stavba bude znovu vyzkoušena.</t>
     <t id="44">Dostupná populace</t>
     <t id="45">Dostupná populace: %.0f\nPoptávka je úměrná populaci.\nZáklad: 8 524 100 000 obyvatel.</t>
     <t id="50">Civilní zboží</t>

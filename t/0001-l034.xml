@@ -23,7 +23,7 @@
     <t id="40">PRUEBA: programar siguiente mejora</t>
     <t id="41">PRUEBA: pausar nuevas ofertas</t>
     <t id="42">PRUEBA: reanudar nuevas ofertas</t>
-    <t id="43">El diseño completo de nivel 10 necesita 12 x 8 x 32 km libres. Falló la última comprobación. Mejoras bloqueadas; construcción y consumo actuales continúan. Se reintenta cada cinco minutos de juego.</t>
+    <t id="43">Los centros usan una parcela de 10 x 10 x 10 km. El plan de construcción aún no está listo. Se volverá a intentar.</t>
     <t id="44">Población accesible</t>
     <t id="45">Población accesible: %.0f\nDemanda proporcional a la población.\nBase: 8.524.100.000 habitantes.</t>
     <t id="50">Mercancía civil</t>

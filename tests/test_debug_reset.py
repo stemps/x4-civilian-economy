@@ -36,6 +36,7 @@ class ResetTests(unittest.TestCase):
             disengage_construction_vessel=lambda n:self.detached.append(r.expr(n.get('object'))),
             signal_cue_instantly=lambda n:self.signals.append(n.get('cue')),
             show_notification=lambda n:self.notifications.append(n.get('text')))
+        r.native['set_build_plot']=lambda n:None
         self.call('Publish')
         self.state=r.env['md'].CE_DebugReset.State
 
@@ -183,17 +184,6 @@ class ResetTests(unittest.TestCase):
         same=fresh.Hub;r.actions(response)
         self.assertIs(self.controller.Registry[self.sector].Hub,same)
 
-    def test_legacy_experiment_cleanup_has_no_generation_and_waits_for_removal(self):
-        probe=Component(exists=True,owner='civilian')
-        old=Table(Active=True,Waiting=True,Worker=Component(exists=True),Probe=probe)
-        self.r.env['md'].CE_LayoutTest.State.Run=old
-        self.r.library('md.CE_LayoutTest.Cleanup')
-        self.assertFalse(old.Active);self.assertFalse(old.Waiting)
-        self.assertIs(old.Worker,NIL);self.assertEqual(self.sent,[probe])
-        self.r.library('md.CE_LayoutTest.Cleanup');self.assertEqual(self.sent,[probe])
-        probe.exists=False;self.r.library('md.CE_LayoutTest.Cleanup')
-        self.assertIs(self.r.env['md'].CE_LayoutTest.State.Run,NIL)
-        self.assertFalse(self.r.scripts['CE_LayoutTest'].xpath('//create_station|//create_construction_sequence|//event_ui_triggered'))
 
 
 if __name__ == '__main__': unittest.main()

@@ -31,6 +31,20 @@ class PseudoValue:
     pass
 
 
+class Angle(float):
+    """Degrees in fixtures; preserve angle type for the observed modulo error.
+
+    This narrow arithmetic contract is not a complete native units model.
+    """
+    def __add__(self, other): return Angle(float(self) + float(other))
+    def __radd__(self, other): return Angle(float(other) + float(self))
+    def __sub__(self, other): return Angle(float(self) - float(other))
+    def __rsub__(self, other): return Angle(float(other) - float(self))
+    def __abs__(self): return Angle(abs(float(self)))
+    def __mod__(self, other): raise TypeError('Native angles do not support modulo')
+    def __rmod__(self, other): raise TypeError('Native angles do not support modulo')
+
+
 class Table(dict):
     # Fixture attribute writes must affect the same table seen by MD paths.
     def __setattr__(self, key, value): self[key] = value
@@ -48,6 +62,10 @@ class Component(Table):
     __hash__=object.__hash__
     def __eq__(self,other): return self is other
     def __ne__(self,other): return self is not other
+
+class Station(Component):
+    """Station component properties are readable, but have no entity blackboard."""
+    pass
 
 class List(list):
     @property
@@ -148,6 +166,7 @@ class Runner:
         s=re.sub(r'(\w+(?:\.[\w]+|\[[^\]]+\])*)\?',r'defined(\1)',s)
         s=re.sub(r'\(([^()]*)\)(LF|f|L|i)\b', lambda m: ('float' if m[2] in ('LF','f') else 'int') + '(' + m[1] + ')', s)
         s=re.sub(r'(\d+(?:\.\d+)?)(?:LF|f|L)\b',r'\1',s)
+        s=re.sub(r'(\d+(?:\.\d+)?)deg\b',r'Angle(\1)',s)
         for unit,scale in [('min',60),('km',1000),('m',1),('Cr',100),('h',3600),('s',1)]:
             s=re.sub(r'(\d+(?:\.\d+)?)'+unit+r'\b',lambda m:str(float(m[1])*scale),s)
         for md,py in [(' ge ',' >= '),(' le ',' <= '),(' gt ',' > '),(' lt ',' < ')]: s=s.replace(md,py)
@@ -161,7 +180,7 @@ class Runner:
                 self.generic_visit(node)
                 return ast.copy_location(ast.Call(func=ast.Name(id='List', ctx=ast.Load()), args=[node], keywords=[]), node)
         code = compile(ast.fix_missing_locations(NativeLists().visit(ast.parse(s, mode='eval'))), '<md expression>', 'eval')
-        return wrap(eval(code, {'__builtins__':{},'List':List,'min':min,'max':max,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
+        return wrap(eval(code, {'__builtins__':{},'Angle':Angle,'List':List,'min':min,'max':max,'abs':abs,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
     def set(self,path,v,remove=False):
         if isinstance(v, PseudoValue):
             raise ValueError('Native pseudo-values cannot be stored; read a property directly')
@@ -177,6 +196,8 @@ class Runner:
         elif '.' in path:
             base,key=path.rsplit('.',1); obj=self.expr(base)
         else: obj=self.env; key=path
+        if isinstance(obj, Station):
+            raise ValueError('Station components cannot store MD blackboard variables')
         if remove: del obj[key]
         else: obj[key]=wrap(v)
     def library(self,name):

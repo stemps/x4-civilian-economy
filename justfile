@@ -4,6 +4,24 @@ python := env_var_or_default("CE_PYTHON", "")
 default:
     @just --list
 
+# Read-only production plan reproducibility, snap geometry and construction contracts.
+plans-check:
+    if ('{{python}}') { & '{{python}}' tools/generate_plans.py; exit $LASTEXITCODE } else { uv run --offline --with lxml python tools/generate_plans.py; exit $LASTEXITCODE }
+    @just plans-tests
+    @just construction-tests
+
+# Focused geometry, native-stage and recovery contracts against generated artifacts.
+plans-tests:
+    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests -p 'test_spine*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests -p 'test_spine*.py'; exit $LASTEXITCODE }
+
+# Focused production staging and profile checks.
+construction-tests:
+    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests -p '*construction*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests -p '*construction*.py'; exit $LASTEXITCODE }
+
+# Explicitly regenerate only the isolated production plan artifacts.
+plans-generate:
+    if ('{{python}}') { & '{{python}}' tools/generate_plans.py --write; exit $LASTEXITCODE } else { uv run --offline --with lxml python tools/generate_plans.py --write; exit $LASTEXITCODE }
+
 # Controller tests, XML parsing and x4validate (uses the configured Python).
 validate:
     if ('{{python}}') { & '{{python}}' tools/check.py; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py; exit $LASTEXITCODE }
@@ -13,11 +31,12 @@ schema:
     if ('{{python}}') { & '{{python}}' tools/check.py --schema; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py --schema; exit $LASTEXITCODE }
 
 lua:
+    if ('{{python}}') { & '{{python}}' tools/test_initial_construction.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_initial_construction.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_debug_menu.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_debug_menu.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_population_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_population_bridge.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_map_status.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_map_status.py; exit $LASTEXITCODE }
 
-check: translations validate lua test-release
+check: translations plans-check validate lua test-release
 
 # Require every English entry in all game locales, including format contracts.
 translations:

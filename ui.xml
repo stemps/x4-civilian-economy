@@ -6,6 +6,7 @@
     <dependency name="ego_detailmonitor" />
     <file name="ui/ce_hub_status.lua" />
     <file name="ui/ce_debug_reset.lua" />
+    <file name="ui/ce_initial_construction.lua" />
     <file name="ui/ce_debug_tools.lua" />
     <file name="ui/ce_map_status.lua" />
     <file name="ui/ce_transaction_log.lua" />

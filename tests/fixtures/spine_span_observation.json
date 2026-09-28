@@ -1,0 +1,1079 @@
+{
+  "evidence": "MEASURED native spans; numeric geometry from corresponding old generated plans",
+  "log_sha256": "b895c15e9ca58f4833aac02493c08aebd1fb4925019b758d7f7e43ecd3398ac8",
+  "observations": [
+    {
+      "race": "argon",
+      "level": 1,
+      "span": [
+        2400.0,
+        400.0,
+        3325.671
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 2,
+      "span": [
+        2400.0,
+        400.0,
+        4125.671
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 3,
+      "span": [
+        2800.0,
+        400.0,
+        4125.672
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 4,
+      "span": [
+        2800.0,
+        3199.976,
+        4125.672
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 5,
+      "span": [
+        2800.0,
+        3199.976,
+        4125.672
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 6,
+      "span": [
+        6119.621,
+        3200.0,
+        5045.495
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 7,
+      "span": [
+        6119.621,
+        6042.429,
+        5045.495
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 8,
+      "span": [
+        6119.621,
+        6042.429,
+        5045.495
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 9,
+      "span": [
+        6119.621,
+        6042.429,
+        5045.495
+      ]
+    },
+    {
+      "race": "argon",
+      "level": 10,
+      "span": [
+        8239.242,
+        8842.43,
+        5045.495
+      ]
+    },
+    {
+      "race": "boron",
+      "level": 1,
+      "span": [
+        6152.832,
+        1199.997,
+        3516.502
+      ]
+    },
+    {
+      "race": "boron",
+      "level": 2,
+      "span": [
+        6152.832,
+        1199.997,
+        4254.08
+      ]
+    },
+    {
+      "race": "boron",
+      "level": 3,
+      "span": [
+        6152.832,
+        1199.997,
+        4254.082
+      ]
+    },
+    {
+      "race": "boron",
+      "level": 4,
+      "span": [
+        6152.835,
+        3999.997,
+        4254.082
+      ]
+    },
+    {
+      "race": "boron",
+      "level": 5,
+      "span": [
+        6152.835,
+        3999.997,
+        4254.082
+      ]
+    },
+    {
+      "race": "boron",
+      "level": 6,
+      "span": [
+        10192.055,
+        3999.997,
+        8475.701
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 1,
+      "span": [
+        1199.962,
+        1147.294,
+        4525.643
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 2,
+      "span": [
+        1199.962,
+        1147.294,
+        5327.321
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 3,
+      "span": [
+        1999.961,
+        1147.294,
+        5327.321
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 4,
+      "span": [
+        1999.961,
+        3547.293,
+        5327.321
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 5,
+      "span": [
+        1999.961,
+        3547.294,
+        5507.894
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 6,
+      "span": [
+        5719.583,
+        3547.293,
+        6245.467
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 7,
+      "span": [
+        5719.583,
+        5947.293,
+        6245.467
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 8,
+      "span": [
+        5719.583,
+        5947.293,
+        6245.467
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 9,
+      "span": [
+        5719.583,
+        5947.293,
+        6245.467
+      ]
+    },
+    {
+      "race": "paranid",
+      "level": 10,
+      "span": [
+        6639.686,
+        8347.293,
+        6639.444
+      ]
+    },
+    {
+      "race": "split",
+      "level": 1,
+      "span": [
+        1903.497,
+        1135.363,
+        4592.849
+      ]
+    },
+    {
+      "race": "split",
+      "level": 2,
+      "span": [
+        1903.497,
+        1135.363,
+        5390.555
+      ]
+    },
+    {
+      "race": "split",
+      "level": 3,
+      "span": [
+        2708.603,
+        1135.363,
+        5390.555
+      ]
+    },
+    {
+      "race": "split",
+      "level": 4,
+      "span": [
+        2708.603,
+        3535.344,
+        5390.555
+      ]
+    },
+    {
+      "race": "split",
+      "level": 5,
+      "span": [
+        2708.603,
+        3535.344,
+        5487.089
+      ]
+    },
+    {
+      "race": "split",
+      "level": 6,
+      "span": [
+        6302.735,
+        3535.35,
+        8034.17
+      ]
+    },
+    {
+      "race": "split",
+      "level": 7,
+      "span": [
+        6302.735,
+        5935.344,
+        8034.17
+      ]
+    },
+    {
+      "race": "split",
+      "level": 8,
+      "span": [
+        6302.735,
+        5935.344,
+        8034.17
+      ]
+    },
+    {
+      "race": "split",
+      "level": 9,
+      "span": [
+        6302.735,
+        5935.344,
+        8034.17
+      ]
+    },
+    {
+      "race": "split",
+      "level": 10,
+      "span": [
+        7256.83,
+        8335.348,
+        8191.747
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 1,
+      "span": [
+        2448.529,
+        1283.271,
+        3848.529
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 2,
+      "span": [
+        2448.529,
+        1283.271,
+        5048.528
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 3,
+      "span": [
+        3200.0,
+        1283.271,
+        5048.528
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 4,
+      "span": [
+        3200.0,
+        3283.271,
+        5048.528
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 5,
+      "span": [
+        3200.0,
+        3283.271,
+        5048.528
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 6,
+      "span": [
+        6519.621,
+        3283.271,
+        5368.353
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 7,
+      "span": [
+        6519.621,
+        5283.271,
+        5368.353
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 8,
+      "span": [
+        6519.621,
+        5283.271,
+        5368.353
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 9,
+      "span": [
+        6519.621,
+        5283.271,
+        5368.353
+      ]
+    },
+    {
+      "race": "terran",
+      "level": 10,
+      "span": [
+        6919.621,
+        7291.6,
+        5368.353
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 1,
+      "span": [
+        1599.962,
+        1077.339,
+        4925.643
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 2,
+      "span": [
+        1599.962,
+        1077.339,
+        5725.644
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 3,
+      "span": [
+        2799.961,
+        1077.339,
+        5725.644
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 4,
+      "span": [
+        2799.961,
+        2677.339,
+        5725.644
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 5,
+      "span": [
+        2799.961,
+        2677.339,
+        5725.644
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 6,
+      "span": [
+        6519.582,
+        2677.339,
+        6645.467
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 7,
+      "span": [
+        6519.582,
+        4277.339,
+        6645.467
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 8,
+      "span": [
+        6519.582,
+        4277.339,
+        6645.467
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 9,
+      "span": [
+        6519.582,
+        4277.339,
+        6645.467
+      ]
+    },
+    {
+      "race": "teladi",
+      "level": 10,
+      "span": [
+        7039.686,
+        5877.339,
+        7039.444
+      ]
+    }
+  ],
+  "boron_level6_entries": [
+    {
+      "index": 1,
+      "level": 1,
+      "macro": "struct_bor_cross_01_macro",
+      "position": [
+        1544.90797,
+        -3800.00187,
+        303.94606
+      ],
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 2,
+      "level": 1,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.90729,
+        -3800.00181,
+        903.94606
+      ],
+      "predecessor": 1,
+      "role": "connector",
+      "yaw": 2.2391104957503156e-12
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 3,
+      "level": 1,
+      "macro": "struct_bor_cross_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        1544.90681,
+        -3800.00187,
+        1503.94616
+      ],
+      "predecessor": 2,
+      "role": "connector",
+      "yaw": 180.0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 4,
+      "level": 1,
+      "macro": "storage_bor_s_container_01_macro",
+      "parent_connection": "con_snap_05",
+      "position": [
+        1544.90644,
+        -4400.00187,
+        1503.94623
+      ],
+      "predecessor": 3,
+      "role": "storage",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 5,
+      "level": 1,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_03",
+      "position": [
+        2064.52184,
+        -3800.00187,
+        1803.94663
+      ],
+      "predecessor": 3,
+      "role": "connector",
+      "yaw": 59.99998782981362
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 6,
+      "level": 1,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        2410.93188,
+        -3800.00187,
+        2003.94703
+      ],
+      "predecessor": 5,
+      "role": "connector",
+      "yaw": 59.99998782981362
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 7,
+      "level": 1,
+      "macro": "dockarea_bor_m_station_01_standard_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        3450.16261,
+        -3800.00187,
+        2203.94625
+      ],
+      "predecessor": 6,
+      "role": "dock",
+      "yaw": 300.00006151245765
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 8,
+      "level": 1,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        1025.29127,
+        -3800.00187,
+        1803.9457
+      ],
+      "predecessor": 3,
+      "role": "connector",
+      "yaw": 299.9999873961356
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 9,
+      "level": 1,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        678.88082,
+        -3800.00187,
+        2003.94539
+      ],
+      "predecessor": 8,
+      "role": "connector",
+      "yaw": 299.9999873961356
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 10,
+      "level": 1,
+      "macro": "pier_bor_harbor_02_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        332.47038,
+        -3800.00187,
+        2203.94532
+      ],
+      "predecessor": 9,
+      "role": "pier",
+      "yaw": 209.9999853985706
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 11,
+      "level": 2,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        2064.5235,
+        -3800.00187,
+        3.94653
+      ],
+      "predecessor": 1,
+      "role": "connector",
+      "yaw": 119.99998739613568
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 12,
+      "level": 2,
+      "macro": "struct_bor_cross_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        2584.13914,
+        -3800.00193,
+        -296.05299
+      ],
+      "predecessor": 11,
+      "role": "connector",
+      "yaw": 299.9999873961334
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 13,
+      "level": 2,
+      "macro": "storage_bor_s_container_01_macro",
+      "parent_connection": "con_snap_05",
+      "position": [
+        2584.13941,
+        -4400.00193,
+        -296.05263
+      ],
+      "predecessor": 12,
+      "role": "storage",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 14,
+      "level": 3,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_03",
+      "position": [
+        1025.29294,
+        -3800.00187,
+        3.9456
+      ],
+      "predecessor": 1,
+      "role": "connector",
+      "yaw": 239.99998782981365
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 15,
+      "level": 3,
+      "macro": "struct_bor_cross_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        505.67792,
+        -3800.00193,
+        -296.05498
+      ],
+      "predecessor": 14,
+      "role": "connector",
+      "yaw": 59.999987829811396
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 16,
+      "level": 3,
+      "macro": "storage_bor_s_container_01_macro",
+      "parent_connection": "con_snap_05",
+      "position": [
+        505.67812,
+        -4400.00193,
+        -296.05531
+      ],
+      "predecessor": 15,
+      "role": "storage",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_02",
+      "index": 17,
+      "level": 4,
+      "macro": "struct_bor_vertical_01_macro",
+      "parent_connection": "con_snap_04",
+      "position": [
+        1544.90772,
+        -3400.00187,
+        303.94595
+      ],
+      "predecessor": 1,
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_02",
+      "index": 18,
+      "level": 4,
+      "macro": "struct_bor_vertical_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.9083,
+        -3000.00187,
+        303.94595
+      ],
+      "predecessor": 17,
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_02",
+      "index": 19,
+      "level": 4,
+      "macro": "struct_bor_vertical_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.90888,
+        -2600.00187,
+        303.94596
+      ],
+      "predecessor": 18,
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_02",
+      "index": 20,
+      "level": 4,
+      "macro": "struct_bor_vertical_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.90946,
+        -2200.00187,
+        303.94597
+      ],
+      "predecessor": 19,
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_02",
+      "index": 21,
+      "level": 4,
+      "macro": "struct_bor_vertical_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.91004,
+        -1800.00187,
+        303.94598
+      ],
+      "predecessor": 20,
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_02",
+      "index": 22,
+      "level": 4,
+      "macro": "struct_bor_vertical_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.91062,
+        -1400.00187,
+        303.94599
+      ],
+      "predecessor": 21,
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_05",
+      "index": 23,
+      "level": 4,
+      "macro": "struct_bor_cross_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.91064,
+        -1000.00187,
+        303.94606
+      ],
+      "predecessor": 22,
+      "role": "connector",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 24,
+      "level": 4,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_01",
+      "position": [
+        1544.90996,
+        -1000.00181,
+        903.94606
+      ],
+      "predecessor": 23,
+      "role": "connector",
+      "yaw": 2.2391104957503156e-12
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 25,
+      "level": 4,
+      "macro": "struct_bor_cross_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        1544.90947,
+        -1000.00187,
+        1503.94616
+      ],
+      "predecessor": 24,
+      "role": "connector",
+      "yaw": 180.0
+    },
+    {
+      "connection": "con_snap_03",
+      "index": 26,
+      "level": 4,
+      "macro": "storage_bor_m_container_01_macro",
+      "parent_connection": "con_snap_05",
+      "position": [
+        1544.90911,
+        -1600.00187,
+        1503.94623
+      ],
+      "predecessor": 25,
+      "role": "storage",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 27,
+      "level": 4,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_03",
+      "position": [
+        2064.5245,
+        -1000.00187,
+        1803.94662
+      ],
+      "predecessor": 25,
+      "role": "connector",
+      "yaw": 59.99998782981362
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 28,
+      "level": 4,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        2410.93454,
+        -1000.00187,
+        2003.94703
+      ],
+      "predecessor": 27,
+      "role": "connector",
+      "yaw": 59.99998782981362
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 29,
+      "level": 4,
+      "macro": "dockarea_bor_m_station_01_standard_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        3450.16528,
+        -1000.00187,
+        2203.94625
+      ],
+      "predecessor": 28,
+      "role": "dock",
+      "yaw": 300.00006151245765
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 30,
+      "level": 5,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        2064.52617,
+        -1000.00187,
+        3.94652
+      ],
+      "predecessor": 23,
+      "role": "connector",
+      "yaw": 119.99998739613568
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 31,
+      "level": 5,
+      "macro": "struct_bor_cross_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        2584.14181,
+        -1000.00193,
+        -296.05299
+      ],
+      "predecessor": 30,
+      "role": "connector",
+      "yaw": 299.9999873961334
+    },
+    {
+      "connection": "con_snap_03",
+      "index": 32,
+      "level": 5,
+      "macro": "storage_bor_m_container_01_macro",
+      "parent_connection": "con_snap_05",
+      "position": [
+        2584.14207,
+        -1600.00193,
+        -296.05263
+      ],
+      "predecessor": 31,
+      "role": "storage",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 33,
+      "level": 6,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_03",
+      "position": [
+        1025.29561,
+        -1000.00187,
+        3.9456
+      ],
+      "predecessor": 23,
+      "role": "connector",
+      "yaw": 239.99998782981365
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 34,
+      "level": 6,
+      "macro": "struct_bor_cross_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        505.68058,
+        -1000.00193,
+        -296.05498
+      ],
+      "predecessor": 33,
+      "role": "connector",
+      "yaw": 59.999987829811396
+    },
+    {
+      "connection": "con_snap_03",
+      "index": 35,
+      "level": 6,
+      "macro": "storage_bor_m_container_01_macro",
+      "parent_connection": "con_snap_05",
+      "position": [
+        505.68079,
+        -1600.00193,
+        -296.05532
+      ],
+      "predecessor": 34,
+      "role": "storage",
+      "yaw": 0
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 36,
+      "level": 6,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_03",
+      "position": [
+        -13.93502,
+        -1000.00193,
+        3.94449
+      ],
+      "predecessor": 34,
+      "role": "connector",
+      "yaw": 299.999975659625
+    },
+    {
+      "connection": "con_snap_01",
+      "index": 37,
+      "level": 6,
+      "macro": "struct_bor_base_01_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        -360.34551,
+        -1000.00193,
+        203.94411
+      ],
+      "predecessor": 36,
+      "role": "connector",
+      "yaw": 299.999975659625
+    },
+    {
+      "connection": "con_snap_03",
+      "index": 38,
+      "level": 6,
+      "macro": "pier_bor_harbor_03_macro",
+      "parent_connection": "con_snap_02",
+      "position": [
+        -2206.75478,
+        -1000.00193,
+        -2194.1329
+      ],
+      "predecessor": 37,
+      "role": "pier",
+      "yaw": 209.99997366205997
+    }
+  ]
+}

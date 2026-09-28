@@ -24,7 +24,7 @@ class InitialHubTests(StartupHarness):
                     self.complete()
                     self.assertTrue(record.Operational)
                     self.assertEqual(sum(k=='materialize' for k,_ in self.events),1)
-                    self.assertFalse(any(k=='queue' for k,_ in self.events))
+                    self.assertEqual(sum(k=='queue' for k,_ in self.events),1)
 
     def test_native_build_completion_preserves_ce_manager_and_other_stations(self):
         base=E.parse(str(REF/'aiscripts/build.buildstorage.xml'))
@@ -34,13 +34,15 @@ class InitialHubTests(StartupHarness):
         r=self.run
         r.env['faction'].update(player='player',ownerless='ownerless')
         for registered in (False,True):
-            for manager in (NIL,Component(exists=True)):
-                for owner in ('civilian','argon','player','ownerless',NIL):
-                    hub=Component(tradenpc=manager)
-                    r.env.update(baseowner=owner,this=Table(object=Table(base=hub)))
-                    r.env['player'].entity.ce_hubs=List([hub]) if registered else List()
-                    expected=bool(r.expr(str(original[0]))) and not (registered and bool(manager))
-                    self.assertEqual(bool(r.expr(patch.text)),expected)
+            for tracked in (False,True):
+                for manager in (NIL,Component(exists=True)):
+                    for owner in ('civilian','argon','player','ownerless',NIL):
+                        hub=Component(tradenpc=manager)
+                        r.env.update(baseowner=owner,this=Table(object=Table(base=hub)))
+                        r.env['player'].entity.ce_hubs=List([hub]) if registered else List()
+                        protected=registered
+                        expected=bool(r.expr(str(original[0]))) and not (protected and bool(manager))
+                        self.assertEqual(bool(r.expr(patch.text)),expected)
 
     def test_cross_script_initialization_helpers_are_explicit(self):
         pending=['md.CE_OwnerlessHub.UpdateHub'];seen=set()
@@ -69,28 +71,25 @@ class InitialHubTests(StartupHarness):
         r.actions(r.tree.xpath('//cue[@name="PopulationReceived"]/actions')[0])
         return r.env['Registry'][self.sector]
 
-    def test_initial_and_reset_hubs_materialize_only_after_all_ten_plans_validate(self):
+    def test_initial_and_reset_hubs_complete_only_stage_one(self):
         for reset in (False,True):
             with self.subTest(reset=reset):
                 self.setUp();record=self.initial(reset)
                 self.assertIs(record.InitialHub,record.Hub)
-                self.assertFalse(self.run.env['InitialPopulationPass'])
-                for _ in range(9):
-                    self.complete(all_stages=False)
-                    self.assertFalse(record.Hub.constructionsequence)
-                    self.assertFalse(record.Build.exists)
                 self.complete()
                 self.assertTrue(record.Operational)
                 self.assertIs(record.InitialHub,NIL)
-                self.assertEqual(record.LayoutPlans.count,10)
-                self.assertEqual(record.CompletedSequence.count,3)
-                self.assertFalse(record.Hub.buildstorage.exists)
+                self.assertEqual(record.FullSequence.stage.count,10)
+                self.assertEqual(record.CompletedSequence.count,record.Construction.Levels[1].count)
+                self.assertLess(record.CompletedSequence.count,record.FullSequence.count)
+                self.assertEqual(self.native_requests[0],(record.Construction.Plan,1))
+                self.assertEqual(sum(k=='materialize' for k,_ in self.events),1)
 
-    def test_expansion_uses_regular_build_and_preserves_prepared_plans(self):
-        record=self.initial();self.complete();plans=record.LayoutPlans
-        self.builder();record.Target=2;self.start()
+    def test_expansion_uses_regular_build_and_preserves_master_sequence(self):
+        record=self.initial();self.complete();full=record.FullSequence
+        self.builder();record.Target=2;self.start();self.complete(index=1)
         self.assertTrue(record.Build.exists)
-        self.assertIs(record.TargetSequence,plans[2])
+        self.assertIs(record.FullSequence,full)
         self.assertEqual(record.Level,1)
         self.assertTrue(record.Hub.buildstorage.buildmodule.constructionvessel.exists)
         self.assertEqual(sum(k=='materialize' for k,_ in self.events),1)

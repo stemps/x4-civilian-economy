@@ -37,7 +37,7 @@ def definitions(run):
                    waretransport=Table(container='container'), Sector=Component(owner=Table(primaryrace=races[1])))
     run.env.update(SectorProfiles=Table(),RaceProfiles=Table())
     def resolve():
-        run.env['Construction']=Table(Valid=True,Dock='dock',Storage='storage',Pier='pier',Connectors=List(['connector']))
+        run.env['Construction']=Table(Valid=True,Plan='ce_hub_argon',Levels=List(List(['m']*n) for n in (3,4,5,7,8,10,12,13,14,17)))
     run.stubs['md.CE_Construction.Resolve']=resolve
     run.env['ProfileRace']=races[1]
     run.library('md.CE_PopulationProfiles.Build')

@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<mdscript name="CE_Placement" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+<?xml version='1.0' encoding='utf-8'?>
+<mdscript xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="CE_Placement" xsi:noNamespaceSchemaLocation="md.xsd">
   <cues>
     <!-- Internal saved retry state, separate from the public hub record/snapshot. -->
     <cue name="State" namespace="this"><conditions><event_cue_signalled/></conditions></cue>
@@ -8,15 +8,10 @@
         <set_value name="$Hub" exact="$R.$Hub"/>
         <do_if value="not md.CE_Placement.State.$Sites?"><set_value name="md.CE_Placement.State.$Sites" exact="table[]"/></do_if>
         <do_if value="not md.CE_Placement.State.$Sites.{$Hub}?">
-          <set_value name="md.CE_Placement.State.$Sites.{$Hub}" exact="table[$Attempts=0,$Failures=0,$NextTry=0s,$Resize=false,$Moves=0]"/>
+          <set_value name="md.CE_Placement.State.$Sites.{$Hub}" exact="table[$Attempts=0,$Failures=0,$NextTry=0s]"/>
         </do_if>
         <set_value name="$Placement" exact="md.CE_Placement.State.$Sites.{$Hub}"/>
-        <do_if value="not $Placement.$SamePlotFailures?">
-          <set_value name="$Placement.$SamePlotFailures" exact="0"/>
-          <!-- Old saves may have scheduled enlargement after only one failure. -->
-          <set_value name="$Placement.$Resize" exact="false"/>
-        </do_if>
-      </actions>
+        </actions>
     </library>
     <library name="Forget">
       <actions>
@@ -26,112 +21,24 @@
       </actions>
     </library>
     <library name="Prepare">
-      <actions>
-        <include_actions ref="md.CE_Placement.GetState"/>
-        <set_value name="$PlacementReady" exact="player.age ge $Placement.$NextTry"/>
-        <do_if value="$PlacementReady">
-          <!-- Always try a fresh shell's current plot. Only a native layout failure
-               permits enlargement; malformed results/build failures do not. -->
-          <do_if value="$Placement.$Resize">
-            <include_actions ref="md.CE_Placement.Grow"/>
-            <do_if value="not $PlotChanged"><include_actions ref="md.CE_Placement.Relocate"/></do_if>
-            <set_value name="$Placement.$Resize" exact="false"/>
-          </do_if>
-          <set_value name="$R.$PlotReady" exact="true"/>
-        </do_if>
-      </actions>
-    </library>
+      <actions><include_actions ref="md.CE_Placement.GetState"/><set_value name="$PlacementReady" exact="player.age ge $Placement.$NextTry"/><do_if value="$PlacementReady"><set_value name="$R.$PlotReady" exact="true"/></do_if></actions></library>
     <library name="Requested">
       <actions>
         <include_actions ref="md.CE_Placement.GetState"/>
         <set_value name="$Placement.$Attempts" operation="add"/>
-        <debug_text text="'[CE] Layout attempt: hub=%s sector=%s sector_name=%s level=%s token=%s attempt=%s failures=%s moves=%s half_size=%s center=%s'.[$Hub,$Hub.sector,$Hub.sector.knownname,$R.$LayoutLevel,$R.$LayoutToken,$Placement.$Attempts,$Placement.$Failures,$Placement.$Moves,$Hub.buildplot.max,$Hub.buildplot.center]"/>
+        <debug_text text="'[CE] Plan attempt: hub=%s level=%s attempts=%s failures=%s'.[$Hub,$R.$LayoutLevel,$Placement.$Attempts,$Placement.$Failures]"/>
       </actions>
     </library>
     <library name="Failed">
-      <actions>
-        <include_actions ref="md.CE_Placement.GetState"/>
-        <set_value name="$Placement.$Failures" operation="add"/>
-        <set_value name="$Placement.$NextTry" exact="player.age + 5min"/>
-        <set_value name="$Placement.$Resize" exact="false"/>
-        <do_if value="$ConstructionFailure == 'generation_failed' or $ConstructionFailure == 'staged_layout_invalid'">
-          <set_value name="$Placement.$SamePlotFailures" operation="add"/>
-          <do_if value="$Placement.$SamePlotFailures lt 3">
-            <!-- Try the next direction on the next controller tick, without growth. -->
-            <set_value name="$Placement.$NextTry" exact="player.age + 1s"/>
-          </do_if>
-          <do_else>
-            <set_value name="$Placement.$SamePlotFailures" exact="0"/>
-            <set_value name="$Placement.$Resize" exact="$ConstructionFailure == 'generation_failed'"/>
-          </do_else>
-          <set_value name="$R.$PlotReady" exact="false"/>
-        </do_if>
-        <debug_text text="'[CE] Layout retry scheduled: hub=%s sector=%s sector_name=%s level=%s token=%s attempt=%s failures=%s reason=%s enlarge=%s retry_at=%s half_size=%s center=%s'.[$Hub,$Hub.sector,$Hub.sector.knownname,$R.$LayoutLevel,$R.$LayoutToken,$Placement.$Attempts,$Placement.$Failures,$ConstructionFailure,$Placement.$Resize,$Placement.$NextTry,$Hub.buildplot.max,$Hub.buildplot.center]"/>
-      </actions>
-    </library>
+      <actions><include_actions ref="md.CE_Placement.GetState"/><set_value name="$Placement.$Failures" operation="add"/><set_value name="$Placement.$NextTry" exact="player.age + 5min"/><debug_text text="'[CE] Plan retry scheduled: hub=%s level=%s reason=%s retry_at=%s'.[$Hub,$R.$LayoutLevel,$ConstructionFailure,$Placement.$NextTry]"/></actions></library>
     <library name="Succeeded">
       <actions>
         <include_actions ref="md.CE_Placement.GetState"/>
-        <debug_text text="'[CE] Layout retry resolved: hub=%s sector=%s sector_name=%s attempt=%s failures=%s moves=%s'.[$Hub,$Hub.sector,$Hub.sector.knownname,$Placement.$Attempts,$Placement.$Failures,$Placement.$Moves]"/>
+        <debug_text text="'[CE] Plan attempt: hub=%s level=%s attempts=%s failures=%s'.[$Hub,$R.$LayoutLevel,$Placement.$Attempts,$Placement.$Failures]"/>
         <set_value name="$Placement.$Failures" exact="0"/>
         <set_value name="$Placement.$NextTry" exact="0s"/>
-        <set_value name="$Placement.$Resize" exact="false"/>
-        <set_value name="$Placement.$SamePlotFailures" exact="0"/>
         <set_value name="$R.$PlotReady" exact="true"/>
       </actions>
     </library>
-    <library name="Grow">
-      <actions>
-        <!-- Add at most 2km per side, capped at 16km half-size. Equal additions
-             preserve the current center; never reduce larger existing plots. -->
-        <set_value name="$PlotMax" exact="$Hub.buildplot.max"/>
-        <set_value name="$GrowX" exact="[0m,[2km,16km - $PlotMax.x].min].max"/>
-        <set_value name="$GrowY" exact="[0m,[2km,16km - $PlotMax.y].min].max"/>
-        <set_value name="$GrowZ" exact="[0m,[2km,16km - $PlotMax.z].min].max"/>
-        <set_value name="$PlotChanged" exact="false"/>
-        <set_value name="$PlotOutcome" exact="'size_cap'"/>
-        <do_if value="$GrowX + $GrowY + $GrowZ gt 0m">
-          <can_safely_extend_build_plot object="$Hub" negx="$GrowX" posx="$GrowX" negy="$GrowY" posy="$GrowY" negz="$GrowZ" posz="$GrowZ" result="$SafePlot"/>
-          <set_value name="$PlotOutcome" exact="'extension_unsafe'"/>
-          <do_if value="$SafePlot">
-            <!-- Store scalar sizes: do not rely on the old box remaining immutable. -->
-            <set_value name="$OldX" exact="$PlotMax.x"/>
-            <set_value name="$OldY" exact="$PlotMax.y"/>
-            <set_value name="$OldZ" exact="$PlotMax.z"/>
-            <extend_build_plot object="$Hub" negx="$GrowX" posx="$GrowX" negy="$GrowY" posy="$GrowY" negz="$GrowZ" posz="$GrowZ"/>
-            <set_value name="$PlotChanged" exact="$Hub.buildplot.max.x gt $OldX or $Hub.buildplot.max.y gt $OldY or $Hub.buildplot.max.z gt $OldZ"/>
-            <set_value name="$PlotOutcome" exact="if $PlotChanged then 'extended' else 'extension_no_change'"/>
-          </do_if>
-        </do_if>
-        <debug_text text="'[CE] Plot retry: hub=%s sector=%s sector_name=%s attempt=%s outcome=%s add_per_side=%s/%s/%s half_size=%s center=%s'.[$Hub,$Hub.sector,$Hub.sector.knownname,$Placement.$Attempts + 1,$PlotOutcome,$GrowX,$GrowY,$GrowZ,$Hub.buildplot.max,$Hub.buildplot.center]"/>
-      </actions>
-    </library>
-    <library name="Relocate">
-      <actions>
-        <set_value name="$PlacementOutcome" exact="'established_or_busy_site'"/>
-        <!-- No storage, native modules, accepted plan, builder, or operational hub
-             may be moved. Storage creation is delayed until layout acceptance. -->
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and not $R.$Operational and not @$R.$InitializedHub and not @$R.$CompletedSequence and not @$R.$TargetSequence and not $R.$Build.exists and not @$R.$LayoutPending and $Hub.constructionsequence.count == 0 and not $Hub.buildstorage.exists">
-          <set_value name="$PlacementOutcome" exact="'placement_retry_cap'"/>
-          <do_if value="$Placement.$Moves lt 3">
-            <set_value name="$Placement.$Moves" operation="add"/>
-            <set_value name="$PlotMax" exact="$Hub.buildplot.max"/>
-            <set_value name="$PlotCenter" exact="$Hub.buildplot.center"/>
-            <!-- 2 * the greatest distance to a face encloses the entire plot;
-                 include a prospective 2km extension and ignore our own shell. -->
-            <set_value name="$Clearance" exact="([$PlotMax.x + $PlotCenter.x,$PlotMax.x - $PlotCenter.x,$PlotMax.y + $PlotCenter.y,$PlotMax.y - $PlotCenter.y,$PlotMax.z + $PlotCenter.z,$PlotMax.z - $PlotCenter.z].max + 2km) * 2"/>
-            <set_value name="$OldZone" exact="$Hub.zone"/>
-            <set_value name="$OldPosX" exact="$Hub.position.x"/>
-            <set_value name="$OldPosY" exact="$Hub.position.y"/>
-            <set_value name="$OldPosZ" exact="$Hub.position.z"/>
-            <warp object="$Hub" sector="$Hub.sector">
-              <safepos x="$Hub.sector.coreposition.x + 50km" y="0m" z="$Hub.sector.coreposition.z + $Placement.$Moves * 30km" radius="$Clearance" ignored="$Hub" includeplotbox="true" allowyaxis="false"/>
-            </warp>
-            <set_value name="$PlacementOutcome" exact="if $Hub.zone != $OldZone or $Hub.position.x != $OldPosX or $Hub.position.y != $OldPosY or $Hub.position.z != $OldPosZ then 'empty_shell_repositioned' else 'relocation_no_change'"/>
-          </do_if>
-        </do_if>
-        <debug_text text="'[CE] Placement retry: hub=%s sector=%s sector_name=%s attempt=%s move=%s outcome=%s zone=%s position=%s half_size=%s center=%s'.[$Hub,$Hub.sector,$Hub.sector.knownname,$Placement.$Attempts + 1,$Placement.$Moves,$PlacementOutcome,$Hub.zone,$Hub.position,$Hub.buildplot.max,$Hub.buildplot.center]"/>
-      </actions>
-    </library>
-  </cues>
+    </cues>
 </mdscript>

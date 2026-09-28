@@ -105,19 +105,24 @@
     <library name="PublishAllDiagnostics">
       <actions>
         <set_value name="$HubList" exact="[]"/>
+          <set_value name="$InitialBuildHubs" exact="[]"/>
         <set_value name="$HubSectors" exact="[]"/>
         <set_value name="$Snapshots" exact="[]"/>
         <do_for_each name="$RegisteredSector" in="$Registry.keys.list">
           <set_value name="$Registered" exact="$Registry.{$RegisteredSector}"/>
           <do_if value="$Registered.$Hub.exists and not $Registered.$Hub.iswreck">
             <append_to_list name="$HubList" exact="$Registered.$Hub"/>
+              <do_if value="@$Registered.$InitialHub == $Registered.$Hub and $Registered.$Hub.owner == faction.civilian and $Registered.$Generation == 1 and $Registered.$Level == 1 and $Registered.$Target == 0 and $Registered.$Build.exists and @$Registered.$TargetSequence and (not @md.CE_DebugReset.State.$Busy or @md.CE_DebugReset.State.$Phase == 'initializing')">
+                <append_to_list name="$InitialBuildHubs" exact="$Registered.$Hub"/>
+              </do_if>
             <append_to_list name="$HubSectors" exact="$RegisteredSector"/>
             <do_if value="$Registered.$Snapshot?">
               <append_to_list name="$Snapshots" exact="$Registered.$Snapshot"/>
             </do_if>
           </do_if>
         </do_for_each>
-        <set_value name="player.entity.$ce_hubs" exact="$HubList"/>
+        <set_value name="player.entity.$ce_initial_build_hubs" exact="$InitialBuildHubs"/>
+          <set_value name="player.entity.$ce_hubs" exact="$HubList"/>
         <set_value name="player.entity.$ce_hub_sectors" exact="$HubSectors"/>
         <set_value name="player.entity.$ce_hub_statuses" exact="$Snapshots"/>
       </actions>
