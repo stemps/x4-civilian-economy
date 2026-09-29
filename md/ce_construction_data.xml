@@ -3,7 +3,7 @@
   <cues>
     <library name="Load">
       <actions>
-        <set_value name="$LayoutFingerprint" exact="'f7dbbb47726eb726414d9411cb2c701f95796c36c9c170aebb40745f88d8727f'"/>
+        <set_value name="$LayoutFingerprint" exact="'7a6a1e278b17adc09bb92b1e2c17d8053d37c7517af5a31b35b74bc8b91f4e4a'"/>
         <set_value name="$LayoutMacros" exact="[]"/>
         <set_value name="$LayoutGeometry" exact="[]"/>
         <do_if value="$LayoutRace == 'argon'">

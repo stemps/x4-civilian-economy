@@ -51,6 +51,7 @@
           <actions>
         <do_if value="not @md.CE_DebugReset.State.$Busy">
             <include_actions ref="Reconcile"/>
+            <include_actions ref="md.CE_Construction.RefreshSnapshots"/>
             <do_for_each name="$Sector" in="$Registry.keys.list">
               <set_value name="$R" exact="$Registry.{$Sector}"/>
               <do_if value="@$R.$LayoutPending">
@@ -265,6 +266,8 @@
           <set_value name="$R.$Wares.{$Ware}.$Offer" exact="null"/>
           <set_value name="$R.$Wares.{$Ware}.$Reserve" exact="0.0f"/>
         </do_for_each>
+        <!-- The replacement loads the plan afresh, so it must expect current layout data. -->
+        <include_actions ref="md.CE_Construction.AdoptSnapshot"/>
         <include_actions ref="RebaseAccrual"/>
         <include_actions ref="PublishDiagnostics"/>
         <debug_text text="'[CE] Hub lost: reserves lost; retained level, growth and counters; discarded pending expansion'"/>

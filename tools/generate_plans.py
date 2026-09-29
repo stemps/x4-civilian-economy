@@ -76,7 +76,9 @@ def generate(reference, bounds_path=None):
             manifest['races'][race]={'static_valid':False,'failure':str(exc)}
             print(f'{race}: BLOCKED: {exc}')
     manifest['sources']=dict(sorted(catalog.fingerprints.items()))
-    manifest['generator_sha256']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in
+    # Hash sources with normalized newlines: a CRLF checkout (core.autocrlf) must
+    # not make identical generator code report the committed artifacts as stale.
+    manifest['generator_sha256']={p.name:hashlib.sha256(p.read_bytes().replace(b'\r\n',b'\n')).hexdigest() for p in
                                  (Path(__file__),Path(__file__).with_name('spine_catalog.py'),Path(__file__).with_name('spine_geometry.py'),Path(__file__).with_name('spine_bounds.py'))}
     manifest['fingerprint']=hashlib.sha256(json.dumps(manifest,sort_keys=True).encode()).hexdigest()
     actions.insert(0,E.Element('set_value',name='$LayoutFingerprint',exact="'"+manifest['fingerprint']+"'"))

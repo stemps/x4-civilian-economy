@@ -79,3 +79,90 @@ class StagedConstructionTests(StartupHarness):
         self.fail_build=False;self.retry();self.complete(index=1)
         self.assertFalse(record.ConstructionError)
         self.assertEqual(self.moves,[]);self.assertEqual(self.plot_calls,[])
+
+
+class LayoutSnapshotRefreshTests(StartupHarness):
+    """Saved construction snapshots versus changed generated layout data."""
+    finish=StagedConstructionTests.finish
+
+    def stale(self, construction):
+        levels=List(List(list(level)) for level in construction.Levels)
+        levels[1][1]='old_layout_macro'
+        return Table(Plan=construction.Plan,Levels=levels,Valid=True,Fingerprint='old')
+
+    def replace_hub(self, record):
+        record.Hub.exists=False
+        self.start();self.complete(index=-1)
+
+    def age_snapshot(self):
+        record=self.start();self.complete();self.finish(record)
+        profile=self.run.env['SectorProfiles'][self.sector]
+        current=profile.Construction;old=self.stale(current)
+        profile.Construction=old;record.Construction=old
+        return record,profile,current,old
+
+    def test_control_stale_snapshot_blocks_replacement_without_refresh(self):
+        record,profile,current,old=self.age_snapshot()
+        self.run.stubs['md.CE_Construction.AdoptSnapshot']=lambda:None
+        self.replace_hub(record)
+        self.assertTrue(record.ConstructionError)
+        self.assertEqual(record.ConstructionFailure,'stage_macro_mismatch')
+
+    def test_committed_hub_keeps_layout_and_replacement_adopts_current(self):
+        record,profile,current,old=self.age_snapshot()
+        master=record.FullSequence;ids=list(record.PlanIDs)
+        self.run.library('md.CE_Construction.RefreshSnapshots')
+        self.assertIs(record.Construction,old)
+        self.assertIs(record.FullSequence,master);self.assertEqual(record.PlanIDs,ids)
+        self.assertEqual(profile.Construction.Fingerprint,current.Fingerprint)
+        self.assertTrue(profile.Construction.Valid)
+        self.replace_hub(record)
+        self.assertIs(record.Construction,profile.Construction)
+        self.assertFalse(record.ConstructionError)
+        self.assertTrue(record.Build.exists)
+
+    def test_stuck_uncommitted_record_recovers_on_load(self):
+        profile_sector=self.sector
+        self.run.library('CaptureSectorProfile')
+        profile=self.run.env['SectorProfiles'][profile_sector]
+        old=self.stale(profile.Construction);profile.Construction=old
+        record=self.start();self.complete()
+        self.assertTrue(record.ConstructionError)
+        self.assertIs(record.FullSequence,NIL)
+        self.assertEqual(record.PlanIDs,List())
+        self.run.library('md.CE_Construction.RefreshSnapshots')
+        self.assertIsNot(record.Construction,old)
+        self.assertFalse(record.ConstructionError)
+        self.retry();self.complete(index=-1)
+        self.assertFalse(record.ConstructionError)
+        self.assertTrue(record.Build.exists)
+
+    def test_unresolved_race_is_retried_on_load(self):
+        self.run.native['get_module_definition']=lambda n:self.run.set(n.get('macro'),List())
+        record=self.start()
+        self.assertFalse(record.Construction.Valid);self.assertIs(record.Hub,NIL)
+        self.run.native['get_module_definition']=self.get_modules
+        self.run.library('md.CE_Construction.RefreshSnapshots')
+        self.assertTrue(record.Construction.Valid)
+        self.assertIs(record.Construction,self.run.env['SectorProfiles'][self.sector].Construction)
+        self.start();self.complete(index=-1)
+        self.assertTrue(record.Build.exists)
+
+    def test_unchanged_valid_snapshots_are_left_alone(self):
+        record=self.start();self.complete()
+        profile=self.run.env['SectorProfiles'][self.sector];snapshot=profile.Construction
+        self.run.library('md.CE_Construction.RefreshSnapshots')
+        self.assertIs(profile.Construction,snapshot);self.assertIs(record.Construction,snapshot)
+
+    def test_committed_hub_with_identical_layout_is_restamped(self):
+        record=self.start();self.complete();self.finish(record)
+        profile=self.run.env['SectorProfiles'][self.sector];current=profile.Construction
+        levels=List(List(list(level)) for level in current.Levels)
+        unstamped=Table(Plan=current.Plan,Levels=levels,Valid=True)
+        profile.Construction=unstamped;record.Construction=unstamped
+        master=record.FullSequence;ids=list(record.PlanIDs)
+        self.run.library('md.CE_Construction.RefreshSnapshots')
+        self.assertIs(record.Construction,profile.Construction)
+        self.assertEqual(record.Construction.Fingerprint,current.Fingerprint)
+        self.assertIs(record.FullSequence,master);self.assertEqual(record.PlanIDs,ids)
+        self.assertFalse(record.ConstructionError)

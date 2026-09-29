@@ -285,7 +285,8 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
         self.start(1)
         deadline=self.r.DemandEvents.Active[1].End
         self.run.env.update(Registry=Table({self.sector:self.r}))
-        self.run.stubs.update(Reconcile=lambda:None,RenameHub=lambda:None)
+        self.run.stubs.update({'Reconcile':lambda:None,'RenameHub':lambda:None,
+                               'md.CE_Construction.RefreshSnapshots':lambda:None})
         self.run.env['player'].age=1200
         self.run.actions(self.run.tree.xpath('//cue[@name="Reload"]/actions')[0])
         self.assertEqual(self.r.Last,0)

@@ -1,3 +1,33 @@
+## 2026-09-29 - layout-snapshot-refresh
+
+- READ: saved `$Construction` snapshots (`Init.$RaceProfiles`, `$R.$Construction`)
+  expect exact per-level macro lists, but plan IDs (`ce_hub_<race>`) stay stable
+  across mod versions while `libraries/constructionplans.xml` is re-read each game
+  start. Before this fix nothing re-resolved a snapshot once definitions existed,
+  and `$LayoutFingerprint` was written but never read.
+- MOCKED (control test): with a stale snapshot, a replacement hub loads the new
+  plan by ID and fails `stage_macro_mismatch` on every 5-minute retry. Geometry-only
+  plan changes (same macros/counts) never failed; macro or count changes did.
+- A failed FIRST load also kept the rejected master in `$R.$FullSequence`, so
+  retries reused it instead of reloading the plan. Now cleared while `$PlanIDs`
+  is empty.
+- IMPLEMENTED: snapshots carry `$Fingerprint`. `CE_Construction.RefreshSnapshots`
+  runs on save load: stale or invalid race/debug snapshots re-resolve once per race.
+  "Committed" = `$PlanIDs` non-empty or a live build: such records keep their
+  snapshot, which matches their saved native master. Uncommitted records and every
+  lost hub (`ForgetHub`) adopt the current profile snapshot via `AdoptSnapshot`.
+  Invalid races are retried each load, so a DLC or adapter installed later recovers.
+- Committed records whose snapshot is unstamped/stale but has the same plan ID
+  and identical per-level macro lists (`MatchSnapshot`) are re-stamped in place;
+  their master and IDs are untouched. Only genuinely different layouts log
+  `Hub keeps its saved construction layout`, on every load while the hub stands.
+- Tool: `generate_plans.py` hashed generator sources as raw bytes, so a CRLF
+  checkout (`core.autocrlf=true`) made `just plans-verify` report STALE with
+  identical geometry. Hashes now normalize CRLF; artifacts regenerated, only the
+  fingerprint changed.
+- UNVERIFIED in-game: that the engine re-reads a changed plan behind an unchanged
+  ID on save load (expected, library data loads at game start).
+
 ## 2026-09-28 - civilian-hub-current-state-only
 
 - The controller is `CE_CivilianHub` (`md/ce_civilian_hub.xml`). Older mod saves
@@ -12,8 +42,8 @@
   `just lua`, `just test-tooling` (14 tests), translations (249 entries in each
   of 16 locales), and `just schema-only` pass. All six merged AI patches have
   no introduced schema errors.
-- `just check` stops at pre-existing stale generated construction data/manifest
-  fingerprints. Those artifacts and their generators were not changed here.
+- SUPERSEDED 2026-09-29: `just check` stopped at stale generated construction
+  fingerprints; the cause was CRLF hashing (see layout-snapshot-refresh).
 - Historical entries below describe earlier implementations, not compatibility
   guarantees. Full restart required; native acceptance remains unverified.
 

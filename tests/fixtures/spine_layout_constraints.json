@@ -1,5 +1,5 @@
 {
-  "evidence": "Preserve five native smoke-passed geometries; collision/docking acceptance pending",
+  "evidence": "Preserve six native smoke-passed geometries; collision/docking acceptance pending",
   "log_sha256": "b895c15e9ca58f4833aac02493c08aebd1fb4925019b758d7f7e43ecd3398ac8",
   "races": {
     "argon": {
@@ -18,6 +18,23 @@
         334.40177267111585
       ],
       "levels_sha256": "705c6f0d3511dba536b8a7f0811b7f5271b3fd1c53bbf133d5f14d4941fce1e9"
+    },
+    "boron": {
+      "candidate": [
+        400,
+        800,
+        1600,
+        false,
+        1,
+        5,
+        true
+      ],
+      "shift": [
+        -1222.840360050947,
+        -99.99879757740018,
+        365.59487586211435
+      ],
+      "levels_sha256": "b9ac91c858b5d953ebde52c8e88ef0ba1284bfd445e5afd0948fff6df3b21421"
     },
     "paranid": {
       "candidate": [

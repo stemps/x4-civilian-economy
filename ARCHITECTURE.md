@@ -536,6 +536,17 @@ the master/IDs and preserves the earned-level replacement policy. CE_Placement
 now owns only per-hub retry counters and five-minute backoff. No random direction
 retries, plot growth or relocation fallback remain.
 
+Construction snapshots record the generated layout fingerprint. On save load
+`CE_Construction.RefreshSnapshots` re-resolves stale or invalid race and debug
+snapshots once per race. Records with an accepted stage (`$PlanIDs`) or a live
+build keep their snapshot, which matches their saved native master sequence.
+If their snapshot expects exactly the current plan and per-level macros
+(`MatchSnapshot`), it is re-stamped with the current one instead.
+Records without one, and every lost hub via `ForgetHub`, adopt the current
+profile snapshot through `AdoptSnapshot`, so a replacement never validates a
+freshly loaded plan against older layout data. A master that failed its first
+validation is not retained.
+
 First-generation level-1 seeds, including reset hubs, retain exact-object
 InitialHub permission. A validated native build is published in
 $ce_initial_build_hubs; ui/ce_initial_construction.lua rechecks that fresh

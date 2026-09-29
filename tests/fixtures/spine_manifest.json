@@ -1,15 +1,15 @@
 {
   "evidence": "reference base+DLC; not installed effective tree",
-  "fingerprint": "f7dbbb47726eb726414d9411cb2c701f95796c36c9c170aebb40745f88d8727f",
+  "fingerprint": "7a6a1e278b17adc09bb92b1e2c17d8053d37c7517af5a31b35b74bc8b91f4e4a",
   "generator_sha256": {
-    "generate_plans.py": "a22aa6cee0969a50986c74dbeae7d6be1b8a6f823eb1a3a346bf9e15aad43594",
+    "generate_plans.py": "3cfa060624f87b08581b5ab08c7d0f0267de8f5e5eb34f6bfbc40faa9999d27d",
     "spine_bounds.py": "de44be48b651572a1529c58280daa80bca7f761a06829cbaf5c98bf6d0027394",
     "spine_catalog.py": "4e3f3645762745577a6d1dae589ffd5c4e56f6990693cae79e409d56b22443f7",
     "spine_geometry.py": "0a28c4b2733ccd5f9ab96f96a2c36736c23eba9b6b3f0ef4094b9f6647df9683"
   },
   "geometry_checks": "snap graph, immutable prefixes, measured native AABB containment and conservative functional AABB separation; connector collisions and docking approaches UNMEASURED",
   "layout_constraints": {
-    "evidence": "Preserve five native smoke-passed geometries; collision/docking acceptance pending",
+    "evidence": "Preserve six native smoke-passed geometries; collision/docking acceptance pending",
     "log_sha256": "b895c15e9ca58f4833aac02493c08aebd1fb4925019b758d7f7e43ecd3398ac8",
     "races": {
       "argon": {
@@ -27,6 +27,23 @@
           -0.00013576041237683967,
           19.86349999999993,
           334.40177267111585
+        ]
+      },
+      "boron": {
+        "candidate": [
+          400,
+          800,
+          1600,
+          false,
+          1,
+          5,
+          true
+        ],
+        "levels_sha256": "b9ac91c858b5d953ebde52c8e88ef0ba1284bfd445e5afd0948fff6df3b21421",
+        "shift": [
+          -1222.840360050947,
+          -99.99879757740018,
+          365.59487586211435
         ]
       },
       "paranid": {

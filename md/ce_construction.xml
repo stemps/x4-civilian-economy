@@ -20,7 +20,8 @@
 <library name="Resolve"><actions>
   <set_value name="$LayoutRace" exact="if $ProfileRace then $ProfileRace.id else ''"/>
   <include_actions ref="md.CE_ConstructionData.Load"/>
-  <set_value name="$Construction" exact="table[$Plan='ce_hub_%1'.[$LayoutRace],$Levels=$LayoutMacros,$Valid=false]"/>
+  <!-- Fingerprint records which generated layout data this snapshot expects. -->
+  <set_value name="$Construction" exact="table[$Plan='ce_hub_%1'.[$LayoutRace],$Levels=$LayoutMacros,$Valid=false,$Fingerprint=$LayoutFingerprint]"/>
   <do_if value="$LayoutMacros.count == 10">
     <set_value name="$Available" exact="[]"/>
     <get_module_definition race="$ProfileRace" tags="tag.module" multiple="true" macro="$Choices"/>
@@ -76,6 +77,8 @@
     <do_else>
       <do_if value="$R.$Build.exists"><remove_build object="$Hub.buildstorage" build="$R.$Build"/></do_if>
       <set_value name="$R.$Build" exact="null"/>
+      <!-- A master that never passed validation is not retained: the retry reloads the plan. -->
+      <do_if value="not @$R.$PlanIDs.count"><set_value name="$R.$FullSequence" exact="null"/></do_if>
       <include_actions ref="md.CE_Construction.ReportFailure"/>
       <include_actions ref="md.CE_Placement.Failed"/>
     </do_else>
@@ -170,6 +173,104 @@
               <do_elseif value="not @$Hub.planmodule.{$EntryID}.exists or @$Hub.planmodule.{$EntryID}.isconstruction"><set_value name="$Constructing" exact="true"/></do_elseif>
             </do_if>
           </do_all>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Saved construction snapshots outlive the generated layout data they were
+         resolved from, while plan IDs stay stable across mod versions. Called on
+         save load in the controller namespace ($Registry, $RaceProfiles,
+         $SectorProfiles). Stale or unresolved snapshots are re-resolved once per
+         race. Records with an accepted stage keep their snapshot: it matches their
+         saved native master sequence, which later stages continue from. -->
+    <library name="RefreshSnapshots">
+      <actions>
+        <set_value name="$LayoutRace" exact="''"/>
+        <include_actions ref="md.CE_ConstructionData.Load"/>
+        <set_value name="$CurrentLayout" exact="$LayoutFingerprint"/>
+        <set_value name="$RefreshedRaces" exact="table[]"/>
+        <do_for_each name="$RefreshProfileKey" in="$RaceProfiles.keys.list">
+          <set_value name="$RefreshProfile" exact="$RaceProfiles.{$RefreshProfileKey}"/>
+          <include_actions ref="md.CE_Construction.RefreshProfileSnapshot"/>
+        </do_for_each>
+        <do_for_each name="$Sector" in="$Registry.keys.list">
+          <set_value name="$R" exact="$Registry.{$Sector}"/>
+          <do_if value="@$R.$DebugProfile">
+            <set_value name="$RefreshProfile" exact="$R.$DebugProfile"/>
+            <include_actions ref="md.CE_Construction.RefreshProfileSnapshot"/>
+          </do_if>
+          <do_if value="@$R.$PlanIDs.count or @$R.$Build.exists">
+            <do_if value="@$R.$Construction.$Fingerprint != $CurrentLayout">
+              <include_actions ref="md.CE_Construction.MatchSnapshot"/>
+              <do_if value="$SnapshotMatches">
+                <!-- Identical plan and macro lists: re-stamp without touching the master. -->
+                <set_value name="$R.$Construction" exact="$MatchSource.$Construction"/>
+              </do_if>
+              <do_else>
+                <debug_text text="'[CE] Hub keeps its saved construction layout: hub=%s level=%s'.[$R.$Hub,$R.$Level]"/>
+              </do_else>
+            </do_if>
+          </do_if>
+          <do_else><include_actions ref="md.CE_Construction.AdoptSnapshot"/></do_else>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="RefreshProfileSnapshot">
+      <actions>
+        <!-- Input RefreshProfile (a race or debug profile table), CurrentLayout and
+             RefreshedRaces. Replaces only the profile's construction snapshot. -->
+        <do_if value="not @$RefreshProfile.$Construction.$Valid or @$RefreshProfile.$Construction.$Fingerprint != $CurrentLayout">
+          <set_value name="$RefreshRaceKey" exact="if @$RefreshProfile.$Race then '$' + $RefreshProfile.$Race else '$unknown'"/>
+          <do_if value="not $RefreshedRaces.{$RefreshRaceKey}?">
+            <set_value name="$ProfileRace" exact="null"/>
+            <do_for_each name="$RefreshRace" in="lookup.race.list">
+              <do_if value="$RefreshRace.id == @$RefreshProfile.$Race"><set_value name="$ProfileRace" exact="$RefreshRace"/></do_if>
+            </do_for_each>
+            <include_actions ref="md.CE_Construction.Resolve"/>
+            <set_value name="$RefreshedRaces.{$RefreshRaceKey}" exact="$Construction"/>
+            <debug_text text="'[CE] Construction snapshot refreshed: race=%s valid=%s previous_layout=%s'.[@$RefreshProfile.$Race,$Construction.$Valid,@$RefreshProfile.$Construction.$Fingerprint]"/>
+          </do_if>
+          <set_value name="$RefreshProfile.$Construction" exact="$RefreshedRaces.{$RefreshRaceKey}"/>
+        </do_if>
+      </actions>
+    </library>
+    <library name="MatchSnapshot">
+      <actions>
+        <!-- Input R and Sector. True when the record's snapshot expects exactly the
+             plan and per-level macros of its current valid profile snapshot. -->
+        <set_value name="$MatchSource" exact="if @$R.$DebugProfile then $R.$DebugProfile else if $Sector then @$SectorProfiles.{$Sector} else null"/>
+        <set_value name="$MatchCurrent" exact="@$MatchSource.$Construction"/>
+        <set_value name="$MatchSaved" exact="$R.$Construction"/>
+        <set_value name="$SnapshotMatches" exact="@$MatchCurrent.$Valid and @$MatchSaved.$Valid and $MatchCurrent.$Plan == $MatchSaved.$Plan and @$MatchCurrent.$Levels.count == 10 and @$MatchSaved.$Levels.count == 10"/>
+        <do_if value="$SnapshotMatches">
+          <do_all exact="10" counter="$MatchLevel">
+            <do_if value="$MatchCurrent.$Levels.{$MatchLevel}.count != $MatchSaved.$Levels.{$MatchLevel}.count">
+              <set_value name="$SnapshotMatches" exact="false"/>
+            </do_if>
+            <do_elseif value="$SnapshotMatches">
+              <do_all exact="$MatchCurrent.$Levels.{$MatchLevel}.count" counter="$MatchIndex">
+                <do_if value="$MatchCurrent.$Levels.{$MatchLevel}.{$MatchIndex} != $MatchSaved.$Levels.{$MatchLevel}.{$MatchIndex}">
+                  <set_value name="$SnapshotMatches" exact="false"/>
+                </do_if>
+              </do_all>
+            </do_elseif>
+          </do_all>
+        </do_if>
+      </actions>
+    </library>
+    <library name="AdoptSnapshot">
+      <actions>
+        <!-- Input R and Sector. A record without an accepted stage has no native
+             master to stay consistent with, so it follows its current profile. -->
+        <set_value name="$AdoptSource" exact="if @$R.$DebugProfile then $R.$DebugProfile else if $Sector then @$SectorProfiles.{$Sector} else null"/>
+        <do_if value="@$AdoptSource.$Construction and not @$R.$PlanIDs.count and not @$R.$Build.exists">
+          <set_value name="$R.$FullSequence" exact="null"/>
+          <set_value name="$R.$PlanIDs" exact="[]"/>
+          <do_if value="@$R.$Construction.$Fingerprint != $AdoptSource.$Construction.$Fingerprint or @$R.$Construction.$Valid != $AdoptSource.$Construction.$Valid">
+            <!-- Changed layout data may fail differently: allow one new report. -->
+            <set_value name="$R.$ConstructionError" exact="false"/>
+            <debug_text text="'[CE] Construction snapshot adopted: sector=%s valid=%s'.[$Sector,$AdoptSource.$Construction.$Valid]"/>
+          </do_if>
+          <set_value name="$R.$Construction" exact="$AdoptSource.$Construction"/>
         </do_if>
       </actions>
     </library>
