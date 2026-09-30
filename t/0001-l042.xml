@@ -250,5 +250,34 @@
     <t id="157">Zpravodajská videa</t>
     <t id="158">Přehrávat zpravodajská videa o civilních incidentech. Po vypnutí se nadále zobrazují textová oznámení a záznamy v deníku.</t>
     <t id="159">Zobrazení</t>
+    <t id="400">Civilní prosperita</t>
+    <t id="401">Bonusy sektoru</t>
+    <t id="402">Zásoby</t>
+    <t id="403">Bonusy</t>
+    <t id="404">Aktivní</t>
+    <t id="405">Pozastaveno</t>
+    <t id="406">Odemkne se na úrovni %d</t>
+    <t id="408">Imigrace pracovní síly</t>
+    <t id="409">Obchodní ceny</t>
+    <t id="410">Diplomacie / špionáž</t>
+    <t id="411">Chybí zásoby - viz Zásoby. Bonusy platí pouze v sektoru tohoto centra.</t>
+    <t id="412">%d / hod. na 1 000 míst</t>
+    <t id="413">%d %% cenového rozpětí</t>
+    <t id="414">+%d %% šance na úspěch</t>
+    <t id="415">Radary stanic: %d</t>
+    <t id="416">Zapnuto</t>
+    <t id="419">%1: odemčen civilní bonus úrovně %2. Vyberte centrum a otevřete Bonusy pro podrobnosti. Bonusy vyžadují všechno civilní zboží na skladě.</t>
+    <t id="420">Všechno potřebné zboží je dodáno. Bonusy platí pouze v sektoru tohoto centra.</t>
+    <t id="421">Bonusy vyžadují aktivní profil civilní poptávky.</t>
+    <t id="423">Další pracovníci za herní hodinu na 1 000 míst ubytování na stanicích hráče. Započítá se pouze kladný přirozený růst; platí přirozené udržitelné cíle a limity ubytování. Registrované stanice: %d.</t>
+    <t id="424">Slevy na nákup a provize z prodeje na stanicích NPC, které povolují přistání, včetně neobjevených stanic. Zapojené stanice: %d. Procento se počítá z rozpětí kolísání ceny zboží, ne z jeho aktuální ceny. Nákup a vylepšení lodí nejsou zahrnuty.</t>
+    <t id="425">Přičte se k běžnému výpočtu úspěchu operací cílených na stanice, včetně nepřátelských. Šance na úspěch je stále omezena na 99 %. Použije se při zahájení operace; existující výsledky se nepřepočítávají.</t>
+    <t id="426">Sdílí radar stanic NPC, které povolují přistání, v celém sektoru. Neobjevené stanice se mohou zviditelnit. Pokrytí odpovídá radaru stanic; dosah lodí a zbraní hráče se nemění.</t>
+    <t id="427">Odhalí polohu schránek v tomto sektoru k prozkoumání. Objevená místa zůstanou viditelná, i když je bonus neaktivní.</t>
+    <t id="428">Civilní senzorová síť</t>
+    <t id="429">Odhalit schránky</t>
+    <t id="431">Bonus</t>
+    <t id="432">Účinek</t>
+    <t id="433">Vypnuto</t>
   </page>
 </language>

@@ -89,6 +89,8 @@
             <set_value name="$LayoutPhase" exact="if @$R.$LayoutPending then 'planning' else if @$R.$ConstructionFailure == 'generation_failed' or @$R.$ConstructionFailure == 'staged_layout_invalid' then 'layout_retry' else if @$R.$ConstructionError then 'build_retry' else 'planning'"/>
           </do_if>
           <append_to_list name="$R.$Snapshot" exact="$LayoutPhase"/>
+          <!-- Sector reward payload (CE_Rewards.Snapshot), index 23. -->
+          <append_to_list name="$R.$Snapshot" exact="if @$R.$Rewards.$Snapshot then $R.$Rewards.$Snapshot else []"/>
           <set_value name="$R.$SnapshotError" exact="false"/>
         </do_if>
         <do_else>
@@ -97,7 +99,7 @@
           </do_if>
           <set_value name="$R.$SnapshotError" exact="true"/>
           <do_if value="$R.$Snapshot?">
-            <set_value name="$R.$Snapshot" exact="[$R.$Snapshot.{1},$R.$Snapshot.{2},$R.$Snapshot.{3},$R.$Snapshot.{4},$R.$Snapshot.{5},$R.$Snapshot.{6},$R.$Snapshot.{7},$R.$Snapshot.{8},$R.$Snapshot.{9},$R.$Snapshot.{10},@$R.$Snapshot.{11},@$R.$Snapshot.{12},@$R.$Snapshot.{13},@$R.$ProfileError,true,@$R.$Snapshot.{16},@$R.$PopulationOverride,@$R.$DebugFallback,false,@$R.$Snapshot.{20},@$R.$Snapshot.{21},@$R.$Snapshot.{22}]"/>
+            <set_value name="$R.$Snapshot" exact="[$R.$Snapshot.{1},$R.$Snapshot.{2},$R.$Snapshot.{3},$R.$Snapshot.{4},$R.$Snapshot.{5},$R.$Snapshot.{6},$R.$Snapshot.{7},$R.$Snapshot.{8},$R.$Snapshot.{9},$R.$Snapshot.{10},@$R.$Snapshot.{11},@$R.$Snapshot.{12},@$R.$Snapshot.{13},@$R.$ProfileError,true,@$R.$Snapshot.{16},@$R.$PopulationOverride,@$R.$DebugFallback,false,@$R.$Snapshot.{20},@$R.$Snapshot.{21},@$R.$Snapshot.{22},@$R.$Snapshot.{23}]"/>
           </do_if>
         </do_else>
       </actions>

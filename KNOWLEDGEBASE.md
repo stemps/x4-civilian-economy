@@ -1,3 +1,33 @@
+## 2026-09-30 - sector-rewards-reintegration
+
+- The 2026-09-23 sector rewards work (commit `97ab3ac` on the deleted branch
+  `codex/sector-rewards`) was never merged. It was recovered via the reflog,
+  pinned as `recovered/sector-rewards`, and cherry-picked onto main.
+- SUPERSEDES the 09-23 entries below on these points: the snapshot stays at
+  version 3 and the reward payload is position 23 (not v4/position 17); hub
+  records are owned by `faction.civilian`, so reward eligibility checks that owner
+  and price/radar partners exclude ownerless and civilian-owned stations; reward
+  text IDs moved from 140-173 to 400-433 because main reused 140-159 for settings
+  and debug text; all 16 locales carry the reward keys; the unlock logbook text
+  (419) uses MD `%1`/`%2` placeholders like the other MD-formatted keys.
+- UI: main's summary layout (population, level bar, next level, status/unrest
+  rows) is kept. Row 5 now shows warnings/unrest on the left and the bonus summary
+  on the right; the Supplies/Bonuses buttons are fixed row 6 with `rowdata=true`
+  (the native validator requires row data for active buttons). Demand events and
+  the active view scroll below. The 09-23 compact-header and `+25% demand` text
+  changes were not carried over.
+- `tools/check.py --schema` now validates every diff-rooted MD file (currently
+  `md/diplomacy.xml`) with the same patch applier as the AI diffs.
+- Trade price value reads `N% of price range` (was `N modifier points`). READ:
+  `common.xsd` `pricemodifieramount` is a percentage of the ware's price variation
+  range, so the effective share of the current price varies per ware.
+- Diplomacy value reads `+N% success chance` (was `+N success points`). READ:
+  vanilla `Success_Evaluation` sums base, agent (+10 per experience level) and
+  bribe chances in percentage points, caps at 99, and succeeds when a seeded 1-100
+  roll is below it, so one CE point is one percentage point relative to vanilla.
+  The hint states the 99% cap.
+- Runtime acceptance from the 09-23 entries is still outstanding.
+
 ## 2026-09-29 - layout-snapshot-refresh
 
 - READ: saved `$Construction` snapshots (`Init.$RaceProfiles`, `$R.$Construction`)
@@ -708,6 +738,131 @@
 - Only English translations currently exist; unrest keys are synchronized there.
   Full game restart required; `/reloadui` cannot install the new MD/AI/faction
   behavior. README and `docs/` remain unchanged.
+
+## 2026-09-23 - player-facing-lockbox-benefit
+
+- Present lockbox discovery as Discover lockboxes with Enabled/Disabled, based
+  on unlock and active eligibility. Keep locked/suspended reasons in Status.
+  Tooltips describe discovery and retained locations, not survey timing or counts.
+  The underlying cadence, filters and diagnostic payload remain unchanged.
+
+## 2026-09-23 - active-without-recipients
+
+- User preference: unlocked bonuses display Active whenever the hub qualifies,
+  even with zero workforce, trade or radar recipients. Recipient counts remain
+  informational; remove the No eligible recipients presentation distinction.
+  Native applicability and grant logic are unchanged. Lua regression covers all
+  three zero-recipient cases remaining green/Active.
+
+## 2026-09-23 - styled-view-tabs
+
+- Replaced the View dropdown with two centered native buttons in fixed row 5.
+  Both stay enabled; the selected tab has a persistent blue background and bold
+  text, the other the standard background and regular text. Selection no longer
+  relies on disabled styling. Reclicking the selected tab does not reset scrolling.
+- The existing single-table contract, first scroll row 6, and Supplies reset on
+  hub change remain. Lua checks cover style, switching, reset and no-op selection;
+  in-game visual acceptance is pending.
+
+## 2026-09-23 - unique-growth-tooltip-lines
+
+- Paused hubs return the same message from state and action formatters. The map
+  growth tooltip now deduplicates nonempty progress/state/action messages in that
+  order, preserving distinct guidance. Regression covers the known pause reasons.
+
+## 2026-09-23 - progress-overlay-and-reward-colors
+
+- Replaced the half-width progress layout with a full-width bar: column 1 anchors
+  the bar, while a transparent icon spanning columns 2-5 overlays right-aligned
+  next-level text. This uses the existing native storage-bar layering pattern.
+- Reward status colors are presentation keys, updated via native color callbacks:
+  active green, suspended red, locked/unavailable gray, no recipients amber.
+  Overall status reflects supply eligibility; a particular bonus can still be
+  locked or have no recipients while that overall status is active.
+- Lua checks model colspan width and exercise all five row-status colors plus
+  summary changes without rebuilding the panel. Native visual acceptance pending.
+
+## 2026-09-23 - compact-hub-header
+
+- The fixed header now has five rows: title; population with right-aligned level;
+  half-width progress with right-aligned next-level details; bonus status; View.
+  Column 2 ends at the panel midpoint, allowing both views to share this geometry.
+- Bonus column headings start the scrolling section directly. Eligibility details
+  live in status/benefit tooltips; the operational/ownerless/population explanation
+  is no longer shown. Next-level text uses `+25% demand`.
+- Keep first scroll row 6 consistent across initialization, view switching, hub
+  switching, cleanup and scroll clamping. Lua checks cover alignment, half-width
+  geometry and native minimum-height calculation; native visual acceptance pending.
+
+## 2026-09-23 - diplomacy-bonus-diagnostic
+
+- `[CE] Diplomacy:` records the native station-targeted calculation at operation
+  start: action, target, sector, before, bonus and final. Zero bonuses are logged
+  for control cases; guaranteed-success actions bypass the calculation and log.
+- The log is inserted after CalculatedSuccessChance, so final includes the native
+  99 cap; before is AssembledSuccessChance minus CEBonus. No roll or outcome is
+  changed. Debug text uses MD `%s` placeholders, including numeric values.
+
+## 2026-09-23 - bonus-view-navigation
+
+- User screenshots showed disabled current-view buttons looking unavailable,
+  while the other view appeared highlighted. Use the native View dropdown with
+  explicit startOption, matching menu_map.lua's createDropDown API and
+  onDropDownConfirmed(_, id) signature. Preserve the single-table widget contract.
+- Bonuses omits shortage ware names (available under Supplies), uses a compact
+  sector-local eligibility explanation and wider benefit column with headings.
+  Lua checks cover selection, switching back, hub reset and native minimum height;
+  final native rendering still requires in-game acceptance.
+
+## 2026-09-23 - level-ten-widget-minimum-height
+
+- MEASURED: profile debug.txt after the Argon Prime test upgrade to L10 logged
+  widget rejection twice: 621 pixels available, 648 minimum required. X4 remained
+  running; this log does not establish a fatal engine crash. Evidence snapshot:
+  `.validation/level10-before/debug.txt` (game times 236489.66 and 236493.00).
+- ROOT CAUSE: native widget_fullscreen.lua `calculateMinRowHeight` groups each
+  selectable row with subsequent unselectable rows. CE's entire scrolling list
+  had nil rowdata, making it an indivisible block despite maxVisibleHeight.
+  Scrolling rows now use true rowdata; fixed summary rows remain unchanged.
+- Regression executes the reference native minimum-height function using fixture
+  row heights, including a negative control with the old nil rowdata. This is
+  source-executed validation, not an in-game rendering acceptance test.
+- The same log rejected `%d` in MD-formatted reward-unlock text (key 159), at
+  each crossed unlock. Changed that MD-only key to `%s`; Lua string.format keys
+  keep their numeric specifiers. Runtime retest remains required.
+
+## 2026-09-23 - sector-rewards-implementation
+
+- Implemented source paths for immigration, NPC ware prices, station-targeted
+  diplomacy/espionage, station radar sharing and lockbox surveys. Balance and
+  eligibility live in CE_RewardRules; saved state belongs to each sector record.
+  Runtime acceptance is outstanding; see ARCHITECTURE's native acceptance section.
+- READ: `common.xsd` price amounts use the ware price variation range, not a flat
+  current-price percentage. Player modifier actions accept IDs, allowing CE-only
+  removal. Native radar access uses paired requests in `md/diplomacy.xml`; repeated
+  adds are not an idempotency mechanism. Coexistence/serialization needs runtime proof.
+- READ: `menu_station_overview.lua` exposes per-race native growth change,
+  sustainable population and target through GetContainerWorkforceInfluence, plus
+  ShouldContainerFillWorkforceCapacity. Immigration uses these constraints without
+  changing global workforce parameters or adding a native growth influence.
+- READ: influenceconfigurations.xsd supports `radarrange`, but
+  stop_script_influences clears all stoppable script influences on an object.
+  CE uses station sharing instead of a temporary ship range multiplier.
+- READ: set_object_long_range_scanned is used by scenario_tutorials.xml to mark
+  objects; its lockbox marker persistence and remote visibility remain runtime gates.
+  CE records marked objects to avoid counting the same survey result repeatedly.
+- Implementation hazard: checking supply only after a delivery hides the preceding
+  shortage. Reserve accrual now invalidates immigration fractions when the elapsed
+  interval contains uncovered time. No extra credit is granted for that gap.
+- Hub snapshot v4 adds a reward payload; UI accepts v3 without rewards. Only English
+  is currently shipped, and all added text uses its localization page.
+- Native success evaluation uses a seeded integer roll and a strict comparison;
+  preserve that comparison, guaranteed-success branch and native cap. CE advertises
+  success-calculation points, not a claimed exact final percentage.
+- READ from md.xsd: only signal_cue_instantly accepts a param attribute;
+  deferred signal_cue does not. Reward signals carry sector/record context using
+  the instant form. Treat the validator's unknown-attribute INFO as actionable
+  unless an actual engine/vanilla precedent establishes otherwise.
 
 Code ownership belongs in [ARCHITECTURE.md](ARCHITECTURE.md). Start with the
 [README](README.md) for an introduction and the

@@ -250,5 +250,34 @@
     <t id="157">Filmy z wiadomościami</t>
     <t id="158">Odtwarzaj filmy z wiadomościami o incydentach cywilnych. Po wyłączeniu tej opcji nadal będą wyświetlane powiadomienia tekstowe i wpisy w dzienniku.</t>
     <t id="159">Wyświetlanie</t>
+    <t id="400">Dobrobyt cywilny</t>
+    <t id="401">Premie sektora</t>
+    <t id="402">Zaopatrzenie</t>
+    <t id="403">Premie</t>
+    <t id="404">Aktywne</t>
+    <t id="405">Wstrzymane</t>
+    <t id="406">Odblokowanie na poziomie %d</t>
+    <t id="408">Imigracja siły roboczej</t>
+    <t id="409">Ceny handlowe</t>
+    <t id="410">Dyplomacja / szpiegostwo</t>
+    <t id="411">Brakuje towarów - zob. Zaopatrzenie. Premie działają tylko w sektorze tego centrum.</t>
+    <t id="412">%d / godz. na 1000 miejsc</t>
+    <t id="413">%d%% zakresu cen</t>
+    <t id="414">+%d%% szansy powodzenia</t>
+    <t id="415">Radary stacji: %d</t>
+    <t id="416">Włączone</t>
+    <t id="419">%1: odblokowano premię cywilną poziomu %2. Wybierz centrum i otwórz Premie, aby zobaczyć szczegóły. Premie wymagają zapasu wszystkich towarów cywilnych.</t>
+    <t id="420">Wszystkie wymagane towary dostarczone. Premie działają tylko w sektorze tego centrum.</t>
+    <t id="421">Premie wymagają aktywnego profilu popytu cywilnego.</t>
+    <t id="423">Dodatkowi pracownicy na godzinę gry na 1000 miejsc mieszkalnych na stacjach gracza. Liczy się tylko dodatni naturalny wzrost; obowiązują naturalne cele zrównoważone i limity mieszkań. Zarejestrowane stacje: %d.</t>
+    <t id="424">Zniżki przy zakupie i prowizje przy sprzedaży na stacjach NPC zezwalających na dokowanie, także nieodkrytych. Uczestniczące stacje: %d. Procent dotyczy zakresu wahań ceny towaru, a nie jego bieżącej ceny. Zakup i ulepszenia statków są wyłączone.</t>
+    <t id="425">Dodawane do natywnego obliczenia szansy powodzenia operacji wymierzonych w stacje, także wrogie. Szansa powodzenia nadal wynosi maksymalnie 99%. Stosowane przy rozpoczęciu operacji; istniejące wyniki nie są losowane ponownie.</t>
+    <t id="426">Udostępnia radar stacji NPC zezwalających na dokowanie w całym sektorze. Nieodkryte stacje mogą stać się widoczne. Zasięg odpowiada natywnemu radarowi stacji; zasięg statków i broni gracza się nie zmienia.</t>
+    <t id="427">Ujawnia położenie skrytek w tym sektorze do zbadania. Odkryte miejsca pozostają widoczne, gdy premia jest nieaktywna.</t>
+    <t id="428">Cywilna sieć czujników</t>
+    <t id="429">Odkrywanie skrytek</t>
+    <t id="431">Premia</t>
+    <t id="432">Efekt</t>
+    <t id="433">Wyłączone</t>
   </page>
 </language>

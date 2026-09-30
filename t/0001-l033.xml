@@ -250,5 +250,34 @@
     <t id="157">Vidéos d’actualité</t>
     <t id="158">Lire les vidéos d’actualité sur les incidents civils. Si cette option est désactivée, les messages du fil d’actualité et les entrées du journal restent affichés.</t>
     <t id="159">Affichage</t>
+    <t id="400">Prospérité civile</t>
+    <t id="401">Bonus de secteur</t>
+    <t id="402">Approvisionnement</t>
+    <t id="403">Bonus</t>
+    <t id="404">Actif</t>
+    <t id="405">Suspendu</t>
+    <t id="406">Débloqué au niveau %d</t>
+    <t id="408">Immigration de main-d'œuvre</t>
+    <t id="409">Prix commerciaux</t>
+    <t id="410">Diplomatie / espionnage</t>
+    <t id="411">Marchandises manquantes - voir Approvisionnement. Les bonus ne s'appliquent que dans le secteur de ce centre.</t>
+    <t id="412">%d / heure pour 1 000 places</t>
+    <t id="413">%d %% de la fourchette de prix</t>
+    <t id="414">+%d %% de chances de réussite</t>
+    <t id="415">%d radars de station</t>
+    <t id="416">Activé</t>
+    <t id="419">%1 : bonus civil de niveau %2 débloqué. Sélectionnez le centre et ouvrez Bonus pour les détails. Les bonus exigent que toutes les marchandises civiles soient en stock.</t>
+    <t id="420">Toutes les marchandises requises sont fournies. Les bonus ne s'appliquent que dans le secteur de ce centre.</t>
+    <t id="421">Les bonus nécessitent un profil de demande civile actif.</t>
+    <t id="423">Travailleurs supplémentaires par heure de jeu pour 1 000 places d'habitat dans les stations du joueur. Seule une croissance native positive est éligible ; les objectifs durables natifs et les limites d'habitat s'appliquent. Stations enregistrées : %d.</t>
+    <t id="424">Remises à l'achat et commissions à la vente dans les stations PNJ autorisant l'amarrage, y compris les stations non découvertes. %d stations participantes. Le pourcentage s'applique à la fourchette de variation du prix de la marchandise, pas à son prix actuel. Les achats et améliorations de vaisseaux sont exclus.</t>
+    <t id="425">Ajouté au calcul natif de réussite des opérations visant une station, y compris hostile. Les chances de réussite restent plafonnées à 99 %. Appliqué au lancement de l'opération ; les résultats existants ne sont pas recalculés.</t>
+    <t id="426">Partage le radar des stations PNJ autorisant l'amarrage dans tout le secteur. Des stations non découvertes peuvent devenir visibles. La couverture suit le radar natif des stations ; la portée des vaisseaux et des armes du joueur est inchangée.</t>
+    <t id="427">Révèle l'emplacement des coffres dans ce secteur pour que vous les exploriez. Les emplacements découverts restent visibles lorsque le bonus est inactif.</t>
+    <t id="428">Réseau de capteurs civil</t>
+    <t id="429">Découvrir les coffres</t>
+    <t id="431">Bonus</t>
+    <t id="432">Effet</t>
+    <t id="433">Désactivé</t>
   </page>
 </language>

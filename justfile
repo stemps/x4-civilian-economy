@@ -39,6 +39,7 @@ lua:
     if ('{{python}}') { & '{{python}}' tools/test_initial_construction.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_initial_construction.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_debug_menu.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_debug_menu.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_population_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_population_bridge.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tools/test_workforce_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_workforce_bridge.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' tools/test_map_status.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_map_status.py; exit $LASTEXITCODE }
 
 # Everyday gate: all controller tests, generated plans, static checks and UI.

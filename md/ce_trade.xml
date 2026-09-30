@@ -37,6 +37,7 @@
           </do_if>
         </do_if>
         <include_actions ref="md.CE_CivilianHub.UpdateOffers"/>
+        <include_actions ref="md.CE_Rewards.Notify"/>
         <include_actions ref="md.CE_CivilianHub.PublishDiagnostics"/>
         <include_actions ref="md.CE_CivilianHub.PublishAllDiagnostics"/>
       </actions>

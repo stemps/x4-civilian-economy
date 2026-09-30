@@ -269,6 +269,7 @@
         <!-- The replacement loads the plan afresh, so it must expect current layout data. -->
         <include_actions ref="md.CE_Construction.AdoptSnapshot"/>
         <include_actions ref="RebaseAccrual"/>
+        <include_actions ref="md.CE_Rewards.Notify"/>
         <include_actions ref="PublishDiagnostics"/>
         <debug_text text="'[CE] Hub lost: reserves lost; retained level, growth and counters; discarded pending expansion'"/>
       </actions>
@@ -354,6 +355,7 @@
         <do_if value="$UpgradeCompleted">
           <include_actions ref="md.CE_Notifications.UpgradeCompleted"/>
         </do_if>
+        <include_actions ref="md.CE_Rewards.Notify"/>
       </actions>
     </library>
     <library name="QueueExpansion">

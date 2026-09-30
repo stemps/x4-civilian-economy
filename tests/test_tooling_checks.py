@@ -39,7 +39,7 @@ class CheckSelectionTests(unittest.TestCase):
                  patch.dict(sys.modules, {'x4validate._cli': fake_cli}), \
                  patch.object(check.unittest.defaultTestLoader, 'discover') as discover, \
                  patch.object(timings, 'runner', return_value=runner), \
-                 patch.object(check, 'validate_merged_ai', return_value=merged_code) as merged, \
+                 patch.object(check, 'validate_merged', return_value=merged_code) as merged, \
                  contextlib.redirect_stdout(output):
                 result = check.run_checks(args, timings)
                 self.assertEqual(os.environ['CE_REFERENCE'], str(reference.resolve()))

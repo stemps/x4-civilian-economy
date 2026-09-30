@@ -58,7 +58,7 @@ AddUITriggeredEvent=function(screen,control,id)
  refreshRequests[#refreshRequests+1]={id=id,time=now}
 end
 Register_OnLoad_Init=function(fn) loadCallback=fn end
-Color={text_normal={},rowgroup_background_default={},row_title_background={},row_background={},text_negative={},text_warning={},text_positive={},frame_background_semitransparent={},statusbar_value_default={},statusbar_marker_hidden={},icon_transparent={}}
+Color={button_background_default={},text_inactive={},text_normal={},rowgroup_background_default={},row_title_background={},row_background={},text_negative={},text_warning={},text_positive={},frame_background_semitransparent={},statusbar_value_default={},statusbar_marker_hidden={},icon_transparent={}}
 nativeDraws, nativeUpdates, nativeCleanups = 0, 0, 0
 menu={selectedcomponents={['42']=true}, selectedShipsTableData={fontsize=12,textHeight=20},
  infoTableOffsetX=10,infoTableWidth=250,borderOffset=2,map=7,holomap=9,
@@ -180,11 +180,11 @@ end
 '''
 lua.execute(setup)
 addon_files = [e.get('name') for e in E.parse(ROOT / 'ui.xml').iter('file')]
-assert addon_files.index('ui/ce_hub_status.lua') < addon_files.index('ui/ce_map_status.lua')
+assert addon_files.index('ui/ce_hub_status.lua') < addon_files.index('ui/ce_reward_status.lua') < addon_files.index('ui/ce_map_status.lua')
 english_ids = set(lua.globals().translations.keys())
 for translation in (ROOT / 't').glob('*.xml'):
     assert {int(e.get('id')) for e in E.parse(translation).iter('t')} == english_ids
-for name in ('ce_hub_status.lua', 'ce_map_status.lua'):
+for name in ('ce_hub_status.lua', 'ce_reward_status.lua', 'ce_map_status.lua'):
     lua.execute((ROOT / 'ui' / name).read_text(encoding='utf-8'))
 lua.execute(r'''
 local M=CEHubStatus
@@ -195,49 +195,49 @@ now=1;M.get(42);assert(reads==before+2)
 known=false;assert(not M.get(42));known=true
 valid=false;assert(not M.get(42));valid=true
 now=3
-local t=draw();assert(t.columns==5 and t.properties.tabOrder==21 and #t.rows==20)
-assert(t.properties.y==1080-400-2-2-4-2)
+local t=draw();assert(t.columns==5 and t.properties.tabOrder==21 and #t.rows==21)
+assert(t.properties.y==1080-420-2-2-4-2)
 assert(value(t.rows[2][1])=='Population 8.52 billion')
 assert(value(t.rows[3][2])=='Level 1 (growing)' and t.rows[3][1].properties.current()==50)
 assert(t.rows[3][2].properties.width==t.rows[3][2]:getWidth())
-assert(value(t.rows[7][2])=='Ware 1' and value(t.rows[11][2])=='Ware 5')
-assert(value(t.rows[7][3])=='16m' and value(t.rows[7][4])=='Supplied')
-assert(value(t.rows[7][5])=='300')
-for _,col in ipairs({2,3,4,5}) do assert(t.rows[7][col].kind=='text') end
-assert(value(t.rows[6][5])=='Buying')
-assert(t.rows[7][1].properties.width==t.rows[7][2]:getWidth()+Helper.borderSize+t.rows[7][3]:getWidth())
-assert(t.rows[7][1].properties.start()==500.5/4000*100 and t.rows[7][1].properties.current()==700.5/4000*100)
-assert(t.rows[7][1].properties.valueColor.b==140 and t.rows[7][1].properties.valueColor.glow==0)
-assert(t.rows[7][1].properties.posChangeColor.g==85)
+assert(value(t.rows[8][2])=='Ware 1' and value(t.rows[12][2])=='Ware 5')
+assert(value(t.rows[8][3])=='16m' and value(t.rows[8][4])=='Supplied')
+assert(value(t.rows[8][5])=='300')
+for _,col in ipairs({2,3,4,5}) do assert(t.rows[8][col].kind=='text') end
+assert(value(t.rows[7][5])=='Buying')
+assert(t.rows[8][1].properties.width==t.rows[8][2]:getWidth()+Helper.borderSize+t.rows[8][3]:getWidth())
+assert(t.rows[8][1].properties.start()==500.5/4000*100 and t.rows[8][1].properties.current()==700.5/4000*100)
+assert(t.rows[8][1].properties.valueColor.b==140 and t.rows[8][1].properties.valueColor.glow==0)
+assert(t.rows[8][1].properties.posChangeColor.g==85)
 for _,col in ipairs({1,4,5}) do
- assert(t.rows[7][col].properties.cellBGColor==Color.rowgroup_background_default)
- assert(t.rows[6][col].properties.cellBGColor==Color.row_title_background)
+ assert(t.rows[8][col].properties.cellBGColor==Color.rowgroup_background_default)
+ assert(t.rows[7][col].properties.cellBGColor==Color.row_title_background)
 end
 assert(value(t.rows[4][1]):find('Energy Cells',1,true))
 assert(t.properties.maxVisibleHeight==432 and t.properties.reserveScrollBar)
-for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
-assert(t.rows[7][2].properties.mouseOverText():find('Incoming: 200',1,true))
+for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=7)) end
+assert(t.rows[8][2].properties.mouseOverText():find('Incoming: 200',1,true))
 status[9][5][2]=0;status[9][5][8]=0;now=4
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
-t=draw();assert(value(t.rows[7][2])=='Ware 1' and value(t.rows[11][2])=='Ware 5')
-assert(value(t.rows[11][3])=='Empty' and value(t.rows[11][4])=='Needed')
-assert(t.rows[11][4].properties.color==Color.text_negative)
+t=draw();assert(value(t.rows[8][2])=='Ware 1' and value(t.rows[12][2])=='Ware 5')
+assert(value(t.rows[12][3])=='Empty' and value(t.rows[12][4])=='Needed')
+assert(t.rows[12][4].properties.color==Color.text_negative)
 assert(value(t.rows[3][2])=='Level 1 (stagnating)')
 assert(t.rows[3][2].properties.mouseOverText():find('Paused: missing supplies\n- Ware 5',1,true))
 status[9][1][8]=899;now=5;t=draw()
-assert(value(t.rows[7][4])=='Low' and t.rows[7][4].properties.color==Color.text_warning)
-status[9][1][8]=900;now=6;t=draw();assert(value(t.rows[7][4])=='Supplied')
+assert(value(t.rows[8][4])=='Low' and t.rows[8][4].properties.color==Color.text_warning)
+status[9][1][8]=900;now=6;t=draw();assert(value(t.rows[8][4])=='Supplied')
 status[9][1][2]=9000;status[9][1][8]=16200;now=7
-assert(value(t.rows[7][3])=='4h 30m' and t.rows[7][1].properties.current()==100)
+assert(value(t.rows[8][3])=='4h 30m' and t.rows[8][1].properties.current()==100)
 assert(menu.onUpdate()==73 and override=='Level: 1\nPopulation served: 8.52 billion')
 picked=77;menu.onUpdate();assert(override==nil)
 override='native hover';menu.onUpdate();assert(override=='native hover')
 picked=42;menu.onUpdate();mouse=false;menu.onUpdate();assert(override==nil);mouse=true
 picked=43;menu.onUpdate();assert(override=='Level: 1\nPopulation served: 8.52 billion');picked=42
-assert(value(t.rows[12][2])=='Ware 6' and value(t.rows[20][2])=='Ware 14')
+assert(value(t.rows[13][2])=='Ware 6' and value(t.rows[21][2])=='Ware 14')
 menu.selectedShipsTable=21;liveTopRow=10;menu.onUpdate();t=draw();assert(t.topRow==10)
-menu.selectedcomponents={['43']=true};t=draw();assert(value(t.rows[7][2])=='Ware 1' and t.topRow==7)
-menu.selectedcomponents={['42']=true};t=draw();assert(value(t.rows[7][2])=='Ware 5')
+menu.selectedcomponents={['43']=true};t=draw();assert(value(t.rows[8][2])=='Ware 1' and t.topRow==8)
+menu.selectedcomponents={['42']=true};t=draw();assert(value(t.rows[8][2])=='Ware 5')
 status[9][15]={'New ware',0,1,1,0,0,0,0,1,'newware'};now=8
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
 menu.selectedcomponents={['42']=true,['43']=true};assert(draw().columns==1)
@@ -263,7 +263,7 @@ assert(menu.cleanup()==74 and nativeCleanups==1 and override==nil)
 before=reads;draw();assert(reads==before+2)
 Helper.viewWidth=1280;t=draw();assert(t.properties.width==752 and t.properties.x==264)
 for _,w in pairs(t.widths) do assert(w>0) end
-assert(t.rows[7][5]:getWidth()>40)
+assert(t.rows[8][5]:getWidth()>40)
 status[4]=0;status[7]=1;now=14
 assert(value(t.rows[3][2])=='Level 1 (stagnating)' and M.get(42).pausedOffers)
 for reason,label in pairs({constructing='constructing',damaged_modules='damaged modules',
@@ -283,7 +283,7 @@ status[3]=0;status[2]=10;now=now+1;t=draw();assert(value(t.rows[3][2])=='Level 1
 status[9][1][4]=1485;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='1,485')
 status[9][1][4]=57000;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='57.00 k')
 status[9][1][4]=1500000;now=now+1;assert(M.columns(M.get(42),M.get(42).wares[1])[4]=='1.50 M')
-status[9]={};now=now+1;t=draw();assert(value(t.rows[7][1])==M.text(71))
+status[9]={};now=now+1;t=draw();assert(value(t.rows[8][1])==M.text(71))
 -- State codes drive labels, sort groups, colors and rebuilds independently of text.
 local wareCases = {
  {0,0,0,'paused',57,'text_normal'},
@@ -351,7 +351,7 @@ deferred.globals().translations = deferred.table_from({
 })
 deferred.execute(setup)
 deferred.execute("savedMenu=menu;menu=nil")
-for name in ('ce_hub_status.lua', 'ce_map_status.lua'):
+for name in ('ce_hub_status.lua', 'ce_reward_status.lua', 'ce_map_status.lua'):
     deferred.execute((ROOT / 'ui' / name).read_text(encoding='utf-8'))
 deferred.execute('''
 assert(loadCallback);loadCallback();menu=savedMenu
@@ -363,7 +363,7 @@ assert(draw().columns==5)
 deferred.execute('''
 -- Exact reported budget with synthetic row measurements: 573 content / 572 cap.
 status[2]=10;status[9]=snapshot(42,14)[9];now=now+1
-Helper.viewHeight=1430;wrappedRowHeights={[1]=193}
+Helper.viewHeight=1430;wrappedRowHeights={[1]=173}
 local boundary=draw()
 assert(boundary:getFullHeight()==573 and boundary:getVisibleHeight()==572)
 status[2]=10;status[9]=snapshot(42,40)[9];now=now+1
@@ -371,16 +371,16 @@ wrappedRowHeights={[1]=41.25,[8]=60.5}
 for _,height in ipairs({720,1080,1081,1432,1440,1513,1513.5}) do
  Helper.viewHeight=height
  local t=draw()
- assert(#t.rows==46 and t.properties.maxVisibleHeight==math.floor(height*0.4))
- assert(t:getFullHeight()==981.75 and t:getVisibleHeight()==math.floor(height*0.4))
+ assert(#t.rows==47 and t.properties.maxVisibleHeight==math.floor(height*0.4))
+ assert(t:getFullHeight()==1001.75 and t:getVisibleHeight()==math.floor(height*0.4))
  assert(t.properties.y%1==0)
  -- Conservative pixel budget: round space down and required content up.
  local available=math.floor(height-8-t.properties.y)
  assert(available>=math.ceil(t:getVisibleHeight())+2)
  for i,r in ipairs(t.rows) do
-  assert(r.properties.fixed==(i<=6))
-  assert(r.rowdata==(i>6 and true or nil) and r.properties.interactive==false)
-  for col=1,5 do assert(r[col].kind~='button') end
+  assert(r.properties.fixed==(i<=7))
+  assert(r.rowdata==((i>7 or i==6) and true or nil) and r.properties.interactive==(i==6))
+  for col=1,5 do assert(r[col].kind~='button' or i==6) end
  end
 end
 menu.selectedShipsTable=21;liveTopRow=35;menu.onUpdate()
@@ -388,18 +388,75 @@ local t=draw();assert(t.topRow==35)
 missingTable=true;menu.onUpdate();t=draw();assert(t.topRow==35)
 missingTable=false;liveTopRow=20;menu.onUpdate();t=draw();assert(t.topRow==20)
 missingTable=true
-menu.selectedcomponents={['43']=true};t=draw();menu.onUpdate();assert(draw().topRow==7)
-menu.selectedcomponents={['42']=true};t=draw();menu.onUpdate();assert(draw().topRow==7)
+menu.selectedcomponents={['43']=true};t=draw();menu.onUpdate();assert(draw().topRow==8)
+menu.selectedcomponents={['42']=true};t=draw();menu.onUpdate();assert(draw().topRow==8)
 missingTable=false;liveTopRow=35;menu.onUpdate()
 status[9]=snapshot(42,6)[9];now=now+1;t=draw()
-assert(#t.rows==12 and t.topRow==12 and value(t.rows[12][2])=='Ware 6')
-assert(t:getVisibleHeight()==301.75)
+assert(#t.rows==13 and t.topRow==13 and value(t.rows[13][2])=='Ware 6')
+assert(t:getVisibleHeight()==321.75)
 assert(math.floor(Helper.viewHeight-8-t.properties.y)>=math.ceil(t:getVisibleHeight())+2)
 wrappedRowHeights=nil
-status[9]={};now=now+1;t=draw();assert(#t.rows==7 and t.topRow==7)
-menu.cleanup();t=draw();assert(t.topRow==7)
+status[9]={};now=now+1;t=draw();assert(#t.rows==8 and t.topRow==8)
+menu.cleanup();t=draw();assert(t.topRow==8)
 ''')
 print('Map status: metrics, identity, cache, scrolling, refresh, reserve/growth bars and native fallbacks passed')
+
+deferred.execute('''
+Helper.viewHeight=1080;wrappedRowHeights=nil;status[9]=snapshot(42,6)[9]
+status[2]=10;status[23]={1,true,'active',{},90,16,12,true,true,2,3,3,300,600,4,360,{2,3,5,7,9}}
+now=now+1
+local t=draw();assert(value(t.rows[5][3])=='Sector bonuses: Active')
+assert(t.rows[5][3].properties.color()==Color.text_positive)
+assert(t.rows[5][3].properties.mouseOverText()==translations[420])
+assert(t.rows[6].rowdata and t.rows[6].properties.fixed)
+assert(t.rows[6][1].kind=='button' and t.rows[6][3].kind=='button')
+assert(value(t.rows[6][1])=='Supplies' and value(t.rows[6][3])=='Bonuses')
+assert(t.rows[6][1].properties.bgColor.b==140 and t.rows[6][3].properties.bgColor==Color.button_background_default)
+menu.refreshMainFrame=false;t.rows[6][1].handlers.onClick();assert(not menu.refreshMainFrame)
+t.rows[6][3].handlers.onClick();assert(menu.refreshMainFrame);t=draw()
+assert(t.rows[6][3].properties.bgColor.b==140 and t.rows[6][1].properties.bgColor==Color.button_background_default)
+assert(#t.rows==12 and t.topRow==8 and value(t.rows[8][1])=='Workforce immigration')
+assert(value(t.rows[7][1])=='Bonus' and value(t.rows[7][4])=='Benefit' and value(t.rows[7][5])=='Status')
+assert(t.widths[4]==t.properties.width*0.28)
+assert(value(t.rows[8][4])=='90 / hour per 1,000 capacity')
+assert(t.rows[8][5].properties.color()==Color.text_positive)
+assert(t.rows[8][4].properties.mouseOverText():find('Registered stations: 2',1,true))
+assert(value(t.rows[9][4])=='16% of price range')
+assert(t.rows[9][4].properties.mouseOverText():find('3 participating stations',1,true))
+assert(value(t.rows[10][4])=='+12% success chance')
+assert(value(t.rows[11][1])=='Civilian sensor network' and value(t.rows[11][4])=='3 station radars')
+assert(value(t.rows[12][1])=='Discover lockboxes' and value(t.rows[12][4])=='Enabled')
+assert(t.rows[12][4].properties.mouseOverText():find('Discover lockbox locations',1,true))
+status[23][2]=false;status[23][3]='shortage';status[23][4]={'Water'};now=now+1
+assert(value(t.rows[8][5])=='Suspended' and value(t.rows[12][4])=='Disabled')
+assert(t.rows[8][5].properties.color()==Color.text_negative)
+assert(t.rows[5][3].properties.color()==Color.text_negative)
+assert(value(t.rows[5][3])=='Sector bonuses: Suspended')
+assert(CERewardStatus.reason(CEHubStatus.get(42))==translations[411])
+status[2]=3;now=now+1;assert(value(t.rows[10][5])=='Unlocks at level 5')
+assert(t.rows[10][5].properties.color()==Color.text_inactive)
+status[15]=true;now=now+1
+assert(value(t.rows[8][5])==translations[68])
+assert(t.rows[8][5].properties.color()==Color.text_inactive and t.rows[5][3].properties.color()==Color.text_inactive)
+status[15]=false
+status[23][5]=0/0;now=now+1;assert(value(t.rows[8][5])==translations[68])
+status[23][5]=20;now=now+1
+-- A missing payload keeps both views usable.
+status[23]=nil;now=now+1;t=draw()
+assert(value(t.rows[5][3])=='Sector bonuses: '..translations[68] and value(t.rows[8][5])==translations[68])
+status[23]={1,true,'active',{},90,16,12,true,true,2,3,3,300,600,4,360,{2,3,5,7,9}};now=now+1
+-- Demand events scroll below the fixed tabs in both views.
+status[21]={2,{{8,75,7200,'Metals'}},{},11};now=now+1;t=draw()
+assert(#t.rows==13 and value(t.rows[7][1]):find('Industrial Boom',1,true) and value(t.rows[9][1])=='Workforce immigration')
+for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
+status[21]=nil;now=now+1
+t.rows[6][1].handlers.onClick();t=draw()
+assert(t.rows[6][1].properties.bgColor.b==140 and value(t.rows[7][1])=='Civilian good')
+t.rows[6][3].handlers.onClick();t=draw()
+menu.selectedcomponents={['43']=true};t=draw();assert(t.rows[6][1].properties.bgColor.b==140)
+menu.selectedcomponents={['42']=true};t=draw();assert(t.rows[6][1].properties.bgColor.b==140)
+''')
+print('Sector bonuses: summary, tabs, bonus rows, unlocks, suspension and fallbacks passed')
 
 deferred.execute('''
 status[20]={96,4,1,900,{'Food','Water'},3};now=now+1
@@ -417,25 +474,25 @@ status[21]={2,{{8,75,7200,string.rep('Long material name, ',12)}},{1,2,8,9},7};n
 for _,height in ipairs({720,1080,1440}) do
  Helper.viewHeight=height
  local t=draw()
- assert(#t.rows==47 and value(t.rows[7][5])=='Buying')
- assert(value(t.rows[6][1]):find('Industrial Boom',1,true))
- assert(value(t.rows[6][1]):find('+75%',1,true))
- assert(t.rows[6][1].properties.wordwrap)
- assert(t.rows[6][1].properties.mouseOverText():find('Long material name',1,true))
+ assert(#t.rows==48 and value(t.rows[8][5])=='Buying')
+ assert(value(t.rows[7][1]):find('Industrial Boom',1,true))
+ assert(value(t.rows[7][1]):find('+75%',1,true))
+ assert(t.rows[7][1].properties.wordwrap)
+ assert(t.rows[7][1].properties.mouseOverText():find('Long material name',1,true))
  assert(value(t.rows[5][1]):find('Critical',1,true))
- for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=5)) end
+ for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
  assert(t:getVisibleHeight()==height*0.4)
 end
 status[21][2][1][2]=-50;status[21][2][1][1]=9;now=now+1
 assert(CEHubStatus.eventText(CEHubStatus.getFresh(42)):find('-50%',1,true))
 status[15]=true;now=now+1
-local t=draw();assert(value(t.rows[6][1]):find('Industrial Slowdown',1,true))
+local t=draw();assert(value(t.rows[7][1]):find('Industrial Slowdown',1,true))
 assert(value(t.rows[5][1])~='')
 status[15]=false
 menu.selectedShipsTable=21;liveTopRow=35;menu.onUpdate();t=draw();assert(t.topRow==35)
 status[21]={2,{},{},8};now=now+1
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
-t=draw();assert(#t.rows==46 and value(t.rows[6][5])=='Buying')
+t=draw();assert(#t.rows==47 and value(t.rows[7][5])=='Buying')
 status[21]={99,50,100,'bad',{},9};now=now+1
 assert(not CEHubStatus.getFresh(42).demandEvents)
 status[21]=nil;now=now+1;assert(draw().columns==5)
@@ -447,30 +504,30 @@ deferred.execute('''
 status[21]={2,{{8,75,7200,'Metals'},{3,50,5400,'Water'},{1,-25,3600,'Food'}},{5},10}
 now=now+1
 local t=draw()
-assert(#t.rows==49 and t.topRow==6)
-assert(value(t.rows[6][1]):find('Lost Harvest',1,true))
-assert(value(t.rows[7][1]):find('Drought',1,true))
-assert(value(t.rows[8][1]):find('Industrial Boom',1,true))
-assert(value(t.rows[9][5])=='Buying' and value(t.rows[10][2])=='Ware 1')
-for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=5)) end
+assert(#t.rows==50 and t.topRow==7)
+assert(value(t.rows[7][1]):find('Lost Harvest',1,true))
+assert(value(t.rows[8][1]):find('Drought',1,true))
+assert(value(t.rows[9][1]):find('Industrial Boom',1,true))
+assert(value(t.rows[10][5])=='Buying' and value(t.rows[11][2])=='Ware 1')
+for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
 status[21][2][2][3]=4800;now=now+1
-assert(value(t.rows[7][1]):find('1h 20m',1,true))
+assert(value(t.rows[8][1]):find('1h 20m',1,true))
 menu.selectedShipsTable=21;liveTopRow=25;menu.onUpdate();t=draw();assert(t.topRow==25)
 status[21][2]={};for _,id in ipairs({1,3,4,5,6,7,8}) do
  status[21][2][#status[21][2]+1]={id,50,3600,string.rep('Long affected goods ',20)}
 end
 for _,height in ipairs({720,1080,1440}) do
  Helper.viewHeight=height;now=now+1;t=draw()
- assert(#t.rows==53 and t:getVisibleHeight()==height*0.4)
- for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=5)) end
- assert(value(t.rows[13][5])=='Buying')
+ assert(#t.rows==54 and t:getVisibleHeight()==height*0.4)
+ for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
+ assert(value(t.rows[14][5])=='Buying')
 end
 status[21][2]={{3,50,600,'Water'}};now=now+1
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
-t=draw();assert(#t.rows==47 and t.topRow==6)
+t=draw();assert(#t.rows==48 and t.topRow==7)
 status[21][2]={{3,50,600,'Water'},{3,50,600,'Water'}};now=now+1
 assert(not CEHubStatus.getFresh(42).demandEvents)
-status[21]={2,{}, {},12};now=now+1;t=draw();assert(#t.rows==46 and t.topRow==7)
+status[21]={2,{}, {},12};now=now+1;t=draw();assert(#t.rows==47 and t.topRow==8)
 ''')
 print('Concurrent events: current decoding, ID ordering, individual timers, seven scrollable events and debug actions passed')
 lua.execute(r'''
@@ -488,10 +545,10 @@ replacement[9][1][3]=60000;statuses={replacement,second}
 assert(CEHubStatus.get(42).wares[1].incoming==200)
 callbacks.CEHubStatusUpdated('CEHubStatusUpdated',42)
 assert(CEHubStatus.get(42).wares[1].incoming==15000)
-assert(t.rows[7][1].properties.start()==0 and t.rows[7][1].properties.current()==25)
+assert(t.rows[8][1].properties.start()==0 and t.rows[8][1].properties.current()==25)
 replacement=snapshot(42,14);replacement[9][1][2]=0;replacement[9][1][5]=0
 statuses={replacement,second};callbacks.CEHubStatusUpdated('CEHubStatusUpdated',42)
-assert(t.rows[7][1].properties.current()==0)
+assert(t.rows[8][1].properties.current()==0)
 menu.selectedcomponents={['43']=true};menu.onUpdate()
 assert(#refreshRequests==3 and refreshRequests[3].id==43)
 menu.selectedcomponents={};now=1003;menu.onUpdate();assert(#refreshRequests==3)

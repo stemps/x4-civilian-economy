@@ -67,6 +67,11 @@
               <include_actions ref="md.CE_Reserves.SyncWare"/>
             </do_if>
           </do_for_each>
+          <!-- A delivery can restore stock before the reward tick observes a gap. -->
+          <do_if value="$RequiredWares gt 0 and $SuppliedSeconds lt $ReserveElapsed and $R.$Rewards?">
+            <set_value name="$R.$Rewards.$Immigrants" exact="table[]"/>
+            <set_value name="$R.$Rewards.$Workplaces" exact="0"/>
+          </do_if>
           <do_if value="$RequiredWares gt 0 and $R.$Target == 0 and $R.$Level lt 10">
             <set_value name="$R.$GrowthSeconds" exact="[$R.$GrowthSeconds,[$RequiredGrowthSeconds,$R.$GrowthSeconds + $SuppliedSeconds].min].max"/>
           </do_if>

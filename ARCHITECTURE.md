@@ -299,6 +299,14 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_transaction_log.xml` | Synchronous optional payment-label integration: capture requests, tax labels and receipt publication. Owns no persistent cue state. |
 | `md/ce_notifications.xml` | Upgrade-start and completion ticker/logbook messages, with saved per-target start deduplication. |
 | `md/ce_diagnostics.xml` | Validated per-hub snapshots and blackboard publication. |
+| `md/ce_rewards.xml` | Reward scheduling, sector listeners, persistent recipient ledgers, unlock announcements and reward snapshots. |
+| `md/ce_reward_rules.xml` | Single balance configuration and read-only, projected sector eligibility query. |
+| `md/ce_reward_stations.xml` | CE-owned price modifiers and paired station radar access requests. |
+| `md/ce_reward_workforce.xml` | Tokened native workforce requests, fractional immigration and grant limits. |
+| `md/ce_reward_discovery.xml` | Bounded sector lockbox surveys and discovery ledger. |
+| `md/diplomacy.xml` | Targeted vanilla diff adding station context and CE success points without changing native rolls. |
+| `ui/ce_workforce.lua` | Read-only adapter for native per-race workforce growth/target constraints. |
+| `ui/ce_reward_status.lua` | Reward payload validation and localized presentation for the hub panel. |
 | `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
 | md/ce_placement.xml | Fixed-plot construction retry counters and bounded backoff. |
@@ -619,10 +627,12 @@ details. The map adapter supplies the current snapshot without composing message
 Map `get` caches player blackboard membership/snapshots for one real
 second; object validity and player knowledge are checked at use. Snapshot version 3
 is required by all UI consumers; incompatible versions show details unavailable.
+The optional sector reward payload is decoded as `rewards` and validated by
+`ce_reward_status.lua`; a missing or malformed payload only hides bonus data.
 The shared validator rejects incomplete/duplicate rows. Testing UI uses `getFresh`
 for display and action eligibility, and `isHub` for construction completion. These
 read current blackboards without consuming or updating the display cache; map-only
-knowledge filtering and retained stale snapshots are not command authority. Malformed version-3 input
+knowledge filtering and retained stale snapshots are not command authority. Malformed supported input
 can retain a copied last-valid snapshot with an explicit stale warning.
 
 Header positions: 1 hub, 2 completed level, 3 pending target, 4 operational,
@@ -630,7 +640,9 @@ Header positions: 1 hub, 2 completed level, 3 pending target, 4 operational,
 10 testing bypass, 11 population, 12 pause reason, 13 schema version (3),
 14 profile-refresh error, 15 stale, 16 next-level localized unlock names.
 Optional trailing positions: 17 fixed debug population, 18 Argon fallback flag,
-19 initial-build completion permission. Old version-3 snapshots omit these fields.
+19 initial-build completion permission, 20 unrest payload, 21 demand-event payload,
+22 layout phase, 23 sector reward payload (see Sector rewards). Old version-3
+snapshots omit these fields.
 Stale snapshots always disable initial-build completion permission.
 Ware rows: 1 name, 2 reserves, 3 replenishment target, 4 native advertised buying,
 5 native reservations, 6 lifetime deliveries, 7 lifetime payment credits,
@@ -752,12 +764,15 @@ rows above the ware heading. Ware rows cannot inherit the summary's wrapped heig
 The three visual ware columns still use a bar anchor plus name/time text cells.
 Do not add tables here without updating and testing the native callback contract.
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
-The five hub summary rows are fixed. With no events the ware heading is also
-fixed; otherwise the event list, ware heading and wares scroll together.
+The five hub summary rows and the Supplies/Bonuses tab row (row 6) are fixed.
+Row 5 shows warnings or unrest on the left and the sector bonus summary on the
+right. With no events the active view's heading is also fixed; otherwise the
+event list, heading and entries scroll together in both views.
 Every scrolling row uses `addRow(true, { interactive=false })`, matching vanilla
 informational capacity rows. Native `calculateMinRowHeight` groups a selectable
 row with subsequent unselectable rows; making the entire list unselectable forces
-the whole list to fit and prevents scrolling. Fixed summary rows remain unselectable.
+the whole list to fit and prevents scrolling. Fixed summary rows remain unselectable;
+the tab row is selectable because native buttons require row data.
 `maxVisibleHeight` caps the single table at 40% of the screen height, rounded down
 to whole pixels. Bottom placement rounds `getVisibleHeight()` up, rounds the
 resulting y position down, and leaves two extra pixels for native widget rounding.
@@ -911,3 +926,81 @@ hub loss, identity mismatch or ownership change revokes permission. Automatic
 replacements and subsequent upgrades do not inherit it; layout failures/save loads
 retain permission for the same requested hub. No force-completion state is shared
 with debug target-level advancement.
+
+## Sector rewards
+
+`CE_RewardRules.Configure` owns unlocks and numerical progression. `Evaluate`
+projects the saved reserves to player age without mutating demand; `Query(Sector)`
+returns `[active, immigrationRate, pricePoints, diplomacyPoints, sensorsUnlocked,
+surveyUnlocked, reason, missingWareNames]`. Rewards require the completed-level
+hub to be operational, owned by the civilian faction, positively populated and supplied in every active
+positive-rate ware. Pending expansion, L10 and NPC delivery provenance do not
+disqualify a hub. Ship-targeted diplomacy is deliberately excluded.
+
+The diplomacy diff logs `[CE] Diplomacy:` after native success-chance capping for
+non-guaranteed station-targeted operations, including zero-bonus cases. Fields are
+action, station name, sector name, pre-CE chance, CE bonus and final capped chance.
+This occurs at operation start; guaranteed-success actions bypass this calculation.
+
+`R.$Rewards` is additive saved state: station membership, per-station CE price/radar
+ledger, fractional immigration by station/race, survey deadlines/marked objects,
+announcement level and snapshot. No existing demand/construction state is migrated.
+The controller receives parameterized instant refresh signals after hub updates, loss and paid
+delivery; it also refreshes every minute, on load and on relation/sector ownership
+events. Recipient discovery uses five-minute sector scans. Invalid/moved/reowned
+recipients lose only CE effects. Expiring CE price IDs provide a backstop; radar
+access uses paired native requests with persisted ownership of each request.
+Reload retains the ledger rather than adding a second request. Native stacking and
+serialization still require runtime acceptance.
+
+Surveys use rotating one-minute initial offsets across five slots, then run every
+five game minutes while active. They mark ordinary existing lockboxes with the
+native long-range-scan action, excluding mission/hidden/known/already-marked objects.
+No forced radar flags or synthetic loot are used; CE never clears discoveries.
+
+Workforce requests carry a monotonically increasing token, station, race object/ID
+pairs, sector, bounded elapsed seconds and rate. Lua returns native capacity,
+sustainable workforce, fill-aware target and signed change. MD consumes each
+response/station/race once, rejects replies older than ten game seconds, checks
+live ownership/sector/supply, and caps integer grants by native limits. Fractions
+survive saves; request clocks rebase on load. Failed samples grant no catch-up.
+Reserve accrual clears fractions on a supply gap even when a late delivery restores
+stock before the reward timer sees it. This is extra immigration, not an engine
+growth-factor override.
+
+The hub snapshot (version 3) appends reward payload v1 at position 23. Its positions are:
+1 version; 2 active; 3 reason; 4 missing ware names; 5 immigration/hour/1,000 capacity;
+6 price points; 7 diplomacy points; 8 radar unlock; 9 survey unlock; 10 registered
+player workplaces; 11 price recipients; 12 sensor recipients; 13 last survey
+(-1 before first); 14 next survey; 15 newly marked objects at last survey;
+16 snapshot game seconds; 17 unlock levels. Lua rejects malformed/stale rewards
+without hiding valid civilian demand data. The existing single map table contains
+Supplies/Bonuses tabs, resets to Supplies on hub change and retains its native
+height cap. Price and radar partners exclude player, ownerless and civilian-owned stations. Both native buttons remain active; the selected tab has a blue
+background and bold centered text. Clicking it again is a no-op; clicking the
+other tab resets scrolling and refreshes the frame. Bonuses uses separate column proportions for Bonus, Benefit and
+Status. Supply explanations are available on hover instead of occupying a row or
+repeating ware names. The operational/civilian-ownership/population explanation is omitted.
+Detailed rows use live snapshot callbacks.
+Status colors also use live callbacks: active is green, suspended red, locked or
+unavailable gray. Unlocked bonuses display Active whenever the hub qualifies,
+including when recipient counts are zero. Counts are informational only.
+The lockbox row presents Discover lockboxes with Enabled/Disabled. Survey timing
+and counts remain in the diagnostic payload but are omitted from player tooltips.
+
+### Native acceptance before deployment
+
+Static/mocked tests do not establish engine behavior. Restart X4 with a disposable
+save and confirm `[CE] Sector rewards loaded`, then test a supplied hub and an
+unsupplied comparison sector. Use debug level advancement only to unlock tiers.
+Verify real stock drives activation; test missing newly unlocked goods, shortages,
+damage, replacement, conquest and saves with active effects. Allow up to one minute
+for tick-driven suspension and five minutes for new recipient discovery.
+
+Check native workforce targets with both fill settings, multiple races and missing
+station food; price stacking with existing diplomacy discounts and no ship discount;
+radar sharing both locally/remotely alongside an active vanilla spy operation
+(ending either source must preserve the other); ordinary versus mission lockboxes
+outside player radar and across save/load; and station versus ship diplomacy targets
+with the native seed/cap unchanged. Confirm real map layout at supported resolutions.
+Do not treat Lua fixtures, debug shortcuts or schema validation as these runtime gates.

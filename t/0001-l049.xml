@@ -250,5 +250,34 @@
     <t id="157">Nachrichtenvideos</t>
     <t id="158">Nachrichtenvideos zu zivilen Zwischenfällen abspielen. Bei deaktivierter Option werden Tickermeldungen und Logbucheinträge weiterhin angezeigt.</t>
     <t id="159">Anzeige</t>
+    <t id="400">Ziviler Wohlstand</t>
+    <t id="401">Sektorboni</t>
+    <t id="402">Versorgung</t>
+    <t id="403">Boni</t>
+    <t id="404">Aktiv</t>
+    <t id="405">Ausgesetzt</t>
+    <t id="406">Freigeschaltet ab Stufe %d</t>
+    <t id="408">Arbeitskräftezuwanderung</t>
+    <t id="409">Handelspreise</t>
+    <t id="410">Diplomatie / Spionage</t>
+    <t id="411">Fehlende Versorgung - siehe Versorgung. Boni gelten nur im Sektor dieses Zentrums.</t>
+    <t id="412">%d / Stunde je 1.000 Plätze</t>
+    <t id="413">%d %% der Preisspanne</t>
+    <t id="414">+%d %% Erfolgschance</t>
+    <t id="415">%d Stationsradare</t>
+    <t id="416">Aktiviert</t>
+    <t id="419">%1: Zivilbonus der Stufe %2 freigeschaltet. Das Zentrum auswählen und Boni öffnen, um Details zu sehen. Boni erfordern, dass alle zivilen Waren vorrätig sind.</t>
+    <t id="420">Alle benötigten Waren sind vorrätig. Boni gelten nur im Sektor dieses Zentrums.</t>
+    <t id="421">Boni erfordern ein aktives ziviles Nachfrageprofil.</t>
+    <t id="423">Zusätzliche Arbeitskräfte pro Spielstunde je 1.000 Wohnplätze auf Spielerstationen. Nur positives natürliches Wachstum zählt; natürliche nachhaltige Zielwerte und Wohnraumgrenzen gelten. Registrierte Stationen: %d.</t>
+    <t id="424">Einkaufsrabatte und Verkaufsprovisionen an andockfreundlichen NPC-Stationen, auch unentdeckten. %d teilnehmende Stationen. Der Prozentsatz bezieht sich auf die Preisspanne der Ware, nicht auf ihren aktuellen Preis. Schiffskäufe und Upgrades sind ausgenommen.</t>
+    <t id="425">Wird zur nativen Erfolgsberechnung für Operationen gegen Stationen addiert, auch gegen feindliche. Die Erfolgschance bleibt auf 99 % begrenzt. Wird beim Start der Operation angewendet; bestehende Ergebnisse werden nicht neu ausgewürfelt.</t>
+    <t id="426">Teilt das Radar andockfreundlicher NPC-Stationen im gesamten Sektor. Unentdeckte Stationen können sichtbar werden. Die Abdeckung folgt dem nativen Stationsradar; Reichweite von Spielerschiffen und Waffen bleibt unverändert.</t>
+    <t id="427">Deckt die Positionen von Schließkassetten in diesem Sektor zum Erkunden auf. Entdeckte Positionen bleiben sichtbar, wenn der Bonus inaktiv ist.</t>
+    <t id="428">Ziviles Sensornetz</t>
+    <t id="429">Schließkassetten aufdecken</t>
+    <t id="431">Bonus</t>
+    <t id="432">Wirkung</t>
+    <t id="433">Deaktiviert</t>
   </page>
 </language>

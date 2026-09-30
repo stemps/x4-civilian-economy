@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="//library[@name='Success_Evaluation']/params">
+    <param name="CEDestination" default="null"/>
+  </add>
+  <add sel="//library[@name='Success_Evaluation']/actions" pos="prepend">
+    <set_value name="$CEBonus" exact="0"/>
+    <do_if value="$CEDestination.exists and $CEDestination.isclass.station">
+      <run_actions ref="md.CE_RewardRules.Query" result="$CEReward">
+        <param name="Sector" value="$CEDestination.sector"/>
+      </run_actions>
+      <do_if value="$CEReward.{1}"><set_value name="$CEBonus" exact="$CEReward.{4}"/></do_if>
+    </do_if>
+  </add>
+  <add sel="//library[@name='Success_Evaluation']//set_value[@name='$AssembledSuccessChance']" pos="after">
+    <set_value name="$AssembledSuccessChance" operation="add" exact="$CEBonus"/>
+  </add>
+  <add sel="//library[@name='Success_Evaluation']//set_value[@name='$CalculatedSuccessChance']" pos="after">
+    <do_if value="$CEDestination.exists and $CEDestination.isclass.station">
+      <debug_text text="'[CE] Diplomacy: action=%s target=%s sector=%s before=%s bonus=%s final=%s'.[$ActionID,$CEDestination.knownname,$CEDestination.sector.knownname,$AssembledSuccessChance - $CEBonus,$CEBonus,$CalculatedSuccessChance]"/>
+    </do_if>
+  </add>
+  <add sel="//cue[@name='Action1_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action2_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action3_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action4_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action5_SuccessCalculation']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action6_SuccessCalculation']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action7_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action8_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action9_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action10_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action11_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action12_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action13_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action14_SuccessCalculation']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action15_SuccessCalculation']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action16_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action17_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action18_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action19_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+  <add sel="//cue[@name='Action20_SuccessCalculation_v2']/actions/run_actions[@ref='Success_Evaluation']"><param name="CEDestination" value="@$Operation.action.$station"/></add>
+</diff>

@@ -250,5 +250,34 @@
     <t id="157">Vídeos de notícias</t>
     <t id="158">Reproduzir vídeos de notícias sobre incidentes civis. Quando desativado, as mensagens de notificação e as entradas do diário de bordo continuam sendo exibidas.</t>
     <t id="159">Exibição</t>
+    <t id="400">Prosperidade civil</t>
+    <t id="401">Bônus do setor</t>
+    <t id="402">Suprimentos</t>
+    <t id="403">Bônus</t>
+    <t id="404">Ativo</t>
+    <t id="405">Suspenso</t>
+    <t id="406">Desbloqueia no nível %d</t>
+    <t id="408">Imigração de trabalhadores</t>
+    <t id="409">Preços comerciais</t>
+    <t id="410">Diplomacia / espionagem</t>
+    <t id="411">Faltam suprimentos - veja Suprimentos. Os bônus valem apenas no setor deste centro.</t>
+    <t id="412">%d / hora por 1.000 vagas</t>
+    <t id="413">%d%% da faixa de preço</t>
+    <t id="414">+%d%% de chance de sucesso</t>
+    <t id="415">%d radares de estação</t>
+    <t id="416">Ativado</t>
+    <t id="419">%1: bônus civil de nível %2 desbloqueado. Selecione o centro e abra Bônus para ver os detalhes. Os bônus exigem todas as mercadorias civis em estoque.</t>
+    <t id="420">Todas as mercadorias necessárias foram fornecidas. Os bônus valem apenas no setor deste centro.</t>
+    <t id="421">Os bônus exigem um perfil de demanda civil ativo.</t>
+    <t id="423">Trabalhadores extras por hora de jogo a cada 1.000 vagas de habitação em estações do jogador. Apenas o crescimento nativo positivo conta; aplicam-se as metas sustentáveis nativas e os limites de habitação. Estações registradas: %d.</t>
+    <t id="424">Descontos de compra e comissões de venda em estações NPC que permitem atracar, incluindo estações não descobertas. %d estações participantes. A porcentagem se aplica à faixa de variação de preço da mercadoria, não ao preço atual. Compras e melhorias de naves são excluídas.</t>
+    <t id="425">Somado ao cálculo nativo de sucesso de operações contra estações, incluindo hostis. A chance de sucesso continua limitada a 99%. Aplicado quando a operação começa; resultados existentes não são sorteados novamente.</t>
+    <t id="426">Compartilha o radar das estações NPC que permitem atracar em todo o setor. Estações não descobertas podem ficar visíveis. A cobertura segue o radar nativo das estações; o alcance das naves e armas do jogador não muda.</t>
+    <t id="427">Revela a localização de cofres neste setor para você explorar. Locais descobertos continuam visíveis quando o bônus está inativo.</t>
+    <t id="428">Rede civil de sensores</t>
+    <t id="429">Descobrir cofres</t>
+    <t id="431">Bônus</t>
+    <t id="432">Efeito</t>
+    <t id="433">Desativado</t>
   </page>
 </language>

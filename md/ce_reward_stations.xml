@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_RewardStations" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Requires R, Sector, B and evaluated reward rules. Ledger entries own only CE effects. -->
+    <library name="Refresh"><actions>
+      <do_if value="$RewardNow ge $B.$NextStations">
+        <find_station name="$RewardStations" space="$Sector" multiple="true"/>
+        <set_value name="$B.$Stations" exact="$RewardStations"/>
+        <set_value name="$B.$NextStations" exact="$RewardNow + 300.0f"/>
+        <do_for_each name="$RewardStation" in="$RewardStations">
+          <do_if value="not $B.$Applied.{$RewardStation}?">
+            <set_value name="$B.$Applied.{$RewardStation}" exact="table[$Price=0,$Radar=false,$Refresh=0.0f]"/>
+          </do_if>
+        </do_for_each>
+      </do_if>
+      <set_value name="$B.$Partners" exact="0"/>
+      <set_value name="$B.$Sensors" exact="0"/>
+      <do_for_each name="$RewardStation" in="$B.$Applied.keys.list">
+        <set_value name="$Applied" exact="$B.$Applied.{$RewardStation}"/>
+        <set_value name="$PartnerEligible" exact="false"/>
+        <do_if value="$RewardStation.exists and not $RewardStation.iswreck and $RewardStation.isclass.station and $RewardStation.sector == $Sector">
+          <set_value name="$PartnerEligible" exact="not $RewardStation.isplayerowned and $RewardStation.owner != faction.ownerless and $RewardStation.owner != faction.civilian and $RewardStation.hasrelation.dock.{faction.player}"/>
+        </do_if>
+        <set_value name="$DesiredPrice" exact="if $RewardActive and $PartnerEligible then $PricePoints else 0"/>
+        <set_value name="$DesiredRadar" exact="$RewardActive and $PartnerEligible and $SensorUnlocked"/>
+        <do_if value="$RewardStation.exists">
+          <do_if value="$Applied.$Price != $DesiredPrice or ($DesiredPrice gt 0 and $RewardNow ge $Applied.$Refresh)">
+            <do_if value="$Applied.$Price gt 0">
+              <remove_player_discount object="$RewardStation" id="'ce_prosperity_buy'"/>
+              <remove_player_commission object="$RewardStation" id="'ce_prosperity_sell'"/>
+            </do_if>
+            <do_if value="$DesiredPrice gt 0">
+              <set_value name="$RewardPriceDuration" exact="[120.0f,$RewardSupplySeconds].min * 1s"/>
+              <add_player_discount object="$RewardStation" id="'ce_prosperity_buy'" name="{974201,400}" amount="$DesiredPrice" time="$RewardPriceDuration" applytoshipsales="false"/>
+              <add_player_commission object="$RewardStation" id="'ce_prosperity_sell'" name="{974201,400}" amount="$DesiredPrice" time="$RewardPriceDuration"/>
+            </do_if>
+            <set_value name="$Applied.$Price" exact="$DesiredPrice"/>
+            <set_value name="$Applied.$Refresh" exact="$RewardNow + [60.0f,$RewardSupplySeconds].min"/>
+          </do_if>
+          <do_if value="$DesiredRadar and not $Applied.$Radar"><add_player_gravidar_access_request object="$RewardStation"/></do_if>
+          <do_elseif value="not $DesiredRadar and $Applied.$Radar"><remove_player_gravidar_access_request object="$RewardStation"/></do_elseif>
+          <set_value name="$Applied.$Radar" exact="$DesiredRadar"/>
+          <do_if value="$RewardActive and $PartnerEligible and $PricePoints gt 0"><set_value name="$B.$Partners" operation="add"/></do_if>
+          <do_if value="$DesiredRadar"><set_value name="$B.$Sensors" operation="add"/></do_if>
+        </do_if>
+        <do_else><remove_value name="$B.$Applied.{$RewardStation}"/></do_else>
+      </do_for_each>
+    </actions></library>
+  </cues>
+</mdscript>

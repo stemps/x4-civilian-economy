@@ -61,55 +61,63 @@ def run_checks(args, timings):
     with timings.stage('toolkit validation (including native schemas)' if args.schema else 'toolkit validation'):
         result = validate()
     if args.schema and not result:
-        with timings.stage('merged AI schemas'):
-            return validate_merged_ai(reference)
+        with timings.stage('merged diff schemas'):
+            return validate_merged(reference)
     return result or 0
 
 
-def validate_merged_ai(reference):
-    # x4validate reports diff-rooted AI scripts as uncheckable. Validate the
-    # merged native script ourselves, reporting only newly introduced errors.
-    from x4validate import _xsd
-    compiled = _xsd._compiled(str(reference / "libraries" / "aiscripts.xsd"))
-    merged_failed = False
-    for path in sorted((ROOT / 'aiscripts').glob('*.xml')):
-        patch = etree.parse(str(path))
-        if patch.getroot().tag == 'aiscript':
-            compiled.assertValid(patch)
+def apply_patch(base, patch, path):
+    for change in patch.getroot():
+        if not isinstance(change.tag, str):
             continue
-        if patch.getroot().tag != 'diff':
-            raise ValueError(f'Expected an AI diff: {path}')
-        base = etree.parse(str(reference / 'aiscripts' / path.name))
-        compiled.validate(base)
-        baseline = {e.message for e in compiled.error_log}
-        for change in patch.getroot():
-            if not isinstance(change.tag, str):
-                continue
-            matches = base.xpath(change.get('sel'))
-            if len(matches) != 1:
-                raise ValueError(f'AI selector is not unique: {path}: {change.get("sel")}')
-            target=matches[0]
-            if change.tag == 'replace' and getattr(target, 'is_attribute', False):
-                target.getparent().set(target.attrname, change.text)
-            elif change.tag == 'replace':
-                parent=target.getparent(); index=parent.index(target)
-                parent.remove(target)
-                for child in change:
-                    parent.insert(index,deepcopy(child));index+=1
-            elif change.tag == 'add' and change.get('pos') in ('before','after','prepend'):
-                parent=target if change.get('pos') == 'prepend' else target.getparent()
-                index=0 if change.get('pos') == 'prepend' else parent.index(target) + (change.get('pos') == 'after')
-                for child in change:
-                    parent.insert(index,deepcopy(child));index+=1
-            else:
-                raise ValueError(f'Unsupported AI patch operation: {path}: {change.tag}')
-        compiled.validate(base)
-        introduced = {e.message for e in compiled.error_log} - baseline
-        if introduced:
-            print(f'Merged {path.name} schema failures:', *sorted(introduced), sep='\n')
-            merged_failed = True
+        matches = base.xpath(change.get('sel'))
+        if len(matches) != 1:
+            raise ValueError(f'Patch selector is not unique: {path}: {change.get("sel")}')
+        target=matches[0]
+        if change.tag == 'replace' and getattr(target, 'is_attribute', False):
+            target.getparent().set(target.attrname, change.text)
+        elif change.tag == 'replace':
+            parent=target.getparent(); index=parent.index(target)
+            parent.remove(target)
+            for child in change:
+                parent.insert(index,deepcopy(child));index+=1
+        elif change.tag == 'add' and change.get('pos') in ('before','after','prepend'):
+            parent=target if change.get('pos') == 'prepend' else target.getparent()
+            index=0 if change.get('pos') == 'prepend' else parent.index(target) + (change.get('pos') == 'after')
+            for child in change:
+                parent.insert(index,deepcopy(child));index+=1
+        elif change.tag == 'add' and change.get('pos') is None:
+            target.extend(deepcopy(child) for child in change)
         else:
-            print(f'Merged {path.name} AI schema: no introduced errors')
+            raise ValueError(f'Unsupported patch operation: {path}: {change.tag}')
+
+
+def validate_merged(reference):
+    # x4validate reports diff-rooted AI and MD scripts as uncheckable. Validate
+    # the merged native scripts ourselves, reporting only newly introduced errors.
+    from x4validate import _xsd
+    merged_failed = False
+    for folder, root_tag, xsd in (('aiscripts', 'aiscript', 'aiscripts.xsd'), ('md', 'mdscript', 'md.xsd')):
+        compiled = _xsd._compiled(str(reference / "libraries" / xsd))
+        for path in sorted((ROOT / folder).glob('*.xml')):
+            patch = etree.parse(str(path))
+            if patch.getroot().tag == root_tag:
+                if folder == 'aiscripts':
+                    compiled.assertValid(patch)
+                continue
+            if patch.getroot().tag != 'diff':
+                raise ValueError(f'Expected a diff: {path}')
+            base = etree.parse(str(reference / folder / path.name))
+            compiled.validate(base)
+            baseline = {e.message for e in compiled.error_log}
+            apply_patch(base, patch, path)
+            compiled.validate(base)
+            introduced = {e.message for e in compiled.error_log} - baseline
+            if introduced:
+                print(f'Merged {folder}/{path.name} schema failures:', *sorted(introduced), sep='\n')
+                merged_failed = True
+            else:
+                print(f'Merged {folder}/{path.name} schema: no introduced errors')
     if merged_failed:
         return 1
     return 0

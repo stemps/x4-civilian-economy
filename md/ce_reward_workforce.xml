@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_RewardWorkforce" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="State" namespace="this"><conditions><event_cue_signalled/></conditions></cue>
+    <cue name="Response" instantiate="true" namespace="this">
+      <conditions><event_ui_triggered screen="'CEWorkforce'" control="'ready'"/></conditions>
+      <actions>
+        <set_value name="$WorkforceResponse" exact="player.entity.$ce_workforce_response"/>
+        <do_if value="md.CE_RewardWorkforce.State.$Pending? and $WorkforceResponse.{1} == md.CE_RewardWorkforce.State.$Token and player.age / 1s - md.CE_RewardWorkforce.State.$Sent le 10">
+          <set_value name="$Pending" exact="md.CE_RewardWorkforce.State.$Pending"/>
+          <remove_value name="md.CE_RewardWorkforce.State.$Pending"/>
+          <include_actions ref="md.CE_RewardWorkforce.Accept"/>
+        </do_if>
+      </actions>
+    </cue>
+    <cue name="Reload" instantiate="true"><conditions><event_game_loaded/></conditions><actions>
+      <do_if value="md.CE_RewardWorkforce.State.$Pending?"><remove_value name="md.CE_RewardWorkforce.State.$Pending"/></do_if>
+    </actions></cue>
+    <library name="Request"><actions>
+      <set_value name="$B.$Workplaces" exact="0"/>
+      <do_for_each name="$WorkStation" in="$B.$Immigrants.keys.list">
+        <do_if value="not $WorkStation.exists or $WorkStation.iswreck or not $WorkStation.isplayerowned or $WorkStation.sector != $Sector">
+          <remove_value name="$B.$Immigrants.{$WorkStation}"/>
+        </do_if>
+      </do_for_each>
+      <do_if value="$RewardActive and $ImmigrationRate gt 0">
+        <do_for_each name="$WorkStation" in="$B.$Stations">
+          <do_if value="$WorkStation.exists and not $WorkStation.iswreck and $WorkStation.isplayerowned and $WorkStation.sector == $Sector and $WorkStation.workforce.capacity gt 0">
+            <do_if value="not $B.$Immigrants.{$WorkStation}?">
+              <set_value name="$B.$Immigrants.{$WorkStation}" exact="table[$Last=$RewardNow,$Fractions=table[]]"/>
+            </do_if>
+            <set_value name="$WorkEntry" exact="$B.$Immigrants.{$WorkStation}"/>
+            <set_value name="$WorkDelta" exact="[60.0f,[0.0f,$RewardNow - $WorkEntry.$Last].max].min"/>
+            <set_value name="$WorkEntry.$Last" exact="$RewardNow"/>
+            <set_value name="$WorkRaces" exact="[]"/>
+            <do_for_each name="$WorkRace" in="$WorkStation.workforce.races">
+              <append_to_list name="$WorkRaces" exact="[$WorkRace,$WorkRace.id]"/>
+            </do_for_each>
+            <append_to_list name="$WorkforceRequests" exact="[$WorkStation,$WorkRaces,$Sector,$WorkDelta,$ImmigrationRate]"/>
+            <set_value name="$B.$Workplaces" operation="add"/>
+          </do_if>
+        </do_for_each>
+      </do_if>
+    </actions></library>
+    <library name="Dispatch"><actions>
+      <do_if value="not md.CE_RewardWorkforce.State.$Token?"><set_value name="md.CE_RewardWorkforce.State.$Token" exact="0"/></do_if>
+      <set_value name="md.CE_RewardWorkforce.State.$Token" operation="add"/>
+      <set_value name="md.CE_RewardWorkforce.State.$Sent" exact="player.age / 1s"/>
+      <set_value name="md.CE_RewardWorkforce.State.$Pending" exact="table[]"/>
+      <do_for_each name="$WorkRequest" in="$WorkforceRequests">
+        <set_value name="md.CE_RewardWorkforce.State.$Pending.{$WorkRequest.{1}}" exact="$WorkRequest"/>
+      </do_for_each>
+      <set_value name="player.entity.$ce_workforce_request" exact="[md.CE_RewardWorkforce.State.$Token,$WorkforceRequests]"/>
+      <do_if value="$WorkforceRequests.count gt 0"><raise_lua_event name="'CEWorkforceRequest'"/></do_if>
+    </actions></library>
+    <library name="Accept"><actions>
+      <do_for_each name="$WorkResponse" in="$WorkforceResponse.{2}">
+        <set_value name="$WorkStation" exact="$WorkResponse.{1}"/>
+        <do_if value="$Pending.{$WorkStation}?">
+          <set_value name="$WorkRequest" exact="$Pending.{$WorkStation}"/>
+          <remove_value name="$Pending.{$WorkStation}"/>
+          <set_value name="$Sector" exact="$WorkRequest.{3}"/>
+          <set_value name="$R" exact="md.CE_CivilianHub.Init.$Registry.{$Sector}"/>
+          <include_actions ref="md.CE_RewardRules.Evaluate"/>
+          <do_if value="$RewardActive and $WorkStation.exists and not $WorkStation.iswreck and $WorkStation.isplayerowned and $WorkStation.sector == $Sector and $R.$Rewards.$Immigrants.{$WorkStation}?">
+            <set_value name="$WorkEntry" exact="$R.$Rewards.$Immigrants.{$WorkStation}"/>
+            <set_value name="$SeenRaces" exact="table[]"/>
+            <do_for_each name="$WorkRow" in="$WorkResponse.{2}">
+              <set_value name="$WorkRace" exact="$WorkRow.{1}"/>
+              <do_if value="$WorkStation.workforce.races.indexof.{$WorkRace} and not $SeenRaces.{$WorkRace}?">
+                <set_value name="$SeenRaces.{$WorkRace}" exact="true"/>
+                <include_actions ref="md.CE_RewardWorkforce.Grant"/>
+              </do_if>
+            </do_for_each>
+            <!-- Missing native rows cannot keep old fractions alive. -->
+            <do_for_each name="$WorkRace" in="$WorkEntry.$Fractions.keys.list">
+              <do_if value="not $SeenRaces.{$WorkRace}?"><remove_value name="$WorkEntry.$Fractions.{$WorkRace}"/></do_if>
+            </do_for_each>
+          </do_if>
+        </do_if>
+      </do_for_each>
+      <do_for_each name="$WorkStation" in="$Pending.keys.list">
+        <set_value name="$Sector" exact="$Pending.{$WorkStation}.{3}"/>
+        <set_value name="$R" exact="md.CE_CivilianHub.Init.$Registry.{$Sector}"/>
+        <do_if value="$R.$Rewards.$Immigrants.{$WorkStation}?">
+          <set_value name="$R.$Rewards.$Immigrants.{$WorkStation}.$Fractions" exact="table[]"/>
+        </do_if>
+      </do_for_each>
+    </actions></library>
+    <library name="Grant"><actions>
+      <!-- Row: race, capacity, sustainable, effective native target, signed native change. -->
+      <set_value name="$WorkCapacity" exact="[$WorkRow.{2},$WorkStation.workforce.{$WorkRace}.capacity].min"/>
+      <set_value name="$WorkRoom" exact="[0,[$WorkCapacity,$WorkRow.{3},$WorkRow.{4}].min - $WorkStation.workforce.{$WorkRace}.amount].max"/>
+      <do_if value="$WorkRow.{5} gt 0 and $WorkRoom gt 0 and $WorkRequest.{4} gt 0">
+        <do_if value="not $WorkEntry.$Fractions.{$WorkRace}?"><set_value name="$WorkEntry.$Fractions.{$WorkRace}" exact="0.0f"/></do_if>
+        <set_value name="$WorkAmount" exact="$WorkEntry.$Fractions.{$WorkRace} + $WorkCapacity / 1000.0f * [$ImmigrationRate,$WorkRequest.{5}].min * $WorkRequest.{4} / 3600.0f"/>
+        <set_value name="$WorkWhole" exact="[$WorkRoom,($WorkAmount)i].min"/>
+        <set_value name="$WorkEntry.$Fractions.{$WorkRace}" exact="if $WorkWhole lt $WorkRoom then $WorkAmount - $WorkWhole else 0.0f"/>
+        <do_if value="$WorkWhole gt 0"><add_workforce object="$WorkStation" race="$WorkRace" exact="$WorkWhole"/></do_if>
+      </do_if>
+      <do_else><set_value name="$WorkEntry.$Fractions.{$WorkRace}" exact="0.0f"/></do_else>
+    </actions></library>
+  </cues>
+</mdscript>

@@ -250,5 +250,34 @@
     <t id="157">Haber videoları</t>
     <t id="158">Sivil olaylarla ilgili haber videolarını oynat. Devre dışı bırakıldığında bildirim mesajları ve günlük kayıtları gösterilmeye devam eder.</t>
     <t id="159">Görüntü</t>
+    <t id="400">Sivil refah</t>
+    <t id="401">Sektör bonusları</t>
+    <t id="402">Tedarik</t>
+    <t id="403">Bonuslar</t>
+    <t id="404">Etkin</t>
+    <t id="405">Askıda</t>
+    <t id="406">%d. seviyede açılır</t>
+    <t id="408">İşgücü göçü</t>
+    <t id="409">Ticaret fiyatları</t>
+    <t id="410">Diplomasi / casusluk</t>
+    <t id="411">Eksik tedarik - Tedarik sekmesine bakın. Bonuslar yalnızca bu merkezin sektöründe geçerlidir.</t>
+    <t id="412">1.000 kapasite başına saatte %d</t>
+    <t id="413">Fiyat aralığının %d%%</t>
+    <t id="414">+%d%% başarı şansı</t>
+    <t id="415">%d istasyon radarı</t>
+    <t id="416">Açık</t>
+    <t id="419">%1: sivil seviye %2 ödülü açıldı. Ayrıntılar için merkezi seçip Bonuslar'ı açın. Ödüller tüm sivil malların stokta olmasını gerektirir.</t>
+    <t id="420">Gerekli tüm mallar tedarik edildi. Bonuslar yalnızca bu merkezin sektöründe geçerlidir.</t>
+    <t id="421">Bonuslar etkin bir sivil talep profili gerektirir.</t>
+    <t id="423">Oyuncu istasyonlarında 1.000 yaşam alanı kapasitesi başına oyun saati başına ek işçi. Yalnızca pozitif doğal büyüme geçerlidir; doğal sürdürülebilir hedefler ve yaşam alanı sınırları uygulanır. Kayıtlı istasyonlar: %d.</t>
+    <t id="424">Keşfedilmemiş olanlar dahil, yanaşmaya izin veren NPC istasyonlarında alış indirimleri ve satış komisyonları. Katılan istasyonlar: %d. Yüzde, malın mevcut fiyatına değil, fiyat dalgalanma aralığına uygulanır. Gemi alımları ve yükseltmeler hariçtir.</t>
+    <t id="425">Düşman istasyonlar dahil, istasyonları hedef alan operasyonların doğal başarı hesabına eklenir. Başarı şansı yine de en fazla yüzde 99 olabilir. Operasyon başladığında uygulanır; mevcut sonuçlar yeniden belirlenmez.</t>
+    <t id="426">Yanaşmaya izin veren NPC istasyonlarının radarını tüm sektörde paylaşır. Keşfedilmemiş istasyonlar görünür hale gelebilir. Kapsama doğal istasyon radarını izler; oyuncu gemisi ve silah menzili değişmez.</t>
+    <t id="427">Keşfetmeniz için bu sektördeki kilitli kutuların konumlarını ortaya çıkarır. Keşfedilen konumlar bonus etkin değilken de görünür kalır.</t>
+    <t id="428">Sivil sensör ağı</t>
+    <t id="429">Kilitli kutuları keşfet</t>
+    <t id="431">Bonus</t>
+    <t id="432">Etki</t>
+    <t id="433">Kapalı</t>
   </page>
 </language>

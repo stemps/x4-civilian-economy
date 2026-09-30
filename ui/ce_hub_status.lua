@@ -130,6 +130,7 @@ local function decode(id, s)
     end
     result.pauseReason = s[12]
     result.profileError, result.stale = yes(s[14]), yes(s[15])
+    result.rewards = type(s[23]) == 'table' and s[23] or nil
     result.growth, result.required = number(s[5]), number(s[6])
     result.target, result.plotReady, result.unlocks = number(s[3]), yes(s[8]), type(s[16]) == 'table' and s[16] or {}
     for _, w in ipairs(type(s[9]) == 'table' and s[9] or {}) do

@@ -250,5 +250,34 @@
     <t id="157">Video delle notizie</t>
     <t id="158">Riproduci video delle notizie sugli incidenti civili. Se disattivato, i messaggi di notifica e le voci del registro vengono comunque mostrati.</t>
     <t id="159">Visualizzazione</t>
+    <t id="400">Prosperità civile</t>
+    <t id="401">Bonus di settore</t>
+    <t id="402">Rifornimenti</t>
+    <t id="403">Bonus</t>
+    <t id="404">Attivo</t>
+    <t id="405">Sospeso</t>
+    <t id="406">Si sblocca al livello %d</t>
+    <t id="408">Immigrazione di forza lavoro</t>
+    <t id="409">Prezzi commerciali</t>
+    <t id="410">Diplomazia / spionaggio</t>
+    <t id="411">Rifornimenti mancanti - vedi Rifornimenti. I bonus valgono solo nel settore di questo centro.</t>
+    <t id="412">%d / ora ogni 1.000 posti</t>
+    <t id="413">%d%% della fascia di prezzo</t>
+    <t id="414">+%d%% di probabilità di successo</t>
+    <t id="415">%d radar di stazione</t>
+    <t id="416">Attivato</t>
+    <t id="419">%1: sbloccato il bonus civile di livello %2. Seleziona il centro e apri Bonus per i dettagli. I bonus richiedono tutte le merci civili in magazzino.</t>
+    <t id="420">Tutte le merci necessarie sono fornite. I bonus valgono solo nel settore di questo centro.</t>
+    <t id="421">I bonus richiedono un profilo di domanda civile attivo.</t>
+    <t id="423">Lavoratori extra per ora di gioco ogni 1.000 posti abitativi nelle stazioni del giocatore. Conta solo la crescita nativa positiva; valgono gli obiettivi sostenibili nativi e i limiti abitativi. Stazioni registrate: %d.</t>
+    <t id="424">Sconti sugli acquisti e commissioni sulle vendite nelle stazioni PNG che consentono l'attracco, comprese quelle non scoperte. %d stazioni partecipanti. La percentuale si applica all'intervallo di variazione del prezzo della merce, non al prezzo attuale. Acquisti e potenziamenti di navi esclusi.</t>
+    <t id="425">Aggiunto al calcolo nativo di successo per le operazioni contro stazioni, anche ostili. La probabilità di successo resta limitata al 99%. Applicato all'avvio dell'operazione; i risultati esistenti non vengono ricalcolati.</t>
+    <t id="426">Condivide il radar delle stazioni PNG che consentono l'attracco in tutto il settore. Stazioni non scoperte possono diventare visibili. La copertura segue il radar nativo delle stazioni; la portata di navi e armi del giocatore non cambia.</t>
+    <t id="427">Rivela la posizione delle casseforti in questo settore da esplorare. Le posizioni scoperte restano visibili quando il bonus è inattivo.</t>
+    <t id="428">Rete di sensori civile</t>
+    <t id="429">Scopri casseforti</t>
+    <t id="431">Bonus</t>
+    <t id="432">Effetto</t>
+    <t id="433">Disattivato</t>
   </page>
 </language>

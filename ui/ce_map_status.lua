@@ -4,7 +4,10 @@ local ffi = require('ffi')
 ffi.cdef[[ uint64_t GetPickedMapComponent(uint64_t holomapid); ]]
 local C = ffi.C
 local registered = false
-local topRow, selected, signature = 7, nil, nil
+-- Rows 1-5: summary; row 6: view tabs; then demand events and the active view.
+local TAB_ROW = 6
+local topRow, selected, signature = nil, nil, nil
+local bonusView = false
 local order = {}
 local eventSignature
 local tooltipMap
@@ -35,14 +38,14 @@ end
 
 local function updateSelection(s)
     local key = tostring(s.id)
-    if selected ~= key then topRow, order = M.eventSignature(s) ~= '' and 6 or 7, M.order(s) else
+    if selected ~= key then topRow, order, bonusView = nil, M.order(s), false else
         local retained, seen = {}, {}
         for _,id in ipairs(order) do if M.find(s,id) then retained[#retained+1]=id;seen[id]=true end end
         for _,id in ipairs(M.order(s)) do if not seen[id] then retained[#retained+1]=id end end
         order=retained
     end
     local newEvents = M.eventSignature(s)
-    if eventSignature ~= newEvents then topRow = newEvents ~= '' and 6 or 7 end
+    if eventSignature ~= newEvents then topRow = nil end
     eventSignature = newEvents
     selected, signature = key, M.signature(s)
 end
@@ -50,7 +53,8 @@ end
 local function createPanel(menu, frame, s)
     local data = menu.selectedShipsTableData
     local eventCount = s.demandEvents and #s.demandEvents.events or 0
-    local fixedRows = eventCount > 0 and 5 or 6
+    -- Events scroll with the view; without events the view headings stay fixed too.
+    local fixedRows = eventCount > 0 and TAB_ROW or TAB_ROW + 1
     local width = math.min(Helper.scaleX(1100), Helper.viewWidth - 2 *
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
     local border = frame:addFrameBorder('selectedships', {offset=Helper.standardContainerOffset})
@@ -60,9 +64,9 @@ local function createPanel(menu, frame, s)
         backgroundPadding=Helper.standardContainerOffset,frameborder=border.id})
     -- MapMenu.viewCreated binds positional widget IDs: this hook MUST add one table.
     t:setColWidth(1,1)
-    t:setColWidth(2,width*0.44)
-    t:setColWidth(3,width*0.18)
-    t:setColWidth(4,width*0.17)
+    t:setColWidth(2,width*(bonusView and 0.5 or 0.44))
+    t:setColWidth(3,width*(bonusView and 0.01 or 0.18))
+    t:setColWidth(4,width*(bonusView and 0.28 or 0.17))
     t:setDefaultCellProperties('text',{fontsize=data.fontsize,minRowHeight=data.textHeight})
     t:setDefaultComplexCellProperties('button','text',{fontsize=data.fontsize})
     t:setDefaultComplexCellProperties('icon','text',{fontsize=data.fontsize})
@@ -70,16 +74,17 @@ local function createPanel(menu, frame, s)
     local rows={}
     local function tableRow(index)
         while #rows<index do
-            local fixed = #rows<fixedRows
+            local fixed, tabs = #rows<fixedRows, #rows+1==TAB_ROW
             -- Native scrolling keeps each selectable row and following plain rows
             -- together. Give each scrolling row its own boundary, as vanilla does
             -- for informational capacity rows, without making it interactive.
-            rows[#rows+1]=t:addRow(not fixed or nil,{fixed=fixed,interactive=false,borderBelow=false})
+            -- Buttons require a selectable row, so the fixed tab row is one.
+            rows[#rows+1]=t:addRow((tabs or not fixed) or nil,{fixed=fixed,interactive=tabs,borderBelow=false})
         end
         return rows[index]
     end
     local function row(index)
-        local result=tableRow(index+5+eventCount)
+        local result=tableRow(index+TAB_ROW+eventCount)
         result[1]:setBackgroundColSpan(5)
         return result
     end
@@ -118,20 +123,57 @@ local function drawSummary(panel, s)
             return M.levelLabel(current())
         end,{halign='left',color=Color['text_normal']})
     summaryLine(3,function() return M.nextLevel(current()) end)
+    local status=tableRow(5)
     -- Failures and explicit test overrides must remain visible, not only in a tooltip.
     if s.stale or s.profileError or s.pausedOffers or not s.available then
-        summaryLine(4,function()
+        status[1]:setColSpan(2):createText(function()
             local now=current()
             return (not now or not now.available or now.stale or now.profileError) and M.state(now)
                 or (now.pausedOffers and M.text(70) or '')
-        end)
+        end,{wordwrap=true})
     elseif s.unrest then
-        summaryLine(4,function() return M.unrest(current()) end)
+        status[1]:setColSpan(2):createText(function() return M.unrest(current()) end,{wordwrap=true})
     end
+    status[3]:setColSpan(3):createText(function() return CERewardStatus.summary(current()) end,
+        {halign='right',wordwrap=true,mouseOverText=function() return CERewardStatus.reason(current()) end,
+            color=function() return Color[CERewardStatus.summaryColor(current())] end})
     for index, event in ipairs(s.demandEvents and s.demandEvents.events or {}) do
         local eventID = event.id
-        tableRow(5+index)[1]:setColSpan(5):createText(function() return M.eventText(current(), eventID) end,
+        tableRow(TAB_ROW+index)[1]:setColSpan(5):createText(function() return M.eventText(current(), eventID) end,
             {wordwrap=true, mouseOverText=function() return M.eventHint(current(), eventID) end})
+    end
+end
+
+local function drawViewSelector(panel, menu)
+    local r=panel.tableRow(TAB_ROW)
+    local function tab(column,span,label,showBonuses)
+        local active=bonusView==showBonuses
+        r[column]:setColSpan(span):createButton({active=true,height=panel.data.textHeight,
+            bgColor=active and panel.blue or Color['button_background_default']}):setText(M.text(label),
+            {halign='center',color=Color['text_normal'],font=active and Helper.headerRow1Font or Helper.standardFont})
+        r[column].handlers.onClick=function()
+            if bonusView==showBonuses then return end
+            bonusView=showBonuses;topRow=nil;menu.refreshMainFrame=true
+        end
+    end
+    tab(1,2,402,false)
+    tab(3,3,403,true)
+end
+
+local function drawBonuses(panel)
+    local headings=panel.row(1)
+    headings[1]:setColSpan(3):createText(M.text(431),{cellBGColor=Color['row_title_background']})
+    headings[4]:createText(M.text(432),{cellBGColor=Color['row_title_background']})
+    headings[5]:createText(M.text(78),{cellBGColor=Color['row_title_background']})
+    for i=1,5 do
+        local index=i
+        local function entry() return CERewardStatus.rows(panel.current())[index] end
+        local r=panel.row(i+1)
+        local hint=function() return entry().hint end
+        r[1]:setColSpan(3):createText(function() return entry().name end,{mouseOverText=hint,wordwrap=true})
+        r[4]:createText(function() return entry().value end,{mouseOverText=hint,wordwrap=true})
+        r[5]:createText(function() return entry().state end,{mouseOverText=hint,wordwrap=true,
+            color=function() return Color[entry().color] end})
     end
 end
 
@@ -181,16 +223,19 @@ local function draw(menu, frame, s)
     updateSelection(s)
     local panel = createPanel(menu, frame, s)
     drawSummary(panel, s)
-    drawWareHeadings(panel)
-    for index, wareKey in ipairs(order) do
-        drawWareRow(panel, wareKey, index + 1)
+    drawViewSelector(panel, menu)
+    if bonusView then drawBonuses(panel) else
+        drawWareHeadings(panel)
+        for index, wareKey in ipairs(order) do
+            drawWareRow(panel, wareKey, index + 1)
+        end
     end
-    if #s.wares == 0 then
+    if not bonusView and #s.wares == 0 then
         panel.row(2)[1]:setColSpan(5):createText(s.available and M.text(71) or M.text(68),
             {wordwrap=true,cellBGColor=panel.background})
     end
     local restoredTopRow = type(topRow) == 'number' and topRow or panel.fixedRows+1
-    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(restoredTopRow, math.max(panel.fixedRows+1, math.max(1,#order)+6+panel.eventCount))))
+    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(restoredTopRow, math.max(panel.fixedRows+1, (bonusView and 5 or math.max(1,#order))+TAB_ROW+1+panel.eventCount))))
     -- Leave two pixels of clearance for native widget rounding at the bottom edge.
     panel.table.properties.y=math.floor(Helper.viewHeight-math.ceil(panel.table:getVisibleHeight())-Helper.borderSize
         -menu.borderOffset-Helper.standardContainerOffset-2)
@@ -205,7 +250,8 @@ local function register()
         local s = selection(menu)
         requestRefresh(s)
         if s then return draw(menu, frame, s) end
-        topRow, selected, signature = 7, nil, nil
+        topRow, selected, signature = nil, nil, nil
+        bonusView = false
         eventSignature = nil
         return nativeDraw(frame, ...)
     end
@@ -235,7 +281,8 @@ local function register()
     menu.cleanup = function(...)
         clearTooltip()
         requestRefresh(nil)
-        topRow, selected, signature = 7, nil, nil
+        topRow, selected, signature = nil, nil, nil
+        bonusView = false
         eventSignature = nil
         M.reset()
         return nativeCleanup(...)

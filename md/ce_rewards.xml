@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_Rewards" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <cue name="Init">
+      <actions><set_value name="$Started" exact="true"/><set_value name="$SurveySlot" exact="0"/><debug_text text="'[CE] Sector rewards loaded'"/></actions>
+      <cues>
+        <cue name="Tick" instantiate="true" checkinterval="1min">
+          <conditions><check_value value="md.CE_CivilianHub.Init.$Registry?"/></conditions>
+          <actions>
+            <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
+            <set_value name="$WorkforceRequests" exact="[]"/>
+            <do_for_each name="$Sector" in="$Registry.keys.list">
+              <set_value name="$R" exact="$Registry.{$Sector}"/>
+              <include_actions ref="md.CE_Rewards.Refresh"/>
+              <include_actions ref="md.CE_RewardWorkforce.Request"/>
+              <include_actions ref="md.CE_RewardDiscovery.Survey"/>
+              <include_actions ref="md.CE_Rewards.Snapshot"/>
+              <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+            </do_for_each>
+            <include_actions ref="md.CE_RewardWorkforce.Dispatch"/>
+            <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+          </actions>
+        </cue>
+        <cue name="RefreshSector" instantiate="true" namespace="this">
+          <conditions><event_cue_signalled/></conditions>
+          <actions>
+            <set_value name="$Sector" exact="event.param.{1}"/><set_value name="$R" exact="event.param.{2}"/>
+            <include_actions ref="md.CE_Rewards.Refresh"/>
+            <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+            <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
+            <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+          </actions>
+        </cue>
+        <cue name="Reload" instantiate="true">
+          <conditions><event_game_loaded/></conditions>
+          <actions>
+            <do_if value="md.CE_CivilianHub.Init.$Registry?">
+              <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
+              <do_for_each name="$Sector" in="$Registry.keys.list">
+                <set_value name="$R" exact="$Registry.{$Sector}"/>
+                <do_if value="$R.$Rewards?">
+                  <set_value name="$R.$Rewards.$NextStations" exact="0.0f"/>
+                  <do_for_each name="$RewardStation" in="$R.$Rewards.$Immigrants.keys.list">
+                    <set_value name="$R.$Rewards.$Immigrants.{$RewardStation}.$Last" exact="player.age / 1s"/>
+                  </do_for_each>
+                </do_if>
+                <include_actions ref="md.CE_Rewards.Refresh"/>
+              </do_for_each>
+            </do_if>
+          </actions>
+        </cue>
+        <cue name="Relations" instantiate="true">
+          <conditions><event_player_relation_changed/></conditions>
+          <actions>
+            <do_if value="md.CE_CivilianHub.Init.$Registry?">
+              <do_for_each name="$Sector" in="md.CE_CivilianHub.Init.$Registry.keys.list">
+                <set_value name="$R" exact="md.CE_CivilianHub.Init.$Registry.{$Sector}"/>
+                <include_actions ref="md.CE_Rewards.Refresh"/>
+              </do_for_each>
+            </do_if>
+          </actions>
+        </cue>
+      </cues>
+    </cue>
+    <cue name="WatchSector" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <set_value name="$Sector" exact="event.param.{1}"/><set_value name="$R" exact="event.param.{2}"/>
+      </actions>
+      <cues>
+        <cue name="OwnerChanged" instantiate="true">
+          <conditions><event_contained_object_changed_owner space="$Sector"/></conditions>
+          <actions>
+            <do_if value="event.param.isclass.station">
+              <include_actions ref="md.CE_Rewards.Refresh"/>
+              <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+              <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
+              <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+            </do_if>
+          </actions>
+        </cue>
+      </cues>
+    </cue>
+    <library name="Notify"><actions>
+      <!-- No dependency on reward initialization; the minute tick repairs an early signal. -->
+      <do_if value="md.CE_Rewards.Init.$Started?"><signal_cue_instantly cue="md.CE_Rewards.RefreshSector" param="[$Sector,$R]" check="false"/></do_if>
+    </actions></library>
+    <library name="Refresh"><actions>
+      <include_actions ref="md.CE_RewardRules.Evaluate"/>
+      <do_if value="not $R.$Rewards?">
+        <set_value name="$R.$Rewards" exact="table[$Active=false,$Stations=[],$Applied=table[],$Immigrants=table[],$NextStations=0.0f,$NextSurvey=$RewardNow + $SurveyInterval,$LastSurvey=-1.0f,$Found=0,$Partners=0,$Sensors=0,$Workplaces=0,$Announced=1]"/>
+        <do_if value="md.CE_Rewards.Init.$SurveySlot?">
+          <set_value name="$R.$Rewards.$NextSurvey" exact="$RewardNow + $SurveyInterval + md.CE_Rewards.Init.$SurveySlot"/>
+          <set_value name="md.CE_Rewards.Init.$SurveySlot" exact="(md.CE_Rewards.Init.$SurveySlot + 60) % 300"/>
+        </do_if>
+      </do_if>
+      <set_value name="$B" exact="$R.$Rewards"/>
+      <do_if value="not $B.$Watching?">
+        <signal_cue_instantly cue="md.CE_Rewards.WatchSector" param="[$Sector,$R]"/>
+        <set_value name="$B.$Watching" exact="true"/>
+      </do_if>
+      <do_if value="not $RewardActive">
+        <set_value name="$B.$Immigrants" exact="table[]"/>
+        <set_value name="$B.$Workplaces" exact="0"/>
+      </do_if>
+      <set_value name="$B.$Active" exact="$RewardActive"/>
+      <include_actions ref="md.CE_RewardStations.Refresh"/>
+      <do_for_each name="$UnlockLevel" in="$RewardUnlocks">
+        <do_if value="$R.$Level ge $UnlockLevel and $B.$Announced lt $UnlockLevel">
+          <write_to_logbook category="general" title="{974201,400}" text="{974201,419}.[$Sector.knownname,$UnlockLevel]"/>
+        </do_if>
+      </do_for_each>
+      <set_value name="$B.$Announced" exact="[$B.$Announced,$R.$Level].max"/>
+      <include_actions ref="md.CE_Rewards.Snapshot"/>
+    </actions></library>
+    <library name="Snapshot"><actions>
+      <!-- Reward payload v1, appended to hub snapshot v4. -->
+      <set_value name="$B.$Snapshot" exact="[1,$RewardActive,$RewardReason,$RewardMissing,$ImmigrationRate,$PricePoints,$DiplomacyPoints,$SensorUnlocked,$SurveyUnlocked,$B.$Workplaces,$B.$Partners,$B.$Sensors,$B.$LastSurvey,$B.$NextSurvey,$B.$Found,$RewardNow,$RewardUnlocks]"/>
+    </actions></library>
+  </cues>
+</mdscript>

@@ -250,5 +250,34 @@
     <t id="157">Vídeos de noticias</t>
     <t id="158">Reproducir vídeos de noticias sobre incidentes civiles. Si se desactiva esta opción, se seguirán mostrando los mensajes de notificación y las entradas del diario.</t>
     <t id="159">Visualización</t>
+    <t id="400">Prosperidad civil</t>
+    <t id="401">Bonificaciones del sector</t>
+    <t id="402">Suministros</t>
+    <t id="403">Bonificaciones</t>
+    <t id="404">Activo</t>
+    <t id="405">Suspendido</t>
+    <t id="406">Se desbloquea en el nivel %d</t>
+    <t id="408">Inmigración de trabajadores</t>
+    <t id="409">Precios comerciales</t>
+    <t id="410">Diplomacia / espionaje</t>
+    <t id="411">Faltan suministros - ver Suministros. Las bonificaciones solo se aplican en el sector de este centro.</t>
+    <t id="412">%d / hora por cada 1.000 plazas</t>
+    <t id="413">%d%% del rango de precios</t>
+    <t id="414">+%d%% de probabilidad de éxito</t>
+    <t id="415">%d radares de estación</t>
+    <t id="416">Activado</t>
+    <t id="419">%1: bonificación civil de nivel %2 desbloqueada. Selecciona el centro y abre Bonificaciones para ver los detalles. Las bonificaciones requieren todas las mercancías civiles en stock.</t>
+    <t id="420">Todas las mercancías necesarias suministradas. Las bonificaciones solo se aplican en el sector de este centro.</t>
+    <t id="421">Las bonificaciones requieren un perfil de demanda civil activo.</t>
+    <t id="423">Trabajadores adicionales por hora de juego por cada 1.000 plazas de hábitat en estaciones del jugador. Solo cuenta el crecimiento nativo positivo; se aplican los objetivos sostenibles nativos y los límites de hábitat. Estaciones registradas: %d.</t>
+    <t id="424">Descuentos de compra y comisiones de venta en estaciones NPC que permiten atracar, incluidas estaciones no descubiertas. %d estaciones participantes. El porcentaje se aplica al rango de variación del precio de la mercancía, no a su precio actual. Se excluyen compras y mejoras de naves.</t>
+    <t id="425">Se suma al cálculo nativo de éxito de las operaciones contra estaciones, incluidas las hostiles. La probabilidad de éxito sigue limitada al 99%. Se aplica al iniciar la operación; los resultados existentes no se recalculan.</t>
+    <t id="426">Comparte el radar de las estaciones NPC que permiten atracar en todo el sector. Pueden hacerse visibles estaciones no descubiertas. La cobertura sigue el radar nativo de las estaciones; el alcance de las naves y armas del jugador no cambia.</t>
+    <t id="427">Descubre la ubicación de cofres en este sector para que los explores. Las ubicaciones descubiertas siguen visibles cuando la bonificación está inactiva.</t>
+    <t id="428">Red civil de sensores</t>
+    <t id="429">Descubrir cofres</t>
+    <t id="431">Bonificación</t>
+    <t id="432">Efecto</t>
+    <t id="433">Desactivado</t>
   </page>
 </language>

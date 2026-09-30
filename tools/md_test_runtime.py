@@ -13,6 +13,9 @@ class Missing:
     def __getitem__(self, key): return self
 NIL = Missing()
 
+class ActionReturn(Exception):
+    def __init__(self,value): self.value=value
+
 class DataType(str):
     @property
     def isnumeric(self): return self in ('integer','float')
@@ -131,6 +134,7 @@ class Runner:
         self.env['datatype']=Table(list=DataType('list'),table=DataType('table'))
         self.stubs={}
         self.native={}
+        self.signals=[]
         self.continue_on_invalid_key=False
         self.engine_errors=[]
     def path(self,s):
@@ -188,6 +192,19 @@ class Runner:
         nodes=tree.xpath('//library[@name=$n]/actions',n=name.rsplit('.',1)[-1])
         if not nodes: raise ValueError(name)
         self.actions(nodes[0])
+    def run_actions(self,name,params):
+        script=name.split('.')[1] if name.startswith('md.') else 'CE_CivilianHub'
+        node=self.scripts[script].xpath('//library[@name=$name]',name=name.rsplit('.',1)[-1])[0]
+        caller=self.env
+        self.env=dict(caller)
+        try:
+            for param in node.findall('params/param'):
+                key=param.get('name')
+                self.env[key]=params[key] if key in params else self.expr(param.get('default','null'))
+            try: self.actions(node.find('actions'))
+            except ActionReturn as result: return result.value
+            return NIL
+        finally: self.env=caller
     def actions(self,nodes):
         branch=False
         for n in nodes:
@@ -232,6 +249,13 @@ class Runner:
                     if count>10000:raise RuntimeError('loop guard')
             elif tag=='include_actions': self.library(n.get('ref'))
             elif tag=='break': raise BreakLoop()
+            elif tag=='run_actions':
+                params={p.get('name'):self.expr(p.get('value')) for p in n.findall('param')}
+                result=self.run_actions(n.get('ref'),params)
+                if n.get('result'):self.set(n.get('result'),result)
+            elif tag=='return' and tag not in self.native: raise ActionReturn(self.expr(n.get('value','null')))
+            elif tag in ('signal_cue','signal_cue_instantly') and tag not in self.native:
+                self.signals.append((n.get('cue'),self.expr(n.get('param','null'))))
             elif tag=='append_to_list': self.expr(n.get('name')).append(self.expr(n.get('exact')))
             elif tag=='append_list_elements': self.expr(n.get('name')).extend(self.expr(n.get('other')))
             elif tag=='remove_value': self.set(n.get('name'),None,remove=True)

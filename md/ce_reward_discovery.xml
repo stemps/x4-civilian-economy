@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_RewardDiscovery" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <library name="Survey"><actions>
+      <do_if value="$RewardActive and $SurveyUnlocked and $RewardNow ge $B.$NextSurvey">
+        <do_if value="not $B.$Marked?"><set_value name="$B.$Marked" exact="table[]"/></do_if>
+        <do_for_each name="$RewardBox" in="$B.$Marked.keys.list">
+          <do_if value="not $RewardBox.exists"><remove_value name="$B.$Marked.{$RewardBox}"/></do_if>
+        </do_for_each>
+        <set_value name="$B.$Found" exact="0"/>
+        <find_object name="$RewardBoxes" space="$Sector" class="class.lockbox" multiple="true"/>
+        <do_for_each name="$RewardBox" in="$RewardBoxes">
+          <do_if value="$RewardBox.exists and not $RewardBox.ismission and $RewardBox.isradarvisible and not $RewardBox.isknown and not $B.$Marked.{$RewardBox}?">
+            <set_object_long_range_scanned object="$RewardBox"/>
+            <set_value name="$B.$Marked.{$RewardBox}" exact="true"/>
+            <set_value name="$B.$Found" operation="add"/>
+          </do_if>
+        </do_for_each>
+        <set_value name="$B.$LastSurvey" exact="$RewardNow"/>
+        <set_value name="$B.$NextSurvey" exact="$RewardNow + $SurveyInterval"/>
+        <debug_text text="'[CE] Survey: sector=%s marked=%s'.[$Sector,$B.$Found]"/>
+      </do_if>
+    </actions></library>
+  </cues>
+</mdscript>

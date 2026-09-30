@@ -237,5 +237,34 @@
     <t id="157">News videos</t>
     <t id="158">Play news videos for civilian incidents. When disabled, ticker messages and logbook entries are still shown.</t>
     <t id="159">Display</t>
+    <t id="400">Civilian prosperity</t>
+    <t id="401">Sector bonuses</t>
+    <t id="402">Supplies</t>
+    <t id="403">Bonuses</t>
+    <t id="404">Active</t>
+    <t id="405">Suspended</t>
+    <t id="406">Unlocks at level %d</t>
+    <t id="408">Workforce immigration</t>
+    <t id="409">Trade prices</t>
+    <t id="410">Diplomacy / espionage</t>
+    <t id="411">Missing supplies - see Supplies. Bonuses apply only within this hub's sector.</t>
+    <t id="412">%d / hour per 1,000 capacity</t>
+    <t id="413">%d%% of price range</t>
+    <t id="414">+%d%% success chance</t>
+    <t id="415">%d station radars</t>
+    <t id="416">Enabled</t>
+    <t id="419">%1: civilian level %2 reward unlocked. Select the hub and open Bonuses for details. Rewards require all civilian goods in stock.</t>
+    <t id="420">All required goods supplied. Bonuses apply only within this hub's sector.</t>
+    <t id="421">Bonuses require an active civilian demand profile.</t>
+    <t id="423">Extra workers per game hour per 1,000 habitat capacity at player stations. Only positive native growth is eligible; native sustainable targets and habitat limits apply. Registered stations: %d.</t>
+    <t id="424">Purchase discounts and sales commissions at docking-friendly NPC stations, including undiscovered stations. %d participating stations. The percentage applies to the ware's price variation range, not its current price. Ship purchases and upgrades are excluded.</t>
+    <t id="425">Added to the native success calculation for station-targeted operations, including hostile stations. Success chance is still capped at 99%. Applied when the operation starts; existing outcomes are not rerolled.</t>
+    <t id="426">Share docking-friendly NPC station radar throughout this sector. Undiscovered stations may become visible. Coverage follows native station radar; player ship range and weapon range are unchanged.</t>
+    <t id="427">Discover lockbox locations in this sector for you to explore. Discovered locations remain visible when the bonus is inactive.</t>
+    <t id="428">Civilian sensor network</t>
+    <t id="429">Discover lockboxes</t>
+    <t id="431">Bonus</t>
+    <t id="432">Benefit</t>
+    <t id="433">Disabled</t>
   </page>
 </language>
