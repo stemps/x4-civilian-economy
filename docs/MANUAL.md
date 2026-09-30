@@ -57,6 +57,31 @@ middle-ish, generates per hour about 150k Cr worth of demand at level 1 and just
 over 6M Cr at level 10. And there's about 36 times the population of Argon Prime
 on the whole galaxy.
 
+## How to Trade with Civilian Hubs
+
+Because civilians don't pay as high prices as the military complex, civilian
+hubs tend to be neglected by profit-based autotraders (vanilla or mods). It's
+therefore recommended to set up dedicated traders to serve the civilian hubs.
+
+If you use vanilla-traders, the best way to do this is with repeat orders,
+albeit setting this up is a bit cumbersome and wasteful because they don't take
+demand into account.
+
+If you allow trader mods, the far easier setup is to use the
+[GalaxyTrader](https://www.nexusmods.com/x4foundations/mods/1857) mod, namely
+their Mk2 Distribution trader with the following settings:
+- Source Stations: your factories or trade hub
+- Destination Stations: the civilian trade hub(s) you want to serve from these
+  sources
+- Min Storage: max
+- Static Storage: 0
+- Max Storage: 0
+- Auto Wares: no (for some reason the ware discovery didn't work for me)
+- Ware Filter: add your wares here
+- Allow Illegal Wares: yes (to allow water trade)
+- Allow Low Volume: yes
+- Low Volume Floor: min
+
 ## Mod-Dependencies
 
 1.
