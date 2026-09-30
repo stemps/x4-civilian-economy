@@ -76,6 +76,59 @@ class StartupProfileTests(unittest.TestCase):
         self.assertEqual(seen,[original])
 
 
+class UnownedSectorRaceTests(unittest.TestCase):
+    def setUp(self):
+        self.r=Runner(); definitions(self.r)
+        self.races=self.r.env['lookup'].race.list  # argon, paranid, teladi
+        self.target=Component(owner=NIL,gatedistance=Table())
+        self.sectors=List([self.target])
+        self.r.native['find_sector']=lambda n:self.r.set(n.get('name'),self.sectors)
+        self.seen=[]
+        def resolve():
+            self.seen.append(self.r.env['ProfileRace'])
+            self.r.env['Construction']=Table(Valid=True)
+        self.r.stubs['md.CE_Construction.Resolve']=resolve
+        self.r.env['Sector']=self.target
+
+    def owned(self,race,distance,hostile=False):
+        owner=Table(primaryrace=self.races[race],hasrelation=Table(enemy=Table(civilian=hostile)))
+        sector=Component(owner=owner)
+        self.target.gatedistance[sector]=distance
+        self.sectors.append(sector)
+        return sector
+
+    def capture(self):
+        self.r.library('CaptureSectorProfile')
+        return self.r.env['SectorProfiles'][self.target]
+
+    def test_nearest_owned_sector_supplies_race(self):
+        self.owned(3,3);self.owned(1,2);self.owned(2,1)
+        self.assertEqual(self.capture().Race,'paranid')
+        self.assertEqual(self.seen,[self.races[2]])
+
+    def test_distance_tie_prefers_race_library_order_regardless_of_sector_order(self):
+        for order in ((3,2),(2,3)):
+            self.setUp()
+            for race in order:self.owned(race,1)
+            self.owned(1,2)
+            self.assertEqual(self.capture().Race,'paranid')
+
+    def test_hostile_unreachable_and_ownerless_sectors_are_ignored(self):
+        self.owned(1,1,hostile=True);self.owned(2,-1)
+        ownerless=Component(owner=Table(primaryrace=NIL));self.target.gatedistance[ownerless]=1
+        self.sectors.append(ownerless)
+        self.owned(3,4)
+        self.assertEqual(self.capture().Race,'teladi')
+
+    def test_owned_sector_keeps_its_own_race(self):
+        self.target.owner=Table(primaryrace=self.races[3]);self.owned(1,1)
+        self.assertEqual(self.capture().Race,'teladi')
+
+    def test_no_candidate_keeps_unknown_profile(self):
+        self.owned(1,-1)
+        self.assertEqual(self.capture().Race,'')
+
+
 class TerranRecipeTests(unittest.TestCase):
     def test_native_terran_categories_use_terran_construction_materials(self):
         root=REF/'extensions/ego_dlc_terran/libraries'

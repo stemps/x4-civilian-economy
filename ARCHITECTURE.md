@@ -440,7 +440,7 @@ text spacer before Gameplay and Display; native UI scaling applies.
 
 ## Local demand profiles
 
-`CE_PopulationProfiles.Build` is included synchronously by startup `CaptureSectorProfile`. Its explicit `$ProfileRace` input is a native race or null, also used by construction discovery. `$DiscoveredRace` is loop scratch. It returns candidate data without replacing `$R` or modifying the saved record. It enumerates `lookup.race.list` and `lookup.ware.list`, using
+`CE_PopulationProfiles.Build` is included synchronously by startup `CaptureSectorProfile`. Sectors whose owner has no primary race (unowned or ownerless) first run `CE_CivilianHub.NearestOwnedRace`: it borrows the race of the nearest reachable sector (gate distance) owned by a faction not hostile to the civilians, breaking distance ties by `lookup.race.list` order so new games agree. No candidate leaves the neutral `''` profile. Its explicit `$ProfileRace` input is a native race or null, also used by construction discovery. `$DiscoveredRace` is loop scratch. It returns candidate data without replacing `$R` or modifying the saved record. It enumerates `lookup.race.list` and `lookup.ware.list`, using
 `race.workforce.resources.list` for local sustain. Pharmaceutical resources unlock
 at level 3; other sustain resources at level 1. Common water and energy unlock at
 levels 1 and 2. Industrial goods unlock at levels 4–7 and luxuries at level 9;

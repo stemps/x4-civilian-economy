@@ -99,12 +99,14 @@ class ProfileTests(ProfileFixture, unittest.TestCase):
         self.run.env['lookup'].ware.list = List([food, gas])
         self.assertEqual(self.apply(10), {'onlyfood'})
 
-    def test_culture_survives_conquest_and_missing_owner_is_neutral(self):
+    def test_culture_survives_conquest_and_isolated_unowned_sector_is_neutral(self):
         self.apply()
         self.select(self.run.env['lookup'].race.list[2])
         self.assertEqual(self.apply(), {'foodrations', 'water'})
         self.setUp()
         self.run.env['Sector'] = Component(owner=NIL)
+        # No reachable owned sector to borrow a race from.
+        self.run.native['find_sector'] = lambda n: self.run.set(n.get('name'), List([self.run.env['Sector']]))
         self.assertEqual(self.apply(), {'water'})
         self.assertEqual(self.r.ProfileRace, '')
 

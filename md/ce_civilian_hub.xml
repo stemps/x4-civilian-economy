@@ -502,6 +502,9 @@
       <actions>
         <do_if value="not $SectorProfiles.{$Sector}?">
           <set_value name="$ProfileRace" exact="@$Sector.owner.primaryrace"/>
+          <do_if value="not $ProfileRace">
+            <include_actions ref="md.CE_CivilianHub.NearestOwnedRace"/>
+          </do_if>
           <set_value name="$ProfileKey" exact="if $ProfileRace then '$' + $ProfileRace.id else '$unknown'"/>
           <do_if value="not $RaceProfiles.{$ProfileKey}?">
             <set_value name="$CandidateComplete" exact="false"/>
@@ -513,6 +516,37 @@
           </do_if>
           <set_value name="$SectorProfiles.{$Sector}" exact="$RaceProfiles.{$ProfileKey}"/>
         </do_if>
+      </actions>
+    </library>
+    <library name="NearestOwnedRace">
+      <actions>
+        <!-- Sectors without a racial owner borrow the race of the nearest reachable sector
+             owned by a non-hostile faction. Gate-distance ties prefer the race listed first
+             in the race library, so every new game resolves the same race. -->
+        <set_value name="$ProfileRace" exact="null"/>
+        <set_value name="$NearestSource" exact="null"/>
+        <set_value name="$NearestDistance" exact="-1"/>
+        <set_value name="$NearestRank" exact="0"/>
+        <find_sector name="$RaceSectors" space="player.galaxy" multiple="true"/>
+        <do_for_each name="$RaceSector" in="$RaceSectors">
+          <set_value name="$RaceCandidate" exact="@$RaceSector.owner.primaryrace"/>
+          <do_if value="$RaceCandidate and $RaceSector != $Sector and not $RaceSector.owner.hasrelation.enemy.{faction.civilian}">
+            <set_value name="$RaceDistance" exact="$Sector.gatedistance.{$RaceSector}"/>
+            <do_if value="$RaceDistance ge 0">
+              <set_value name="$RaceRank" exact="lookup.race.list.indexof.{$RaceCandidate}"/>
+              <do_if value="not $RaceRank">
+                <set_value name="$RaceRank" exact="lookup.race.list.count + 1"/>
+              </do_if>
+              <do_if value="$NearestDistance lt 0 or $RaceDistance lt $NearestDistance or ($RaceDistance == $NearestDistance and $RaceRank lt $NearestRank)">
+                <set_value name="$ProfileRace" exact="$RaceCandidate"/>
+                <set_value name="$NearestSource" exact="$RaceSector"/>
+                <set_value name="$NearestDistance" exact="$RaceDistance"/>
+                <set_value name="$NearestRank" exact="$RaceRank"/>
+              </do_if>
+            </do_if>
+          </do_if>
+        </do_for_each>
+        <debug_text text="'[CE] Unowned sector %s uses race %s from %s at gate distance %s'.[$Sector.knownname,@$ProfileRace.id,@$NearestSource.knownname,$NearestDistance]"/>
       </actions>
     </library>
   </cues>

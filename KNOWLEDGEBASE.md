@@ -2243,3 +2243,20 @@ Historical single-event model; superseded by concurrent-sector-events below.
   in-progress task rather than relying only on a positive wantedmoney value.
 - VALIDATED: `just validate` passes 276 tests and XML/reference checks. No native
   game verification performed; a full restart is required for this MD change.
+
+## 2026-09-29 - unowned-sector-race-fallback
+
+- READ: an unowned start sector (e.g. Nopileos' Fortune VI, `Cluster_04_Sector002`,
+  3.18B population, no vanilla `god.xml` station) resolved race `''`. No
+  `ce_hub_` layout exists for it, so `$Construction.$Valid` stayed false and
+  ReconcileSector reported `invalid_components` instead of creating a hub. A fresh
+  game log had exactly one `race= plan=ce_hub_` block; that it is this sector is
+  inferred (the message carries no sector name).
+- IMPLEMENTED: `NearestOwnedRace` borrows the nearest reachable, non-hostile owned
+  sector's race by `gatedistance` (-1 = unreachable); ties use `lookup.race.list`
+  order. It logs `[CE] Unowned sector ... uses race ...`. The result is frozen in
+  the sector profile like any owned race and does not change on later conquest.
+- MOCKED: tests cover nearest pick, order-independent tie-breaks, hostile,
+  unreachable and ownerless exclusion, and the isolated neutral fallback.
+  Not measured in game: which race each unowned sector gets, and the startup
+  cost of one galaxy scan with per-sector `gatedistance` per unowned sector.
