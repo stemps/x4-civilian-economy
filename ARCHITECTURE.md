@@ -160,6 +160,11 @@ Before the first tag, CE derives the suggestion from the existing manifest
   is never modified, and description editing on Nexus remains manual.
   Continued numbered lists use explicit numbers because Nexus BBCode has no
   list-start attribute; this preserves CE's dependency-section numbering.
+- `scripts/game_link.ps1` (`just link` / `unlink` / `link-status`): manages the
+  `extensions/civilian_economy` junction to this checkout. The extensions dir
+  comes from `X4_EXTENSIONS`, then the toolkit's `.claude/x4-paths.env`, then
+  `X4_GAME\extensions`. It refuses to replace or delete a regular folder, and
+  unlink removes only the reparse point (non-recursive delete).
 - `test/`: isolated release repositories/local remotes and fake HTTP responses;
   run via `just test-release`, also included in `just check`. This directory is
   separate from the MD controller tests in `tests/`.

@@ -92,6 +92,18 @@ test-release:
     if ('{{python}}') { & '{{python}}' test/test_archive.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_archive.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' test/test_release_support.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_release_support.py; exit $LASTEXITCODE }
 
+# Junction this dev directory into the game's extensions folder for in-game testing.
+link:
+    & ./scripts/game_link.ps1 link
+
+# Remove the extensions junction; never deletes a regular folder or the dev files.
+unlink:
+    & ./scripts/game_link.ps1 unlink
+
+# Show whether the extensions folder holds a junction, a copied folder or nothing.
+link-status:
+    & ./scripts/game_link.ps1 status
+
 # Exercise the optional installed VTL source without redistributing it.
 vtl moddir:
     uv run --offline --with lxml --with lupa python tools/test_transaction_log.py "{{moddir}}"
