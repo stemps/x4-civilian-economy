@@ -2443,3 +2443,28 @@ Historical single-event model; superseded by concurrent-sector-events below.
   unreachable and ownerless exclusion, and the isolated neutral fallback.
   Not measured in game: which race each unowned sector gets, and the startup
   cost of one galaxy scan with per-sector `gatedistance` per unowned sector.
+
+## 2026-09-30 - nexus-create-file-returns-version-id
+
+- MEASURED (live API, first CE upload): `POST /v3/mod-files` returned an `id`
+  (`11420318055444`) that is the new file's first VERSION id, not the file id.
+  `GET /v3/mod-files/{that id}/versions` returns 404; `GET
+  /v3/mod-file-versions/{that id}` returns the version with the real file id
+  under `file.id` (`8056605`). The published OpenAPI spec
+  (`CreateModFileSuccess` -> `UploadModFile`) describes it as a file, so do not
+  trust the spec here. `nexus_publish.py` resolves the file through the version.
+- READ (spec): `POST /v3/mod-files/{id}/versions` returns `{file, version:{id}}`;
+  not yet exercised live by CE.
+
+## 2026-09-30 - release-zip-membership
+
+- MEASURED: the game's `extensions/civilian_economy` is a Windows junction to
+  this dev checkout, so in-game tests see the whole working tree, never the
+  release ZIP. A file missing from the ZIP cannot show up in local testing.
+- MEASURED (v0.1.0): the ZIP held 81 of 178 tracked files; all 97 exclusions
+  were docs, tools, tests, scripts, images and repo metadata. Every `ui.xml`
+  Lua file, cutscene video and icon texture resolved inside the ZIP.
+- SOURCE: `MIT-LICENSE` ships from v0.1.1 on. Reconstructing the v0.1.0 ZIP
+  with `publish-nexus v0.1.0` now fails membership verification, because the
+  published v0.1.0 ZIP lacks the licence. That release is complete, so this only
+  matters if it is ever re-published.

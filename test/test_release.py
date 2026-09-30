@@ -121,6 +121,8 @@ class ReleaseTests(ReleaseFixture):
         with self.assertRaises(release.ReleaseError): self.run_release()
         self.assertEqual((self.root / "dist/Civilian-Economy-0.1.0.zip").read_text(), "keep")
 
+    # GIT_EDITOR/VISUAL/EDITOR outrank core.editor; clear them so the configured one runs.
+    @patch.dict(os.environ, {"GIT_EDITOR": "", "VISUAL": "", "EDITOR": ""})
     def test_editor_arguments_empty_and_failure(self):
         self.cmd("config", "core.editor", "sh -c 'printf -- " + '"- Edited notes\\n"' + " > \"$1\"' editor")
         self.assertEqual(self.runner.notes(None), "- Edited notes")

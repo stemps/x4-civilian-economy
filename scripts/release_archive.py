@@ -12,7 +12,7 @@ class ReleaseError(Exception):
 def runtime_path(name):
     path = PurePosixPath(name)
     return (bool(path.parts) and not path.is_absolute() and '..' not in path.parts and '\\' not in name
-            and (name in ('content.xml', 'ui.xml')
+            and (name in ('content.xml', 'ui.xml', 'MIT-LICENSE')
                  or (name.startswith('ui/') and name.endswith('.lua'))
                  or (path.parts[0] in ('md', 'aiscripts', 'assets', 'index', 'libraries', 'extensions')
                      and name.endswith('.xml'))
@@ -21,6 +21,38 @@ def runtime_path(name):
                  or name == 'assets/textures/ui/factions/ce_unrest_skull.gz'
                  or name in ('videos/ce_news_raid.mkv', 'videos/ce_news_sabotage.mkv',
                              'videos/ce_news_hacking.mkv')))
+
+
+# Folders the engine loads from an extension, and file types it reads. A file
+# matching either that runtime_path() rejects would be silently left out of the
+# ZIP while still working in a dev checkout, so packaging refuses it instead.
+ENGINE_DIRS = frozenset(('md', 'aiscripts', 'assets', 'index', 'libraries', 'extensions', 't', 'ui',
+                         'cutscenes', 'videos', 'maps', 'sfx', 'voice', 'music', 'shadergl', 'fx',
+                         'textures'))
+ENGINE_SUFFIXES = frozenset(('.xml', '.lua', '.mkv', '.webm', '.bik', '.gz', '.dds', '.tga', '.ogg',
+                             '.wav', '.xpl', '.xmf', '.ani', '.ttf', '.otf'))
+# Top-level development folders whose files never ship, whatever their type.
+DEV_DIRS = frozenset(('test', 'tests', 'tools', 'scripts', 'docs', 'images', 'output', 'dist'))
+
+
+def unpackaged_runtime(names):
+    """Files that look loadable by the engine but that runtime_path() excludes."""
+    suspicious = []
+    for name in names:
+        path = PurePosixPath(name)
+        if not path.parts or runtime_path(name) or path.parts[0] in DEV_DIRS:
+            continue
+        if (len(path.parts) > 1 and path.parts[0] in ENGINE_DIRS) or path.suffix.lower() in ENGINE_SUFFIXES:
+            suspicious.append(name)
+    return sorted(suspicious)
+
+
+def require_packaged(names):
+    missing = unpackaged_runtime(names)
+    if missing:
+        raise ReleaseError('Files that look like runtime content would be left out of the ZIP: '
+                           + ', '.join(missing) + '. Add them to runtime_path() in '
+                           'scripts/release_archive.py, or move them out of runtime folders.')
 
 
 def git_bytes(root, *args, data=None):
@@ -35,10 +67,11 @@ def working_files(root, local=False):
     args = ['ls-files', '-z', '--cached']
     if local:
         args += ['--others', '--exclude-standard']
-    names = git_bytes(root, *args).decode().split('\0')
-    files = sorted({name for name in names if runtime_path(name)})
+    names = [name for name in git_bytes(root, *args).decode().split('\0') if name]
     if local:
-        files = [name for name in files if (root / name).exists() or (root / name).is_symlink()]
+        names = [name for name in names if (root / name).exists() or (root / name).is_symlink()]
+    require_packaged(names)
+    files = sorted({name for name in names if runtime_path(name)})
     require_manifests(files)
     for name in files:
         path = root / name

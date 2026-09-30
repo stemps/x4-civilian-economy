@@ -1,5 +1,6 @@
 """Archive behavior using isolated Git repositories; never access Nexus."""
 import hashlib
+import re
 from pathlib import Path
 import sys
 import unittest
@@ -71,16 +72,10 @@ class ArchiveTests(unittest.TestCase):
                  'cutscenes/ce_news_hacking.xml', 'videos/ce_news_hacking.mkv')
         for name in files:
             self.fixture.write(name, 'synthetic test asset')
-        self.fixture.write('videos/unrelated.mkv', 'exclude')
-        self.fixture.write('videos/ce_news_raid.tmp.mkv', 'exclude')
-        self.fixture.write('cutscenes/notes.txt', 'exclude')
         archive = local_zip(self.root)
         with zipfile.ZipFile(archive) as zipped:
             for name in files:
                 self.assertEqual(zipped.read('civilian_economy/' + name), b'synthetic test asset')
-            self.assertNotIn('civilian_economy/videos/unrelated.mkv', zipped.namelist())
-            self.assertNotIn('civilian_economy/videos/ce_news_raid.tmp.mkv', zipped.namelist())
-            self.assertNotIn('civilian_economy/cutscenes/notes.txt', zipped.namelist())
 
     def test_raider_logo_texture_is_packaged_without_source_artwork(self):
         texture = 'assets/textures/ui/factions/ce_unrest_skull.gz'
@@ -93,11 +88,9 @@ class ArchiveTests(unittest.TestCase):
 
     def test_md_in_local_release_and_tagged_archives(self):
         self.fixture.write('md/ce_logistics.xml', '<mdscript name="CE_Logistics"/>\n')
-        self.fixture.write('md/notes.txt', 'Not runtime content')
         local = local_zip(self.root)
         with zipfile.ZipFile(local) as archive:
             self.assertIn('civilian_economy/md/ce_logistics.xml', archive.namelist())
-            self.assertNotIn('civilian_economy/md/notes.txt', archive.namelist())
         self.fixture.cmd('add', 'md')
         self.fixture.cmd('commit', '-m', 'Add MD reader')
         self.fixture.cmd('push', 'origin', 'main')  # fixture's temporary local bare repo
@@ -131,6 +124,37 @@ class ArchiveTests(unittest.TestCase):
         public.unlink()
         rebuilt, _, _ = tagged_zip(self.root, 'v0.1.0')
         self.assertEqual(rebuilt.read_bytes(), expected)
+
+    def test_unpackaged_runtime_looking_files_fail(self):
+        # Each would work in a dev checkout (junctioned into the game) but be
+        # missing from the player's ZIP.
+        for name in ('videos/unrelated.mkv', 'videos/ce_news_raid.tmp.mkv', 'cutscenes/notes.txt',
+                     'md/notes.txt', 'assets/banner.png', 'maps/ce_sectors.xml', 'sounds/ce_alarm.ogg',
+                     'root_patch.xml'):
+            with self.subTest(name=name):
+                self.fixture.write(name, 'synthetic')
+                with self.assertRaisesRegex(ReleaseError, 'would be left out of the ZIP: ' + re.escape(name)):
+                    local_zip(self.root)
+                (self.root / name).unlink()
+        self.fixture.write('sounds/ce_alarm.ogg', 'synthetic')
+        self.fixture.cmd('add', 'sounds')
+        self.fixture.cmd('commit', '-m', 'Add unshipped sound')
+        self.fixture.cmd('push', 'origin', 'main')
+        with self.assertRaisesRegex(ReleaseError, 'sounds/ce_alarm.ogg'):
+            self.fixture.run_release()
+        self.assertEqual(self.fixture.cmd('tag', '--list'), '')
+
+    def test_dev_folders_and_documents_are_not_flagged(self):
+        for name in ('tools/probe.lua', 'docs/example.xml', 'images/cover.png', 'README.md'):
+            self.fixture.write(name, 'synthetic')
+        with zipfile.ZipFile(local_zip(self.root)) as archive:
+            self.assertEqual(archive.namelist(), ['civilian_economy/' + name for name in
+                             ('content.xml', 't/0001.xml', 'ui.xml', 'ui/example.lua')])
+
+    def test_license_is_shipped(self):
+        self.fixture.write('MIT-LICENSE', 'MIT License\n')
+        with zipfile.ZipFile(local_zip(self.root)) as archive:
+            self.assertEqual(archive.read('civilian_economy/MIT-LICENSE'), b'MIT License\n')
 
     def test_missing_manifest_fails(self):
         (self.root / 'ui.xml').unlink()

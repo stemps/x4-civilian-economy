@@ -67,8 +67,6 @@ class ReleaseFixture(unittest.TestCase):
         self.write("ui/example.lua", "return 1\n")
         self.write("t/0001.xml", "<language/>\n")
         self.write("test/excluded.lua", "return 0\n")
-        self.write("assets/banner.png", "promotional image placeholder\n")
-        self.write("assets/nested/example.lua", "return 'not runtime content'\n")
         self.write("images/nested/example.xml", "<promotional/>\n")
         self.write("README.md", "Not shipped\n")
         self.write("docs/MANUAL.md", "## Usage\n\nRelease manual.\n")

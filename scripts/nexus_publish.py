@@ -399,12 +399,13 @@ class Publisher:
             # Parsing/checkpoint/read failures after a successful POST must leave
             # the operation uncertain, never make it eligible for another POST.
             if state['new_file']:
-                state['file_id'] = str(created['id'])
-                save()
-                versions = [v for v in self.versions(state['file_id']) if v['version'] == version]
-                if len(versions) != 1:
+                # MEASURED 2026-09-30: despite the documented ModFile schema, the
+                # returned id is the first version's id; resolve the file through it.
+                entry = self.client.api('GET', f'/mod-file-versions/{self.ident(created["id"])}')
+                if entry.get('version') != version or not entry.get('file', {}).get('id'):
                     raise ReleaseError('New file created; its version needs reconciliation on resume.')
-                state['version_id'] = str(versions[0]['id'])
+                state['file_id'] = str(entry['file']['id'])
+                state['version_id'] = str(entry['id'])
             else:
                 state['version_id'] = str(created['version']['id'])
             state['version_stage'] = 'done'

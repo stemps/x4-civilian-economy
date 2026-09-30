@@ -139,14 +139,21 @@ Before the first tag, CE derives the suggestion from the existing manifest
   orchestration; preserves concurrent edits and rolls back pre-commit failures.
 - `scripts/release_archive.py`: deterministic ZIPs under `civilian_economy/`,
   local working-tree builds and reconstruction from verified remote tags.
-  Runtime selection includes the two manifests, UI Lua and XML in `md`, `t`,
-  `aiscripts`, `assets`, `index`, `libraries` and nested `extensions` patches.
-  Promotional images, docs, tools and tests are excluded.
+  Runtime selection (`runtime_path`) includes the two manifests, `MIT-LICENSE`,
+  UI Lua, XML in `md`, `t`, `aiscripts`, `assets`, `index`, `libraries`,
+  `cutscenes` and nested `extensions` patches, plus the news videos and skull
+  texture by exact name. Promotional images, docs, tools and tests are excluded.
+  Because the game's `extensions/civilian_economy` is a junction to this checkout,
+  in-game tests cannot catch a file missing from the ZIP. `require_packaged`
+  therefore fails any build or release that would drop a file in an engine
+  folder (`ENGINE_DIRS`) or of an engine file type (`ENGINE_SUFFIXES`) outside
+  the dev folders (`DEV_DIRS`); extend `runtime_path` when adding such content.
 - `scripts/nexus_publish.py`: Nexus upload/version/changelog publication with
   resumable receipts in ignored `dist/nexus/`. `nexus.json` targets mod 2405;
-  `X4_NEXUS_KEY` supplies credentials. With `file_id: null`, exactly one main
-  file must exist. For an empty page, set `create_new_file: true`; the successful
-  file binding is retained locally for subsequent releases.
+  `X4_NEXUS_KEY` supplies credentials. `file_id` pins the main file (`8056605`)
+  so releases update it even if the local `dist/nexus/` binding is lost. With
+  `file_id: null`, exactly one main file must exist; `create_new_file: true` is
+  only for an empty page and is not safe to leave on once a file exists.
 - `scripts/manual_bbcode.py`: converts the released `docs/MANUAL.md` to
   `dist/nexus/<tag>/description.bbcode.txt` and opens Notepad for copy/paste.
   Unsupported Markdown fails before releasing or publishing. The source manual
