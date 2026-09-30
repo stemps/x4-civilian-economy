@@ -2,7 +2,7 @@
   "game": "x4foundations",
   "mod_id": 2405,
   "file_id": null,
-  "create_new_file": false,
+  "create_new_file": true,
   "display_name": "Civilian Economy",
   "description": "Civilian Economy for X4 Foundations. Population-driven civilian demand and trade hubs.",
   "category": "main",
