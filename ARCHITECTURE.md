@@ -764,21 +764,30 @@ rows above the ware heading. Ware rows cannot inherit the summary's wrapped heig
 The three visual ware columns still use a bar anchor plus name/time text cells.
 Do not add tables here without updating and testing the native callback contract.
 The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
-The five hub summary rows and the Supplies/Bonuses tab row (row 6) are fixed.
-Row 5 shows warnings or unrest on the left and the sector bonus summary on the
-right. With no events the active view's heading is also fixed; otherwise the
-event list, heading and entries scroll together in both views.
+Row order: five hub summary rows, demand events, the Supplies/Bonuses tab row,
+then the active view. Row 5 shows warnings or unrest on the left and the sector
+bonus summary on the right. `eventLayout` places events above the tabs as fixed
+rows while title, summary, events, tabs, heading and three spare rows fit under the
+40% cap (event heights measured with native `GetTextHeight`, falling back to the
+row height); the view heading is then fixed too. Otherwise events scroll below the
+fixed tabs with the view, as before, so many events cannot crowd out the goods or
+make the native table refuse to draw.
 Every scrolling row uses `addRow(true, { interactive=false })`, matching vanilla
 informational capacity rows. Native `calculateMinRowHeight` groups a selectable
 row with subsequent unselectable rows; making the entire list unselectable forces
 the whole list to fit and prevents scrolling. Fixed summary rows remain unselectable;
 the tab row is selectable because native buttons require row data.
 `maxVisibleHeight` caps the single table at 40% of the screen height, rounded down
-to whole pixels. Bottom placement rounds `getVisibleHeight()` up, rounds the
-resulting y position down, and leaves two extra pixels for native widget rounding.
-Short lists use only
-the height they need. `reserveScrollBar=true` leaves room in the variable-width
-last column. There are no page controls or five-ware limit.
+to whole pixels. Bottom placement uses `renderedHeight`, not Helper's
+`getVisibleHeight()`: content that fits uses its full height; a scrolling table uses
+fixed rows plus the whole scrolling rows that fit under the cap, because the widget
+system draws whole rows only and keeps that initial height. The result is rounded
+up, y rounded down, and two extra pixels are left for native widget rounding.
+`reserveScrollBar=false` keeps measured and rendered column widths identical when
+no scrollbar is shown; with `true`, Helper widens the last column only after the
+height is measured, so wrapped last-column text was over-estimated. With a
+scrollbar, Helper narrows the last column, which only affects capped tables.
+There are no page controls or five-ware limit.
 
 Before native updates rebuild the frame, CE records `GetTopRow` for the same hub
 only when the result is numeric, retaining the previous position if the native

@@ -26,6 +26,34 @@
   bribe chances in percentage points, caps at 99, and succeeds when a seeded 1-100
   roll is below it, so one CE point is one percentage point relative to vanilla.
   The hint states the 99% cap.
+- MEASURED (debug.txt, 1468 px view, temporary `[CE] MapLayout` logging): the
+  Bonuses view lifted the bottom-anchored panel because Helper estimated all five
+  bonus rows at 49 px (two lines) while only one wraps on screen. Per-cell logs
+  showed the last (status) column measured at 158 px, wrapping "Unlocks at level N"
+  in the estimate only. Helper sizes the last column without the reserved
+  scrollbar space; a narrow wrapped last column therefore over-estimates height.
+  Fix: columns 1-2 stay 44% in both views (tabs no longer shift), bonus name spans
+  1-2, benefit 3-4, status column 5 at about 26% of the width. Lua regression
+  asserts the status width. In-game re-check pending.
+- READ (helper.lua createDescriptor ~5040-5070): with `reserveScrollBar=true` and
+  no scrollbar needed, Helper widens the variable last column at descriptor
+  creation, after our draw measured heights. That is why the estimate used 158 px.
+- READ (widget_fullscreen.lua drawTableSection ~6102, table setup ~14524): a
+  scrolling table draws whole rows only, starting at the first non-fixed row, and
+  keeps min(cap, max(drawn, minimum)) as its height. Helper's getVisibleHeight()
+  returns the full cap, so a bottom-anchored scrolling panel sat up to one row too
+  high (user observed about one line on a level 10 hub).
+- Fix: `renderedHeight` in ce_map_status.lua mirrors that rule for anchoring, and
+  the table uses `reserveScrollBar=false`. A mutation check (anchoring on
+  getVisibleHeight again) fails the Lua regression. In-game re-check pending.
+- User-confirmed in-game: level 1 and level 10 hubs keep a stable bottom edge in
+  both tabs after the renderedHeight fix.
+- Demand events now sit above the tabs (user request). This PARTLY SUPERSEDES the
+  2026-09-27 concurrent-sector-events rule that events always scroll: they are
+  fixed above the tabs only while a height budget fits (`eventLayout`), and fall
+  back to scrolling below the tabs otherwise. Up to seven events can be active
+  (one per demand group). Lua tests cover both layouts, including the 720 px
+  fallback with seven events. In-game check pending.
 - Runtime acceptance from the 09-23 entries is still outstanding.
 
 ## 2026-09-29 - layout-snapshot-refresh

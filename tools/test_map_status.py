@@ -101,6 +101,8 @@ function newFrame()
   function t:setTopRow(row) self.topRow=row end
   function t:addRow(data,props)
    assert(data==nil or data==true); local r={rowdata=data,properties=props}
+   local rowIndex=#self.rows+1
+   function r:getHeight() return t:getRowHeight(rowIndex) end
    for i=1,cols do
     local cell={handlers={},properties={}}
     function cell:setColSpan(n) assert(i+n-1<=cols);return self end
@@ -214,7 +216,7 @@ for _,col in ipairs({1,4,5}) do
  assert(t.rows[7][col].properties.cellBGColor==Color.row_title_background)
 end
 assert(value(t.rows[4][1]):find('Energy Cells',1,true))
-assert(t.properties.maxVisibleHeight==432 and t.properties.reserveScrollBar)
+assert(t.properties.maxVisibleHeight==432 and t.properties.reserveScrollBar==false)
 for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=7)) end
 assert(t.rows[8][2].properties.mouseOverText():find('Incoming: 200',1,true))
 status[9][5][2]=0;status[9][5][8]=0;now=4
@@ -375,8 +377,14 @@ for _,height in ipairs({720,1080,1081,1432,1440,1513,1513.5}) do
  assert(t:getFullHeight()==1001.75 and t:getVisibleHeight()==math.floor(height*0.4))
  assert(t.properties.y%1==0)
  -- Conservative pixel budget: round space down and required content up.
+ -- The widget system draws whole scrolling rows only and keeps that height:
+ -- fixed rows (41.25 + 6*20), row 8 (60.5), then as many 20px rows as fit.
+ local cap=math.floor(height*0.4)
+ local expected=161.25+60.5+math.floor((cap-221.75)/20)*20
+ assert(t.ceRenderedHeight==expected and t.ceRenderedHeight<=t:getVisibleHeight())
+ assert(t:getVisibleHeight()-t.ceRenderedHeight<20)
  local available=math.floor(height-8-t.properties.y)
- assert(available>=math.ceil(t:getVisibleHeight())+2)
+ assert(available>=math.ceil(t.ceRenderedHeight)+2 and available<=math.ceil(t.ceRenderedHeight)+3)
  for i,r in ipairs(t.rows) do
   assert(r.properties.fixed==(i<=7))
   assert(r.rowdata==((i>7 or i==6) and true or nil) and r.properties.interactive==(i==6))
@@ -394,10 +402,19 @@ missingTable=false;liveTopRow=35;menu.onUpdate()
 status[9]=snapshot(42,6)[9];now=now+1;t=draw()
 assert(#t.rows==13 and t.topRow==13 and value(t.rows[13][2])=='Ware 6')
 assert(t:getVisibleHeight()==321.75)
-assert(math.floor(Helper.viewHeight-8-t.properties.y)>=math.ceil(t:getVisibleHeight())+2)
+assert(t.ceRenderedHeight==321.75)
+assert(math.floor(Helper.viewHeight-8-t.properties.y)>=math.ceil(t.ceRenderedHeight)+2)
 wrappedRowHeights=nil
 status[9]={};now=now+1;t=draw();assert(#t.rows==8 and t.topRow==8)
 menu.cleanup();t=draw();assert(t.topRow==8)
+''')
+deferred.execute('''
+Helper.viewHeight=1080;wrappedRowHeights={[1]=41.25,[8]=60.5};status[9]=snapshot(42,40)[9];now=now+1
+local t=draw()
+-- Old anchoring used getVisibleHeight() (the 432 cap); the renderer stops at 421.75.
+assert(t:getVisibleHeight()==432 and t.ceRenderedHeight==421.75)
+assert(t.properties.y==math.floor(1080-422-2-2-4-2))
+wrappedRowHeights=nil
 ''')
 print('Map status: metrics, identity, cache, scrolling, refresh, reserve/growth bars and native fallbacks passed')
 
@@ -416,19 +433,21 @@ menu.refreshMainFrame=false;t.rows[6][1].handlers.onClick();assert(not menu.refr
 t.rows[6][3].handlers.onClick();assert(menu.refreshMainFrame);t=draw()
 assert(t.rows[6][3].properties.bgColor.b==140 and t.rows[6][1].properties.bgColor==Color.button_background_default)
 assert(#t.rows==12 and t.topRow==8 and value(t.rows[8][1])=='Workforce immigration')
-assert(value(t.rows[7][1])=='Bonus' and value(t.rows[7][4])=='Benefit' and value(t.rows[7][5])=='Status')
-assert(t.widths[4]==t.properties.width*0.28)
-assert(value(t.rows[8][4])=='90 / hour per 1,000 capacity')
+assert(value(t.rows[7][1])=='Bonus' and value(t.rows[7][3])=='Benefit' and value(t.rows[7][5])=='Status')
+assert(t.widths[2]==t.properties.width*0.44 and t.widths[4]==t.properties.width*0.26)
+-- Helper under-sizes the last column; keep status wide enough not to over-estimate wraps.
+assert(t.rows[8][5]:getWidth()>=t.properties.width*0.25)
+assert(value(t.rows[8][3])=='90 / hour per 1,000 capacity')
 assert(t.rows[8][5].properties.color()==Color.text_positive)
-assert(t.rows[8][4].properties.mouseOverText():find('Registered stations: 2',1,true))
-assert(value(t.rows[9][4])=='16% of price range')
-assert(t.rows[9][4].properties.mouseOverText():find('3 participating stations',1,true))
-assert(value(t.rows[10][4])=='+12% success chance')
-assert(value(t.rows[11][1])=='Civilian sensor network' and value(t.rows[11][4])=='3 station radars')
-assert(value(t.rows[12][1])=='Discover lockboxes' and value(t.rows[12][4])=='Enabled')
-assert(t.rows[12][4].properties.mouseOverText():find('Discover lockbox locations',1,true))
+assert(t.rows[8][3].properties.mouseOverText():find('Registered stations: 2',1,true))
+assert(value(t.rows[9][3])=='16% of price range')
+assert(t.rows[9][3].properties.mouseOverText():find('3 participating stations',1,true))
+assert(value(t.rows[10][3])=='+12% success chance')
+assert(value(t.rows[11][1])=='Civilian sensor network' and value(t.rows[11][3])=='3 station radars')
+assert(value(t.rows[12][1])=='Discover lockboxes' and value(t.rows[12][3])=='Enabled')
+assert(t.rows[12][3].properties.mouseOverText():find('Discover lockbox locations',1,true))
 status[23][2]=false;status[23][3]='shortage';status[23][4]={'Water'};now=now+1
-assert(value(t.rows[8][5])=='Suspended' and value(t.rows[12][4])=='Disabled')
+assert(value(t.rows[8][5])=='Suspended' and value(t.rows[12][3])=='Disabled')
 assert(t.rows[8][5].properties.color()==Color.text_negative)
 assert(t.rows[5][3].properties.color()==Color.text_negative)
 assert(value(t.rows[5][3])=='Sector bonuses: Suspended')
@@ -445,12 +464,13 @@ status[23][5]=20;now=now+1
 status[23]=nil;now=now+1;t=draw()
 assert(value(t.rows[5][3])=='Sector bonuses: '..translations[68] and value(t.rows[8][5])==translations[68])
 status[23]={1,true,'active',{},90,16,12,true,true,2,3,3,300,600,4,360,{2,3,5,7,9}};now=now+1
--- Demand events scroll below the fixed tabs in both views.
+-- Demand events sit above the tabs in both views while they fit.
 status[21]={2,{{8,75,7200,'Metals'}},{},11};now=now+1;t=draw()
-assert(#t.rows==13 and value(t.rows[7][1]):find('Industrial Boom',1,true) and value(t.rows[9][1])=='Workforce immigration')
-for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
+assert(#t.rows==13 and value(t.rows[6][1]):find('Industrial Boom',1,true) and value(t.rows[9][1])=='Workforce immigration')
+assert(t.rows[7][3].kind=='button' and value(t.rows[7][3])=='Bonuses')
+for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=8)) end
 status[21]=nil;now=now+1
-t.rows[6][1].handlers.onClick();t=draw()
+t=draw();t.rows[6][1].handlers.onClick();t=draw()
 assert(t.rows[6][1].properties.bgColor.b==140 and value(t.rows[7][1])=='Civilian good')
 t.rows[6][3].handlers.onClick();t=draw()
 menu.selectedcomponents={['43']=true};t=draw();assert(t.rows[6][1].properties.bgColor.b==140)
@@ -475,18 +495,19 @@ for _,height in ipairs({720,1080,1440}) do
  Helper.viewHeight=height
  local t=draw()
  assert(#t.rows==48 and value(t.rows[8][5])=='Buying')
- assert(value(t.rows[7][1]):find('Industrial Boom',1,true))
- assert(value(t.rows[7][1]):find('+75%',1,true))
- assert(t.rows[7][1].properties.wordwrap)
- assert(t.rows[7][1].properties.mouseOverText():find('Long material name',1,true))
+ assert(value(t.rows[6][1]):find('Industrial Boom',1,true))
+ assert(value(t.rows[6][1]):find('+75%',1,true))
+ assert(t.rows[6][1].properties.wordwrap)
+ assert(t.rows[6][1].properties.mouseOverText():find('Long material name',1,true))
  assert(value(t.rows[5][1]):find('Critical',1,true))
- for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
+ assert(t.rows[7][1].kind=='button')
+ for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=8)) end
  assert(t:getVisibleHeight()==height*0.4)
 end
 status[21][2][1][2]=-50;status[21][2][1][1]=9;now=now+1
 assert(CEHubStatus.eventText(CEHubStatus.getFresh(42)):find('-50%',1,true))
 status[15]=true;now=now+1
-local t=draw();assert(value(t.rows[7][1]):find('Industrial Slowdown',1,true))
+local t=draw();assert(value(t.rows[6][1]):find('Industrial Slowdown',1,true))
 assert(value(t.rows[5][1])~='')
 status[15]=false
 menu.selectedShipsTable=21;liveTopRow=35;menu.onUpdate();t=draw();assert(t.topRow==35)
@@ -504,14 +525,15 @@ deferred.execute('''
 status[21]={2,{{8,75,7200,'Metals'},{3,50,5400,'Water'},{1,-25,3600,'Food'}},{5},10}
 now=now+1
 local t=draw()
-assert(#t.rows==50 and t.topRow==7)
-assert(value(t.rows[7][1]):find('Lost Harvest',1,true))
-assert(value(t.rows[8][1]):find('Drought',1,true))
-assert(value(t.rows[9][1]):find('Industrial Boom',1,true))
+assert(#t.rows==50 and t.topRow==11)
+assert(value(t.rows[6][1]):find('Lost Harvest',1,true))
+assert(value(t.rows[7][1]):find('Drought',1,true))
+assert(value(t.rows[8][1]):find('Industrial Boom',1,true))
+assert(t.rows[9][1].kind=='button')
 assert(value(t.rows[10][5])=='Buying' and value(t.rows[11][2])=='Ware 1')
-for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
+for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=10)) end
 status[21][2][2][3]=4800;now=now+1
-assert(value(t.rows[8][1]):find('1h 20m',1,true))
+assert(value(t.rows[7][1]):find('1h 20m',1,true))
 menu.selectedShipsTable=21;liveTopRow=25;menu.onUpdate();t=draw();assert(t.topRow==25)
 status[21][2]={};for _,id in ipairs({1,3,4,5,6,7,8}) do
  status[21][2][#status[21][2]+1]={id,50,3600,string.rep('Long affected goods ',20)}
@@ -519,12 +541,17 @@ end
 for _,height in ipairs({720,1080,1440}) do
  Helper.viewHeight=height;now=now+1;t=draw()
  assert(#t.rows==54 and t:getVisibleHeight()==height*0.4)
- for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=6)) end
+ -- Seven events exceed the fixed-row budget at 720: they scroll below the tabs.
+ local below=height==720
+ local tabs=below and 6 or 13
+ assert(t.rows[tabs][1].kind=='button' and t.rows[tabs].properties.fixed)
+ assert(value(t.rows[below and 7 or 6][1]):find('Lost Harvest',1,true))
+ for i,r in ipairs(t.rows) do assert(r.properties.fixed==(i<=(below and 6 or 14))) end
  assert(value(t.rows[14][5])=='Buying')
 end
 status[21][2]={{3,50,600,'Water'}};now=now+1
 menu.refreshMainFrame=nil;menu.onUpdate();assert(menu.refreshMainFrame)
-t=draw();assert(#t.rows==48 and t.topRow==7)
+t=draw();assert(#t.rows==48 and t.topRow==9)
 status[21][2]={{3,50,600,'Water'},{3,50,600,'Water'}};now=now+1
 assert(not CEHubStatus.getFresh(42).demandEvents)
 status[21]={2,{}, {},12};now=now+1;t=draw();assert(#t.rows==47 and t.topRow==8)

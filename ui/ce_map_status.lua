@@ -4,8 +4,9 @@ local ffi = require('ffi')
 ffi.cdef[[ uint64_t GetPickedMapComponent(uint64_t holomapid); ]]
 local C = ffi.C
 local registered = false
--- Rows 1-5: summary; row 6: view tabs; then demand events and the active view.
-local TAB_ROW = 6
+-- Rows 1-5: summary; demand events; view tabs; then the active view. Events sit
+-- above the tabs only while they fit a fixed-row budget (see eventLayout).
+local SUMMARY_ROWS = 5
 local topRow, selected, signature = nil, nil, nil
 local bonusView = false
 local order = {}
@@ -50,23 +51,50 @@ local function updateSelection(s)
     selected, signature = key, M.signature(s)
 end
 
+-- Fixed rows cannot scroll, and the native table refuses to draw when fixed rows
+-- plus a minimum scrolling area exceed its cap. Events above the tabs are fixed,
+-- so they are placed there only while summary, events, tabs, headings and three
+-- spare rows fit; otherwise they scroll below the tabs as before.
+local function eventLayout(s, data, width)
+    local events = s.demandEvents and s.demandEvents.events or {}
+    local cap = math.floor(Helper.viewHeight * 0.4)
+    local function height(text, font)
+        local ok, h = pcall(function()
+            return C.GetTextHeight(tostring(text), font, math.floor(data.fontsize), math.floor(width))
+        end)
+        return math.max(data.textHeight, ok and tonumber(h) and math.ceil(h) or 0)
+    end
+    local used = height(title(s), Helper.headerRow1Font) + (SUMMARY_ROWS + 1 + 1 + 3) * data.textHeight
+    for _, event in ipairs(events) do used = used + height(M.eventText(s, event.id), Helper.standardFont) end
+    return #events > 0 and used <= cap
+end
+
 local function createPanel(menu, frame, s)
     local data = menu.selectedShipsTableData
     local eventCount = s.demandEvents and #s.demandEvents.events or 0
-    -- Events scroll with the view; without events the view headings stay fixed too.
-    local fixedRows = eventCount > 0 and TAB_ROW or TAB_ROW + 1
     local width = math.min(Helper.scaleX(1100), Helper.viewWidth - 2 *
         (menu.infoTableOffsetX + menu.infoTableWidth + 2 * Helper.borderSize))
+    local eventsAbove = eventLayout(s, data, width)
+    local tabRow = SUMMARY_ROWS + 1 + (eventsAbove and eventCount or 0)
+    local eventStart = eventsAbove and SUMMARY_ROWS or tabRow
+    local viewOffset = tabRow + (eventsAbove and 0 or eventCount)
+    -- Scrolling events below the tabs end the fixed area at the tabs; otherwise
+    -- the view headings stay fixed too.
+    local fixedRows = (eventCount > 0 and not eventsAbove) and tabRow or tabRow + 1
     local border = frame:addFrameBorder('selectedships', {offset=Helper.standardContainerOffset})
     local t=frame:addTable(5,{tabOrder=21,width=width,x=(Helper.viewWidth-width)/2,y=0,
-        scaling=false,reserveScrollBar=true,skipTabChange=true,maxVisibleHeight=math.floor(Helper.viewHeight*0.4),
+        scaling=false,reserveScrollBar=false,skipTabChange=true,maxVisibleHeight=math.floor(Helper.viewHeight*0.4),
         backgroundID='solid',backgroundColor=Color['frame_background_semitransparent'],
         backgroundPadding=Helper.standardContainerOffset,frameborder=border.id})
     -- MapMenu.viewCreated binds positional widget IDs: this hook MUST add one table.
     t:setColWidth(1,1)
-    t:setColWidth(2,width*(bonusView and 0.5 or 0.44))
+    -- Columns 1-2 keep one width so the tab buttons do not move between views.
+    -- Bonuses: name 1-2, benefit 3-4, status 5. Helper sizes the last column without
+    -- the reserved scrollbar space, so a narrow status column over-estimates wrapped
+    -- rows and lifts the bottom-anchored panel.
+    t:setColWidth(2,width*0.44)
     t:setColWidth(3,width*(bonusView and 0.01 or 0.18))
-    t:setColWidth(4,width*(bonusView and 0.28 or 0.17))
+    t:setColWidth(4,width*(bonusView and 0.26 or 0.17))
     t:setDefaultCellProperties('text',{fontsize=data.fontsize,minRowHeight=data.textHeight})
     t:setDefaultComplexCellProperties('button','text',{fontsize=data.fontsize})
     t:setDefaultComplexCellProperties('icon','text',{fontsize=data.fontsize})
@@ -74,7 +102,7 @@ local function createPanel(menu, frame, s)
     local rows={}
     local function tableRow(index)
         while #rows<index do
-            local fixed, tabs = #rows<fixedRows, #rows+1==TAB_ROW
+            local fixed, tabs = #rows<fixedRows, #rows+1==tabRow
             -- Native scrolling keeps each selectable row and following plain rows
             -- together. Give each scrolling row its own boundary, as vanilla does
             -- for informational capacity rows, without making it interactive.
@@ -84,7 +112,7 @@ local function createPanel(menu, frame, s)
         return rows[index]
     end
     local function row(index)
-        local result=tableRow(index+TAB_ROW+eventCount)
+        local result=tableRow(index+viewOffset)
         result[1]:setBackgroundColSpan(5)
         return result
     end
@@ -95,7 +123,8 @@ local function createPanel(menu, frame, s)
     local blue = {r=12,g=85,b=140,a=100,glow=0}
     local background = Color['rowgroup_background_default']
     return {table=t, data=data, current=current, tableRow=tableRow, row=row, summaryLine=summaryLine,
-        green=green, blue=blue, background=background, eventCount=eventCount, fixedRows=fixedRows}
+        green=green, blue=blue, background=background, eventCount=eventCount, fixedRows=fixedRows,
+        tabRow=tabRow, eventStart=eventStart, viewOffset=viewOffset, eventsAbove=eventsAbove}
 end
 
 local function drawSummary(panel, s)
@@ -139,13 +168,13 @@ local function drawSummary(panel, s)
             color=function() return Color[CERewardStatus.summaryColor(current())] end})
     for index, event in ipairs(s.demandEvents and s.demandEvents.events or {}) do
         local eventID = event.id
-        tableRow(TAB_ROW+index)[1]:setColSpan(5):createText(function() return M.eventText(current(), eventID) end,
+        tableRow(panel.eventStart+index)[1]:setColSpan(5):createText(function() return M.eventText(current(), eventID) end,
             {wordwrap=true, mouseOverText=function() return M.eventHint(current(), eventID) end})
     end
 end
 
 local function drawViewSelector(panel, menu)
-    local r=panel.tableRow(TAB_ROW)
+    local r=panel.tableRow(panel.tabRow)
     local function tab(column,span,label,showBonuses)
         local active=bonusView==showBonuses
         r[column]:setColSpan(span):createButton({active=true,height=panel.data.textHeight,
@@ -162,16 +191,16 @@ end
 
 local function drawBonuses(panel)
     local headings=panel.row(1)
-    headings[1]:setColSpan(3):createText(M.text(431),{cellBGColor=Color['row_title_background']})
-    headings[4]:createText(M.text(432),{cellBGColor=Color['row_title_background']})
+    headings[1]:setColSpan(2):createText(M.text(431),{cellBGColor=Color['row_title_background']})
+    headings[3]:setColSpan(2):createText(M.text(432),{cellBGColor=Color['row_title_background']})
     headings[5]:createText(M.text(78),{cellBGColor=Color['row_title_background']})
     for i=1,5 do
         local index=i
         local function entry() return CERewardStatus.rows(panel.current())[index] end
         local r=panel.row(i+1)
         local hint=function() return entry().hint end
-        r[1]:setColSpan(3):createText(function() return entry().name end,{mouseOverText=hint,wordwrap=true})
-        r[4]:createText(function() return entry().value end,{mouseOverText=hint,wordwrap=true})
+        r[1]:setColSpan(2):createText(function() return entry().name end,{mouseOverText=hint,wordwrap=true})
+        r[3]:setColSpan(2):createText(function() return entry().value end,{mouseOverText=hint,wordwrap=true})
         r[5]:createText(function() return entry().state end,{mouseOverText=hint,wordwrap=true,
             color=function() return Color[entry().color] end})
     end
@@ -219,6 +248,33 @@ local function drawWareRow(panel, wareKey, index)
     end
 end
 
+-- Bottom anchoring needs the height the widget system will draw, not Helper's
+-- getVisibleHeight(). A scrolling table is drawn with whole rows only, starting at
+-- the first scrolling row, and keeps that height (widget_fullscreen.lua
+-- drawTableSection / initial table setup). Helper instead reports the full cap.
+-- Requires reserveScrollBar=false: otherwise Helper widens the last column only
+-- after this measurement, when no scrollbar is needed, and wrapped text shrinks.
+local function renderedHeight(t)
+    local cap = t.getMaxVisibleHeight and t:getMaxVisibleHeight() or t.properties.maxVisibleHeight
+    local rows, heights, full, fixed, tallest = t.rows, {}, 0, 0, 0
+    for i, r in ipairs(rows) do
+        heights[i] = r:getHeight() + (r.properties.paddingTop or 0) + (r.properties.paddingBottom or 0)
+        full = full + heights[i]
+        if i < #rows and r.properties.borderBelow then full = full + Helper.borderSize end
+        if r.properties.fixed then fixed = fixed + heights[i] else tallest = math.max(tallest, heights[i]) end
+    end
+    -- Native minimum for a scrolling table: fixed rows plus one selectable row group.
+    local minimum = fixed + math.max(tallest, 35)
+    if not cap or cap <= 0 or full <= cap or full <= minimum then return full end
+    local height = 0
+    for i, r in ipairs(rows) do
+        local next = heights[i] + ((i > 1 and rows[i-1].properties.borderBelow) and Helper.borderSize or 0)
+        if not r.properties.fixed and height + next > cap then break end
+        height = height + next
+    end
+    return math.min(cap, math.max(height, minimum))
+end
+
 local function draw(menu, frame, s)
     updateSelection(s)
     local panel = createPanel(menu, frame, s)
@@ -235,9 +291,10 @@ local function draw(menu, frame, s)
             {wordwrap=true,cellBGColor=panel.background})
     end
     local restoredTopRow = type(topRow) == 'number' and topRow or panel.fixedRows+1
-    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(restoredTopRow, math.max(panel.fixedRows+1, (bonusView and 5 or math.max(1,#order))+TAB_ROW+1+panel.eventCount))))
+    panel.table:setTopRow(math.max(panel.fixedRows+1, math.min(restoredTopRow, math.max(panel.fixedRows+1, (bonusView and 5 or math.max(1,#order))+panel.viewOffset+1))))
+    panel.table.ceRenderedHeight=renderedHeight(panel.table)
     -- Leave two pixels of clearance for native widget rounding at the bottom edge.
-    panel.table.properties.y=math.floor(Helper.viewHeight-math.ceil(panel.table:getVisibleHeight())-Helper.borderSize
+    panel.table.properties.y=math.floor(Helper.viewHeight-math.ceil(panel.table.ceRenderedHeight)-Helper.borderSize
         -menu.borderOffset-Helper.standardContainerOffset-2)
 end
 local function register()
