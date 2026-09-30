@@ -4,7 +4,7 @@
   description="People have desires too. Trade with the civilian population, get bonuses or upset them."
   author="stemps"
   version="100"
-  date="2026-09-28"
+  date="2026-09-30"
   save="true"
   enabled="true">
   <text language="44" name="Civilian Economy" description="People have desires too. Trade with the civilian population, get bonuses or upset them." />
