@@ -47,11 +47,13 @@ class ConversionTests(unittest.TestCase):
     def test_current_manual(self):
         source = (Path(__file__).resolve().parents[1] / manual.MANUAL).read_text(encoding='utf-8')
         output = manual.convert(source)
-        for expected in ('[b][size=5]Manual: Civilian Economy mod. People have desires too![/size][/b]', 'Declaration of AI usage',
-                         '[url=https://www.nexusmods.com/x4foundations/mods/503]',
-                         '[url=https://github.com/stemps/x4-civilian-economy]',
-                         'civilian trade hubs', 'How it Works'):
-            self.assertIn(expected, output)
+        # Structure only, so rewording the manual does not break the test.
+        for pattern in (r'\A\[b\]\[size=5\].+?\[/size\]\[/b\]\n',
+                        r'\[b\]\[size=4\].+?\[/size\]\[/b\]',
+                        r'\[list\]\n\[\*\].+?\[/\*\]',
+                        r'\[url=https://[^\]]+\].+?\[/url\]'):
+            with self.subTest(pattern=pattern):
+                self.assertRegex(output, pattern)
         self.assertNotIn('Work in progress', output)
 
     def test_handoff_writes_persistent_file_and_opens_notepad(self):
