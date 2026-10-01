@@ -9,7 +9,7 @@
     <actions>
       <sequence name="Broadcast" start="0">
         <shot name="NewsCard" environment="scenezone" duration="auto">
-          <video name="extensions/civilian_economy/videos/ce_news_sabotage"/>
+          <video name="extensions/civilian_economy/ce_news_sabotage"/>
           <camera_follow reference="playership" orient_to="object" interpolation="smooth"/>
         </shot>
       </sequence>

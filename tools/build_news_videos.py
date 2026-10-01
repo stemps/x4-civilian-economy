@@ -26,7 +26,6 @@ def main():
     scratch = ROOT / '.cache/news-text'
     scratch.mkdir(parents=True, exist_ok=True)
     (ROOT / 'output').mkdir(exist_ok=True)
-    (ROOT / 'videos').mkdir(exist_ok=True)
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
     for kind, artwork, text_id in [('raid', 'pirate-mobilisation', 291),
                                    ('sabotage', 'station-sabotage', 292),
@@ -47,7 +46,8 @@ def main():
                 f"x='{offset}-mod(t*110,tw+100)':y=636+(84-th)/2"
             )
         source = ROOT / f'images/broadcast/{artwork}.png'
-        destination = ROOT / f'videos/ce_news_{kind}.mkv'
+        # Extension root: WorkshopTool refuses a videos/ folder.
+        destination = ROOT / f'ce_news_{kind}.mkv'
         temporary = destination.with_name(destination.stem + '.tmp' + destination.suffix)
         subprocess.run([ffmpeg, '-y', '-hide_banner', '-loglevel', 'error',
                         '-loop', '1', '-framerate', '24', '-i', str(source),

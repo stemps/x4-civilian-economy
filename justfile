@@ -80,6 +80,18 @@ news-videos:
 publish-nexus tag *args:
     if ('{{python}}') { & '{{python}}' scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE }
 
+# Publish or resume a tagged release on the Steam Workshop (WorkshopTool; Steam must be running).
+publish-steam tag *args:
+    if ('{{python}}') { & '{{python}}' scripts/release.py publish-steam "{{tag}}" {{args}}; exit $LASTEXITCODE } else { uv run python scripts/release.py publish-steam "{{tag}}" {{args}}; exit $LASTEXITCODE }
+
+# Stage the working tree as a Workshop folder (ws_ manifest, packed catalog) in dist/workshop/local.
+build-workshop:
+    if ('{{python}}') { & '{{python}}' scripts/release.py build-workshop; exit $LASTEXITCODE } else { uv run python scripts/release.py build-workshop; exit $LASTEXITCODE }
+
+# Minimal folder for the one-time WorkshopTool publish that creates the Workshop item.
+workshop-placeholder:
+    if ('{{python}}') { & '{{python}}' scripts/release.py workshop-placeholder; exit $LASTEXITCODE } else { uv run python scripts/release.py workshop-placeholder; exit $LASTEXITCODE }
+
 # Render and open the manual at a release tag, branch or commit without publishing anything.
 nexus-description ref:
     if ('{{python}}') { & '{{python}}' scripts/manual_bbcode.py "{{ref}}"; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/manual_bbcode.py "{{ref}}"; exit $LASTEXITCODE }
@@ -91,6 +103,7 @@ test-release:
     if ('{{python}}') { & '{{python}}' test/test_nexus.py; exit $LASTEXITCODE } else { uv run python test/test_nexus.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' test/test_archive.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_archive.py; exit $LASTEXITCODE }
     if ('{{python}}') { & '{{python}}' test/test_release_support.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_release_support.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' test/test_workshop.py; exit $LASTEXITCODE } else { uv run python test/test_workshop.py; exit $LASTEXITCODE }
 
 # Junction this dev directory into the game's extensions folder for in-game testing.
 link:

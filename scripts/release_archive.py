@@ -19,8 +19,8 @@ def runtime_path(name):
                  or (name.startswith('t/') and name.endswith('.xml'))
                  or (name.startswith('cutscenes/') and name.endswith('.xml'))
                  or name == 'assets/textures/ui/factions/ce_unrest_skull.gz'
-                 or name in ('videos/ce_news_raid.mkv', 'videos/ce_news_sabotage.mkv',
-                             'videos/ce_news_hacking.mkv')))
+                 # Root, not videos/: WorkshopTool refuses a videos folder.
+                 or name in ('ce_news_raid.mkv', 'ce_news_sabotage.mkv', 'ce_news_hacking.mkv')))
 
 
 # Folders the engine loads from an extension, and file types it reads. A file
@@ -123,6 +123,27 @@ def local_zip(root):
 
 def tagged_zip(root, tag):
     """Verify remote identity and package blobs without checking out the release."""
+    commit, files, read, annotation = tagged_files(root, tag)
+    final = root / 'dist' / f'Civilian-Economy-{tag[1:]}.zip'
+    final.parent.mkdir(exist_ok=True)
+    if final.exists():
+        # Older release ZIPs can contain checkout line endings. Apply Git's clean
+        # filters, as the original release script does, when validating them.
+        verify_zip(final, files, lambda name, data:
+                   git_bytes(root, 'hash-object', '--stdin', '--path', name, data=data).strip()
+                   == git_bytes(root, 'rev-parse', f'{commit}:{name}').strip())
+    else:
+        with tempfile.TemporaryDirectory(prefix='ce-tag-', dir=final.parent) as directory:
+            temporary = Path(directory) / final.name
+            write_zip(temporary, files, read)
+            # No overwrites of a concurrently created public release archive.
+            with final.open('xb') as output:
+                output.write(temporary.read_bytes())
+    return final, commit, annotation
+
+
+def tagged_files(root, tag):
+    """Verified release tag: (commit, runtime files, blob reader, reviewed notes)."""
     from xml.etree import ElementTree
     import re
     if not re.fullmatch(r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', tag):
@@ -155,22 +176,7 @@ def tagged_zip(root, tag):
             files.append(name)
     files.sort()
     require_manifests(files)
-    final = root / 'dist' / f'Civilian-Economy-{tag[1:]}.zip'
-    final.parent.mkdir(exist_ok=True)
-    if final.exists():
-        # Older release ZIPs can contain checkout line endings. Apply Git's clean
-        # filters, as the original release script does, when validating them.
-        verify_zip(final, files, lambda name, data:
-                   git_bytes(root, 'hash-object', '--stdin', '--path', name, data=data).strip()
-                   == git_bytes(root, 'rev-parse', f'{commit}:{name}').strip())
-    else:
-        with tempfile.TemporaryDirectory(prefix='ce-tag-', dir=final.parent) as directory:
-            temporary = Path(directory) / final.name
-            write_zip(temporary, files, read)
-            # No overwrites of a concurrently created public release archive.
-            with final.open('xb') as output:
-                output.write(temporary.read_bytes())
     annotation = git_bytes(root, 'cat-file', 'tag', tag_object).split(b'\n\n', 1)[1].decode().strip()
     if not annotation:
         raise ReleaseError('Release tag has no reviewed notes.')
-    return final, commit, annotation
+    return commit, files, read, annotation

@@ -154,6 +154,17 @@ Before the first tag, CE derives the suggestion from the existing manifest
   so releases update it even if the local `dist/nexus/` binding is lost. With
   `file_id: null`, exactly one main file must exist; `create_new_file: true` is
   only for an empty page and is not safe to leave on once a file exists.
+- `scripts/workshop_build.py`: stages `dist/workshop/<tag|local>/civilian_economy/`
+  from the same runtime files as the ZIP. Its `content.xml` gets
+  `id="ws_<published_file_id>"`, `sync="false"` and a `ws_` twin for each optional
+  dependency mapped in `steam.json`. Root `.mkv` files stay loose; everything else
+  is packed into `ext_01.cat/.dat` with XRCatTool and verified against the sources.
+  `just workshop-placeholder` builds the folder for the one-time item creation.
+- `scripts/steam_publish.py`: uploads that folder with `WorkshopTool update
+  -batchmode` (Steam client must be online) and keeps resumable receipts in
+  `dist/steam/`. Uncertain outcomes are resolved with `--confirm-uploaded` or
+  `--retry-upload`; `--minor` is for an unchanged version. Without `steam.json`,
+  releases skip Steam.
 - `scripts/manual_bbcode.py`: converts the released `docs/MANUAL.md` to
   `dist/nexus/<tag>/description.bbcode.txt` and opens Notepad for copy/paste.
   Unsupported Markdown fails before releasing or publishing. The source manual
@@ -177,6 +188,10 @@ named by the rendered commit because branches move). Release
 tasks use `uv` with pinned `markdown-it-py==4.0.0`, or the existing `CE_PYTHON`
 override (which must have the dependencies installed). Retain `dist/nexus`
 receipts to resume uncertain uploads safely.
+
+`just release` checks Nexus and Steam first, then publishes Nexus, then Steam.
+`just publish-steam vX.Y.Z` resumes Steam alone; `just build-workshop` stages the
+working tree.
 
 ## Civil unrest
 
@@ -278,6 +293,7 @@ fitting the full images above a solid red lower third without cropping. Bold whi
 headlines scroll left at 110 pixels/sec, prefixed with BREAKING. Strings come from
 English text IDs 291-292 and 296. These baked-in video headlines remain English;
 localizing them would require separate strip renders and language-based clip selection.
+The MKVs live in the extension root because WorkshopTool rejects a `videos/` folder.
 Runtime captions use the localized native text entries. These are packaged videos, not a runtime
 image-generation or encoder dependency. Only the three production broadcast MKVs are
 included in release archives, along with cutscene XML.

@@ -2534,3 +2534,28 @@ Historical single-event model; superseded by concurrent-sector-events below.
   source. List: `swi-sector-populations.md`.
 - READ: SWI sets `<area>` economy/security/sunlight on cluster datasets only;
   economy is 1 in 184 of 220 sectors; 28 clusters set `factionlogic="false"`.
+
+## 2026-10-01 - steam-workshop-publishing
+
+- A Workshop item needs `content.xml` id `ws_<publishedfileid>` (Egosoft;
+  confirmed by Chem O`Dun). CE keeps `civilian_economy` in the repo for Nexus and
+  rewrites only the staged Workshop copy. Saves record the extension id, so Nexus
+  and Workshop saves are not interchangeable.
+- Only Egosoft's WorkshopTool (X Tools, appid 282160) can upload X4 items. There
+  is no Web API upload, and SteamCMD `workshop_build_item` fails with "no
+  workshop depot found" (X4 items are file-based). A SteamCMD login with the
+  same account also logs the Steam client off ("Session Replaced").
+- WorkshopTool 1.15 rules: the Steam client must be running and online
+  ("No connection to Steam servers" otherwise); the folder must contain a
+  catalog (`-buildcat` packs one); only `.cat .dat .cur .mkv .txt .pdf` plus the
+  manifest upload, and `.mkv` only from the folder root (a `videos/` folder is
+  rejected); `-batchmode` skips the prompt; `-minor` is required when the
+  version is unchanged; `update` keeps the Steam title/description unless
+  `-namedesc` is given; it rewrites the uploaded `content.xml` (`lastupdate`).
+- The engine plays videos from the extension root (tested in game), so CE ships
+  its MKVs there for both platforms. `ui.xml` and Lua inside `ext_01.cat` work
+  (Mod Support APIs ships that way).
+- Workshop dependency twins: UI Extensions is `ws_3477279743` (Valador's
+  authorised upload); Verbose Transaction Log has no Workshop copy.
+- Open: whether the Workshop installs the item as `extensions/civilian_economy`
+  (WorkshopTool's default folder name). The video paths depend on it.

@@ -67,9 +67,9 @@ class ArchiveTests(unittest.TestCase):
         self.assertNotEqual(archive.read_bytes(), original)
 
     def test_broadcast_assets_included_without_unrelated_video_files(self):
-        files = ('cutscenes/ce_news_raid.xml', 'videos/ce_news_raid.mkv',
-                 'cutscenes/ce_news_sabotage.xml', 'videos/ce_news_sabotage.mkv',
-                 'cutscenes/ce_news_hacking.xml', 'videos/ce_news_hacking.mkv')
+        files = ('cutscenes/ce_news_raid.xml', 'ce_news_raid.mkv',
+                 'cutscenes/ce_news_sabotage.xml', 'ce_news_sabotage.mkv',
+                 'cutscenes/ce_news_hacking.xml', 'ce_news_hacking.mkv')
         for name in files:
             self.fixture.write(name, 'synthetic test asset')
         archive = local_zip(self.root)
@@ -128,7 +128,7 @@ class ArchiveTests(unittest.TestCase):
     def test_unpackaged_runtime_looking_files_fail(self):
         # Each would work in a dev checkout (junctioned into the game) but be
         # missing from the player's ZIP.
-        for name in ('videos/unrelated.mkv', 'videos/ce_news_raid.tmp.mkv', 'cutscenes/notes.txt',
+        for name in ('videos/unrelated.mkv', 'unrelated.mkv', 'ce_news_raid.tmp.mkv', 'cutscenes/notes.txt',
                      'md/notes.txt', 'assets/banner.png', 'maps/ce_sectors.xml', 'sounds/ce_alarm.ogg',
                      'root_patch.xml'):
             with self.subTest(name=name):
