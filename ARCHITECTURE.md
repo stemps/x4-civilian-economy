@@ -171,7 +171,9 @@ Before the first tag, CE derives the suggestion from the existing manifest
 
 `just build-zip` packages dirty and untracked runtime files without changing Git
 or versions. `just publish-nexus vX.Y.Z` resumes an existing release;
-`just nexus-description vX.Y.Z` regenerates only its manual handoff. Release
+`just nexus-description <ref>` regenerates only the manual handoff for a release
+tag (`dist/nexus/vX.Y.Z/`) or any branch/commit (`dist/nexus/<ref>-<commit>/`,
+named by the rendered commit because branches move). Release
 tasks use `uv` with pinned `markdown-it-py==4.0.0`, or the existing `CE_PYTHON`
 override (which must have the dependencies installed). Retain `dist/nexus`
 receipts to resume uncertain uploads safely.

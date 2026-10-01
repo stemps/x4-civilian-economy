@@ -80,9 +80,9 @@ news-videos:
 publish-nexus tag *args:
     if ('{{python}}') { & '{{python}}' scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE }
 
-# Regenerate and open a released manual without publishing anything.
-nexus-description tag:
-    if ('{{python}}') { & '{{python}}' scripts/manual_bbcode.py "{{tag}}"; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/manual_bbcode.py "{{tag}}"; exit $LASTEXITCODE }
+# Render and open the manual at a release tag, branch or commit without publishing anything.
+nexus-description ref:
+    if ('{{python}}') { & '{{python}}' scripts/manual_bbcode.py "{{ref}}"; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/manual_bbcode.py "{{ref}}"; exit $LASTEXITCODE }
 
 # Exercise releases using temporary repositories and local remotes only.
 test-release:
