@@ -1344,6 +1344,42 @@ implemented by this mod. Runtime effects require separate verification.
   does not establish support or persistence on sectors/clusters, nor does it
   override CE's observed station-blackboard failure. Retain the proven registry.
 
+### Population consumers and change sources (vanilla sweep, 2026-10-01)
+
+READ over base + all DLC md/aiscripts/libraries/ui (747 base + 448 DLC files);
+engine formulas are invisible, so each engine-side link is marked.
+
+- Consumers: (1) station workforce growth (`parameters.xml` workforce/growth/population,
+  surfaced as the "Sector Population" influence of `GetContainerWorkforceInfluence`);
+  (2) build plot price, `parameters.xml` `plot/population factor="0.01" max="25"`,
+  per 1M inhabitants (schema text only); (3) terraforming: many projects require
+  population >= 10,000, `pricescale="population"` supplies, per-planet housing targets
+  (100M-1B); (4) `citylevel` planet shader param, 0..10B -> 0..1; (5) UI only (map
+  sector panel, encyclopedia, station overview tooltip). No aiscript, job, gamestart,
+  faction goal or other mission reads population. Script-readable form is only
+  `cluster.terraforming.stat.population.value` (read-only); no sector property.
+- Terraforming is base game. Stat `population` (`terraforming.xml:80`) defaults to 0,
+  has no min/max, and project effects can only ADD to it (min/max/value/onfail ignored).
+  Repeatable housing projects: bubblecity +10k, habmodule +5M, housing_dense +15M,
+  arcology +200M, housing_luxury +100, Boron housing_ocean +5M. Worlds: Scale Plate
+  Green, Black Hole Sun, Getsu Fune, Frontier's Edge, Atiya's Misfortune, Eighteen
+  Billion, Memory of Profit, Ocean of Fantasy; Tharkas Cascade and Emperor's Pride
+  setups are never triggered. These planets have no `maxpopulation`, so
+  `vanilla-sector-populations.md` shows 0 for them, but they can reach billions.
+- No vanilla decrease path: random events and side effects never touch population;
+  `set_terraforming_stat id='population'` is only used for setup (0) and debug cues (10B).
+- Cradle of Humanity `Story_Terraforming` cue `Ch8_Terraforming_Effects`
+  (`ego_dlc_terran/md/story_terraforming.xml:14206+`): Segaris (Terranova) and Gaian
+  Prophecy (Sutton), both without `maxpopulation`, are initialised at 0 and then raised
+  hourly 1k -> 75M (Gaian x1.2) via `set_world_population amount=`, not via the stat.
+- No script or UI code links population to sector owner.
+- UNVERIFIED engine links, need a scratch-save test: whether the terraforming stat
+  feeds `GetSectorPopulation` through `worlds/world factor` (inferred yes: those planets
+  are listed in sector worlds and lack `maxpopulation`); whether `set_world_population
+  amount=` does; whether conquest changes it (inferred no). If the first holds,
+  terraformed sectors can cross CE's 100M hub threshold mid-game; the Cradle of
+  Humanity story alone tops out below it (~75M / ~90M).
+
 ### Terraforming as a possible supply-contract mechanism
 
 - `libraries/terraforming.xml` provides native recurring supply examples:
