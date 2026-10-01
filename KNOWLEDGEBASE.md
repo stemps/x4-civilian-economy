@@ -2504,3 +2504,17 @@ Historical single-event model; superseded by concurrent-sector-events below.
   with `publish-nexus v0.1.0` now fails membership verification, because the
   published v0.1.0 ZIP lacks the licence. That release is complete, so this only
   matters if it is ever re-published.
+
+## 2026-10-01 - swi-sectors-have-no-population
+
+- READ (SW Interworlds 0.9.1 HF, packed `ext_01`/`ext_02`): the `swi_galaxy_macro`
+  galaxy has 220 single-sector clusters. Its `mapdefaults.xml` defines no
+  `<system>`/`<planets>` and no sector `<worlds>`, and `maxpopulation` appears in
+  no SWI file. `parameters.xml` does not patch `<workforce>`.
+- INFERRED (same derivation as `vanilla-sector-populations.md`, not measured in a
+  save): `GetSectorPopulation` is 0 in every SWI sector, so no SWI sector reaches
+  CE's 100M hub threshold and the workforce growth bonus is +0%. Unless a running
+  save shows otherwise, CE spawns no hubs under SWI without its own population
+  source. List: `swi-sector-populations.md`.
+- READ: SWI sets `<area>` economy/security/sunlight on cluster datasets only;
+  economy is 1 in 184 of 220 sectors; 28 clusters set `factionlogic="false"`.
