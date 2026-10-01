@@ -1373,12 +1373,28 @@ engine formulas are invisible, so each engine-side link is marked.
   Prophecy (Sutton), both without `maxpopulation`, are initialised at 0 and then raised
   hourly 1k -> 75M (Gaian x1.2) via `set_world_population amount=`, not via the stat.
 - No script or UI code links population to sector owner.
-- UNVERIFIED engine links, need a scratch-save test: whether the terraforming stat
-  feeds `GetSectorPopulation` through `worlds/world factor` (inferred yes: those planets
-  are listed in sector worlds and lack `maxpopulation`); whether `set_world_population
-  amount=` does; whether conquest changes it (inferred no). If the first holds,
-  terraformed sectors can cross CE's 100M hub threshold mid-game; the Cradle of
-  Humanity story alone tops out below it (~75M / ~90M).
+- MEASURED 2026-10-01 (throwaway probe extension, source archived in toolkit
+  `.claude/backups/ce_terraform_probe-2026-10-01/`; user's ~66h save where
+  vanilla had already initialised Black Hole Sun, partname `planet001b`, stat 0):
+  `set_terraforming_stat population` 0 -> 400,000,000 was confirmed by reading the stat
+  back, but `C.GetSectorPopulation` for Black Hole Sun IV (factor 1) and V (factor 0.75)
+  stayed 0 at +2s, +60s and +6min. CE's registry had no record for either, and no
+  `[CE] Population:` line appeared. So within a running session the terraforming stat
+  does NOT feed sector population, and CE does not react to it. The earlier inference
+  ("yes, via world factor") was wrong for this window. Positive control is INFERRED
+  only: CE logged no population changes for its tracked sectors, which it would have
+  if `GetSectorPopulation` returned 0 everywhere.
+- MEASURED 2026-10-01, same save after save + reload: the map showed Black Hole Sun IV
+  at 400M (USER-VERIFIED). CE's first reconcile after load created two new construction
+  sites in one pass; their initial civilian funding was 2,870,400 and 2,148,400, ratio
+  1.336, matching 400M : 300M (the 0.75 world factor). That the two sites are Black
+  Hole Sun IV and V is INFERRED from timing and that ratio; the log line names no sector.
+  So the engine computes sector population from the terraforming stat times the world
+  factor, but only refreshes it on game load. CE picks it up on its first reconcile
+  after load. A new record gets its population at creation, so no `[CE] Population:`
+  line is logged. Vanilla workforce growth probably shares the same lag (INFERRED, it
+  uses the same engine value). Not yet tested: project effects instead of
+  `set_terraforming_stat`, `set_world_population amount=`, conquest.
 
 ### Terraforming as a possible supply-contract mechanism
 
