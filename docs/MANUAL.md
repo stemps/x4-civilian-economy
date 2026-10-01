@@ -1,5 +1,11 @@
 # Manual: Civilian Economy mod. People have desires too!
 
+## Community
+
+Join the [discord](https://discord.gg/TjyxU4TKGn) for feedback, feature
+requests, bug reports and for coordinating contributions.
+
+
 ## The core idea is
 - the mod adds civilian trade hub stations in each sector with a sizeable
   population

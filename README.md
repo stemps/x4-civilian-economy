@@ -9,9 +9,10 @@ X4 mod that adds a civilian economy to the game.
 - [User Manual](/docs/MANUAL.md)
 - [Developer Documentation](/docs/DEVELOPMENT.md)
 
-## Contributing
+## Community
 
-Contributions in the form of pull requests are welcome.
+Join the [discord](https://discord.gg/TjyxU4TKGn) for help, feedback, feature
+requests, bug reports and for coordinating contributions.
 
 ## Internationalization
 
