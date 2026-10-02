@@ -1523,7 +1523,7 @@ installed-mod effective-tree audit:
 ```powershell
 python tools/check.py
 python tools/check.py --schema
-uv run --with lupa python tools/test_debug_menu.py
+uv run --with lupa python tests/lua/test_debug_menu.py
 ```
 
 Restart X4 after source updates before testing. These local checks do not emulate
@@ -2513,6 +2513,8 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - MEASURED: the game's `extensions/civilian_economy` is a Windows junction to
   this dev checkout, so in-game tests see the whole working tree, never the
   release ZIP. A file missing from the ZIP cannot show up in local testing.
+  SUPERSEDED 2026-10-02: the mod moved to `src/`, the junction targets `src/`
+  and the release is all of `src/`, so local tests and the ZIP see the same files.
 - MEASURED (v0.1.0): the ZIP held 81 of 178 tracked files; all 97 exclusions
   were docs, tools, tests, scripts, images and repo metadata. Every `ui.xml`
   Lua file, cutscene video and icon texture resolved inside the ZIP.

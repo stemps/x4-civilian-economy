@@ -1,5 +1,14 @@
 # Runtime architecture
 
+## Repository layout
+
+`src/` is the mod: exactly the files the game loads and every release ships.
+Everything else is development-only: `tests/mod/` (MD controller tests),
+`tests/lua/` (Lua UI harnesses), `tests/release/` (release tooling),
+`tests/translations/`, `tools/` (check runner, MD test runtime, generators),
+`scripts/` (release and publishing), `docs/`, `images/` and metadata. Tools
+and tests keep repo-relative paths on `ROOT` and mod paths on `MOD = ROOT / 'src'`.
+
 ## Production connector-spine construction
 
 Normal hubs now use the six approved racial connector-spine layouts. The debug
@@ -50,12 +59,12 @@ in the game reference, matching Supply Chain View's coverage. This includes
 Bulgarian, Turkish and Ukrainian even where the game's language selector does
 not enable them. Entries cover UI labels, tooltips, MD messages and debug actions.
 
-`test/check_translations.py` mirrors SCV's translation coverage gate, adapted
+`tests/translations/check_translations.py` mirrors SCV's translation coverage gate, adapted
 to CE's existing English filename instead of adding a second English source.
 It checks every page, required locale files, missing/extra/duplicate/empty entries,
 language IDs and X4 text escapes. CE additionally checks ordered Lua format
 specifiers, numbered MD arguments, text references and literal newline counts.
-`test/test_translations.py` exercises failure fixtures and the shipped files.
+`tests/translations/test_translations.py` exercises failure fixtures and the shipped files.
 `just translations` runs both; `just check` runs it before the other checks.
 These checks validate coverage and formatting, not linguistic quality or UI fit.
 Translation files require a full game restart; `/reloadui` is insufficient.
@@ -139,15 +148,11 @@ Before the first tag, CE derives the suggestion from the existing manifest
   orchestration; preserves concurrent edits and rolls back pre-commit failures.
 - `scripts/release_archive.py`: deterministic ZIPs under `civilian_economy/`,
   local working-tree builds and reconstruction from verified remote tags.
-  Runtime selection (`runtime_path`) includes the two manifests, `MIT-LICENSE`,
-  UI Lua, XML in `md`, `t`, `aiscripts`, `assets`, `index`, `libraries`,
-  `cutscenes` and nested `extensions` patches, plus the news videos and skull
-  texture by exact name. Promotional images, docs, tools and tests are excluded.
-  Because the game's `extensions/civilian_economy` is a junction to this checkout,
-  in-game tests cannot catch a file missing from the ZIP. `require_packaged`
-  therefore fails any build or release that would drop a file in an engine
-  folder (`ENGINE_DIRS`) or of an engine file type (`ENGINE_SUFFIXES`) outside
-  the dev folders (`DEV_DIRS`); extend `runtime_path` when adding such content.
+  The mod is exactly `src/` (`MOD`): every file in it ships, nothing outside it
+  does, and package names are relative to it. The game's junction points at
+  `src/`, so in-game tests see the same files as the ZIP. `src/MIT-LICENSE` is a
+  copy of the root licence (kept for GitHub); a test keeps them identical. Tags
+  from before the `src/` layout (v0.1.0) cannot be repackaged.
 - `scripts/nexus_publish.py`: Nexus upload/version/changelog publication with
   resumable receipts in ignored `dist/nexus/`. `nexus.json` targets mod 2405;
   `X4_NEXUS_KEY` supplies credentials. `file_id` pins the main file (`8056605`)
@@ -172,15 +177,15 @@ Before the first tag, CE derives the suggestion from the existing manifest
   Continued numbered lists use explicit numbers because Nexus BBCode has no
   list-start attribute; this preserves CE's dependency-section numbering.
 - `scripts/game_link.ps1` (`just link` / `unlink` / `link-status`): manages the
-  `extensions/civilian_economy` junction to this checkout. The extensions dir
+  `extensions/civilian_economy` junction to this checkout's `src/`. The extensions dir
   comes from `X4_EXTENSIONS`, then the toolkit's `.claude/x4-paths.env`, then
   `X4_GAME\extensions`. It refuses to replace or delete a regular folder, and
   unlink removes only the reparse point (non-recursive delete).
-- `test/`: isolated release repositories/local remotes and fake HTTP responses;
-  run via `just test-release`, also included in `just check`. This directory is
-  separate from the MD controller tests in `tests/`.
+- `tests/release/`: isolated release repositories/local remotes and fake HTTP
+  responses; run via `just test-release`, also included in `just check-release`.
+  Controller discovery only searches `tests/mod/`.
 
-`just build-zip` packages dirty and untracked runtime files without changing Git
+`just build-zip` packages dirty and untracked `src/` files without changing Git
 or versions. `just publish-nexus vX.Y.Z` resumes an existing release;
 `just nexus-description <ref>` regenerates only the manual handoff for a release
 tag (`dist/nexus/vX.Y.Z/`) or any branch/commit (`dist/nexus/<ref>-<commit>/`,
@@ -356,7 +361,7 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `images/` | Promotional images for posting with the mod; separate from runtime game assets. |
 | `aiscripts/build.buildstorage.xml` | Excludes registered hubs from vanilla builder recruitment; MD assigns their builders. Skips duplicate native initialization when a registered CE hub already has a trade NPC. |
 | `t/` | Localized names and diagnostics. |
-| `tests/`, `tools/` | MD action tests, Lua mocks, plan generation and schema/toolkit validation. |
+| `tests/mod/`, `tools/` | MD action tests, Lua mocks, plan generation and schema/toolkit validation. |
 
 ## State and events
 
@@ -548,7 +553,7 @@ ties. Storage is added every level, docks at 1/4/7/10, and piers at 1/6/10.
 tools/spine_geometry.py builds the snap-connected multi-elevation layouts.
 tools/spine_bounds.py fits measured native boxes and frozen candidate constraints.
 tools/generate_plans.py writes six bookmarked production master plans,
-CE_ConstructionData, and the reproducible numeric manifest in tests/fixtures.
+CE_ConstructionData, and the reproducible numeric manifest in tests/mod/fixtures.
 just plans-check verifies reproducibility, geometry and runtime contracts;
 plans-generate explicitly regenerates artifacts. Only numeric geometry/metadata
 is retained; game assets are read from the local reference, never copied.
@@ -732,7 +737,7 @@ there is no metadata backfill for older saves.
 retains the previous snapshot on failure without relabeling old data as version 3.
 Removed hubs evict cached snapshots. Rendering never creates supplies.
 
-`tests/test_refresh_safety.py` exercises failures and isolated delivery scopes,
+`tests/mod/test_refresh_safety.py` exercises failures and isolated delivery scopes,
 including X4-style continued execution after invalid profile-key writes. These
 checks and full XML schemas complement, but cannot replace, native save/load and
 concurrent-trade acceptance tests.
@@ -871,12 +876,12 @@ still execute real Git operations, including rejection hooks and rollback paths.
 `just test-tooling` exercises interpreter/check-runner contracts; Git fixture
 isolation is exercised by `just test-release`.
 
-`tests/support.py` owns fixture data, reference resolution and the reusable
+`tests/mod/support.py` owns fixture data, reference resolution and the reusable
 profile fixture. `support_construction.py`, `support_startup.py`,
 `support_unrest.py` and `support_sales_tax.py` own focused shared fixtures;
 test suites do not import helpers or setup methods from other test suites.
 Release/archive tests share the disposable local Git fixture in
-`test/release_support.py`. Lifecycle tests execute real account/manager
+`tests/release/release_support.py`. Lifecycle tests execute real account/manager
 provisioning libraries with native side effects mocked.
 `tools/check.py --reference` passes its resolved path through `CE_REFERENCE` to
 all fixtures; `X4_REFERENCE` and `X4_TOOLKIT` set defaults for isolated worktrees.

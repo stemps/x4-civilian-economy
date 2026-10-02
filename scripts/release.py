@@ -10,7 +10,7 @@ import sys
 import tempfile
 import zipfile
 
-from release_archive import ReleaseError, working_files, write_zip, git_bytes
+from release_archive import ReleaseError, MOD, repo_path, working_files, write_zip, git_bytes
 
 
 def version_tuple(value):
@@ -23,7 +23,8 @@ def version_tuple(value):
 
 
 class Release:
-    metadata = ("VERSION", "CHANGELOG.md", "content.xml")
+    manifest = f"{MOD}/content.xml"
+    metadata = ("VERSION", "CHANGELOG.md", manifest)
 
     def __init__(self, root):
         self.root = Path(root).resolve()
@@ -71,7 +72,7 @@ class Release:
             if path.exists():
                 raise ReleaseError("VERSION exists without a release tag; resolve release history first.")
             from xml.etree import ElementTree
-            current = int(ElementTree.parse(self.root / 'content.xml').getroot().attrib['version'])
+            current = int(ElementTree.parse(self.root / self.manifest).getroot().attrib['version'])
             major, minor = current // 10000, (current // 100) % 100
             suggested = f"{major}.{minor + 1}.0" if minor < 99 else f"{major + 1}.0.0"
             return None, suggested
@@ -106,7 +107,7 @@ class Release:
     def updated_metadata(self, version, notes):
         major, minor, patch = version_tuple(version)
         date = datetime.date.today().isoformat()
-        manifest = (self.root / "content.xml").read_bytes()
+        manifest = (self.root / self.manifest).read_bytes()
         match = re.search(rb"<content\b[^>]*>", manifest)
         if not match:
             raise ReleaseError("Missing content manifest root.")
@@ -122,13 +123,13 @@ class Release:
         if not old.startswith("# Changelog\n"):
             raise ReleaseError("CHANGELOG.md must start with '# Changelog'.")
         new = f"# Changelog\n\n## {version} - {date}\n\n{notes}\n\n" + old[len("# Changelog\n"):].lstrip()
-        return {"VERSION": (version + "\n").encode(), "CHANGELOG.md": new.encode(), "content.xml": manifest}
+        return {"VERSION": (version + "\n").encode(), "CHANGELOG.md": new.encode(), self.manifest: manifest}
 
     def runtime_files(self):
         return working_files(self.root)
 
     def build_zip(self, path, files):
-        write_zip(path, files, lambda name: (self.root / name).read_bytes())
+        write_zip(path, files, lambda name: (self.root / MOD / name).read_bytes())
 
     def check_unchanged(self, head, written):
         if self.git("branch", "--show-current") != "main" or self.git("rev-parse", "HEAD") != head:
@@ -195,15 +196,15 @@ class Release:
                     raise ReleaseError("Working tree changed during release commit.")
                 with zipfile.ZipFile(archive) as built:
                     for name in files:
-                        digest = subprocess.run(["git", "hash-object", "--stdin", "--path", name],
+                        digest = subprocess.run(["git", "hash-object", "--stdin", "--path", repo_path(name)],
                                                 input=built.read("civilian_economy/" + name), cwd=self.root,
                                                 capture_output=True, check=True).stdout.decode().strip()
-                        if digest != self.git("rev-parse", f"HEAD:{name}"):
+                        if digest != self.git("rev-parse", f"HEAD:{repo_path(name)}"):
                             raise ReleaseError(f"Committed file differs from archive: {name}")
                 # Public archives use canonical committed bytes so a missing ZIP
                 # can be reconstructed identically, including on Windows.
                 canonical = Path(directory) / ('canonical-' + final.name)
-                write_zip(canonical, files, lambda name: git_bytes(self.root, 'show', f'{commit}:{name}'))
+                write_zip(canonical, files, lambda name: git_bytes(self.root, 'show', f'{commit}:{repo_path(name)}'))
                 archive = canonical
                 note_file = Path(directory) / "tag-notes.md"
                 note_file.write_text(notes + "\n", encoding="utf-8")

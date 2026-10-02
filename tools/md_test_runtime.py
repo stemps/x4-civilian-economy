@@ -118,7 +118,7 @@ class BreakLoop(Exception):
 
 class Runner:
     def __init__(self):
-        root = Path(__file__).resolve().parents[1] / 'md'
+        root = Path(__file__).resolve().parents[1] / 'src' / 'md'
         self.scripts = {}
         for path in sorted(root.glob('*.xml')):
             tree = E.parse(str(path))

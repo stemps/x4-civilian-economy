@@ -13,7 +13,7 @@ import shutil
 import subprocess
 import tempfile
 
-from release_archive import ReleaseError, working_files, tagged_files
+from release_archive import ReleaseError, MOD, working_files, tagged_files
 
 FOLDER = 'civilian_economy'
 CATALOG = 'ext_01.cat'
@@ -189,7 +189,7 @@ def local_stage(root):
     if not cfg:
         raise ReleaseError('steam.json is missing.')
     names = working_files(root, local=True)
-    folder, _ = stage(root, names, lambda name: (root / name).read_bytes(),
+    folder, _ = stage(root, names, lambda name: (root / MOD / name).read_bytes(),
                       root / 'dist' / 'workshop' / 'local', cfg)
     print(f'Workshop folder: {folder}')
     return folder
@@ -205,7 +205,7 @@ def tagged_stage(root, tag, cfg):
 def placeholder(root):
     """Minimal folder for WorkshopTool's first publish, which assigns the ws_ id."""
     root = Path(root).resolve()
-    manifest = (root / 'content.xml').read_bytes()
+    manifest = (root / MOD / 'content.xml').read_bytes()
     match = opening_tag(manifest)
     # Keep the root attributes WorkshopTool reads (name, description, version);
     # drop dependencies so the first upload needs nothing else on Workshop.

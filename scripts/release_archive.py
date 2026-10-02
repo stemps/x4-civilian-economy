@@ -1,4 +1,4 @@
-"""Runtime archive selection and verification shared by local and public builds."""
+"""Release archives of the src/ mod folder, shared by local and public builds."""
 from pathlib import Path, PurePosixPath
 import subprocess
 import tempfile
@@ -9,50 +9,25 @@ class ReleaseError(Exception):
     pass
 
 
-def runtime_path(name):
-    path = PurePosixPath(name)
-    return (bool(path.parts) and not path.is_absolute() and '..' not in path.parts and '\\' not in name
-            and (name in ('content.xml', 'ui.xml', 'MIT-LICENSE')
-                 or (name.startswith('ui/') and name.endswith('.lua'))
-                 or (path.parts[0] in ('md', 'aiscripts', 'assets', 'index', 'libraries', 'extensions')
-                     and name.endswith('.xml'))
-                 or (name.startswith('t/') and name.endswith('.xml'))
-                 or (name.startswith('cutscenes/') and name.endswith('.xml'))
-                 or name == 'assets/textures/ui/factions/ce_unrest_skull.gz'
-                 # Root, not videos/: WorkshopTool refuses a videos folder.
-                 or name in ('ce_news_raid.mkv', 'ce_news_sabotage.mkv', 'ce_news_hacking.mkv')))
+# The mod is exactly this folder: the game's dev junction points at it and every
+# file in it ships. Names inside the package are relative to it.
+MOD = 'src'
 
 
-# Folders the engine loads from an extension, and file types it reads. A file
-# matching either that runtime_path() rejects would be silently left out of the
-# ZIP while still working in a dev checkout, so packaging refuses it instead.
-ENGINE_DIRS = frozenset(('md', 'aiscripts', 'assets', 'index', 'libraries', 'extensions', 't', 'ui',
-                         'cutscenes', 'videos', 'maps', 'sfx', 'voice', 'music', 'shadergl', 'fx',
-                         'textures'))
-ENGINE_SUFFIXES = frozenset(('.xml', '.lua', '.mkv', '.webm', '.bik', '.gz', '.dds', '.tga', '.ogg',
-                             '.wav', '.xpl', '.xmf', '.ani', '.ttf', '.otf'))
-# Top-level development folders whose files never ship, whatever their type.
-DEV_DIRS = frozenset(('test', 'tests', 'tools', 'scripts', 'docs', 'images', 'output', 'dist'))
+def repo_path(name):
+    return f'{MOD}/{name}'
 
 
-def unpackaged_runtime(names):
-    """Files that look loadable by the engine but that runtime_path() excludes."""
-    suspicious = []
-    for name in names:
-        path = PurePosixPath(name)
-        if not path.parts or runtime_path(name) or path.parts[0] in DEV_DIRS:
-            continue
-        if (len(path.parts) > 1 and path.parts[0] in ENGINE_DIRS) or path.suffix.lower() in ENGINE_SUFFIXES:
-            suspicious.append(name)
-    return sorted(suspicious)
-
-
-def require_packaged(names):
-    missing = unpackaged_runtime(names)
-    if missing:
-        raise ReleaseError('Files that look like runtime content would be left out of the ZIP: '
-                           + ', '.join(missing) + '. Add them to runtime_path() in '
-                           'scripts/release_archive.py, or move them out of runtime folders.')
+def mod_names(paths):
+    prefix = MOD + '/'
+    names = []
+    for path in paths:
+        if path.startswith(prefix):
+            name = path[len(prefix):]
+            if '\\' in name or '..' in PurePosixPath(name).parts:
+                raise ReleaseError(f'Unsupported runtime path: {path}')
+            names.append(name)
+    return sorted(names)
 
 
 def git_bytes(root, *args, data=None):
@@ -67,15 +42,15 @@ def working_files(root, local=False):
     args = ['ls-files', '-z', '--cached']
     if local:
         args += ['--others', '--exclude-standard']
-    names = [name for name in git_bytes(root, *args).decode().split('\0') if name]
+    paths = [path for path in git_bytes(root, *args, '--', MOD).decode().split('\0') if path]
     if local:
-        names = [name for name in names if (root / name).exists() or (root / name).is_symlink()]
-    require_packaged(names)
-    files = sorted({name for name in names if runtime_path(name)})
+        paths = [path for path in paths if (root / path).exists() or (root / path).is_symlink()]
+    files = mod_names(set(paths))
     require_manifests(files)
+    mod = root / MOD
     for name in files:
-        path = root / name
-        if path.is_symlink() or root.resolve() not in path.resolve().parents:
+        path = mod / name
+        if path.is_symlink() or mod.resolve() not in path.resolve().parents:
             raise ReleaseError(f'Runtime symlinks cannot be packaged: {name}')
         if any(parent.is_symlink() for parent in path.parents if parent != root.parent):
             raise ReleaseError(f'Runtime symlink directory: {name}')
@@ -115,7 +90,7 @@ def local_zip(root):
     final.parent.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='ce-local-', dir=final.parent) as directory:
         temporary = Path(directory) / final.name
-        write_zip(temporary, files, lambda name: (root / name).read_bytes())
+        write_zip(temporary, files, lambda name: (root / MOD / name).read_bytes())
         temporary.replace(final)
     print(f'Local ZIP: {final}')
     return final
@@ -130,8 +105,8 @@ def tagged_zip(root, tag):
         # Older release ZIPs can contain checkout line endings. Apply Git's clean
         # filters, as the original release script does, when validating them.
         verify_zip(final, files, lambda name, data:
-                   git_bytes(root, 'hash-object', '--stdin', '--path', name, data=data).strip()
-                   == git_bytes(root, 'rev-parse', f'{commit}:{name}').strip())
+                   git_bytes(root, 'hash-object', '--stdin', '--path', repo_path(name), data=data).strip()
+                   == git_bytes(root, 'rev-parse', f'{commit}:{repo_path(name)}').strip())
     else:
         with tempfile.TemporaryDirectory(prefix='ce-tag-', dir=final.parent) as directory:
             temporary = Path(directory) / final.name
@@ -157,24 +132,26 @@ def tagged_files(root, tag):
                   git_bytes(root, 'ls-remote', 'origin', ref, ref + '^{}').decode().splitlines())
     if remote.get(ref) != tag_object or remote.get(ref + '^{}') != commit:
         raise ReleaseError('Local and remote release tags do not match.')
-    read = lambda name: git_bytes(root, 'show', f'{commit}:{name}')
-    if read('VERSION').decode().strip() != tag[1:]:
+    show = lambda path: git_bytes(root, 'show', f'{commit}:{path}')
+    read = lambda name: show(repo_path(name))
+    if show('VERSION').decode().strip() != tag[1:]:
         raise ReleaseError('Tagged VERSION disagrees with the release tag.')
     parts = tuple(map(int, tag[1:].split('.')))
     if parts[1] >= 100 or parts[2] >= 100:
         raise ReleaseError('Minor and patch must be below 100.')
+    if not git_bytes(root, 'ls-tree', commit, '--', repo_path('content.xml')).strip():
+        raise ReleaseError(f'{tag} predates the {MOD}/ layout and cannot be packaged by this version.')
     manifest = ElementTree.fromstring(read('content.xml'))
     if manifest.get('version') != str(parts[0] * 10000 + parts[1] * 100 + parts[2]):
         raise ReleaseError('Tagged manifest version disagrees with the release tag.')
-    entries = git_bytes(root, 'ls-tree', '-rz', commit).decode().split('\0')
-    files = []
+    entries = git_bytes(root, 'ls-tree', '-rz', commit, '--', MOD).decode().split('\0')
+    paths = []
     for entry in filter(None, entries):
-        attributes, name = entry.split('\t', 1)
-        if runtime_path(name):
-            if not attributes.startswith(('100644 blob ', '100755 blob ')):
-                raise ReleaseError(f'Unsupported runtime entry: {name}')
-            files.append(name)
-    files.sort()
+        attributes, path = entry.split('\t', 1)
+        if not attributes.startswith(('100644 blob ', '100755 blob ')):
+            raise ReleaseError(f'Unsupported runtime entry: {path}')
+        paths.append(path)
+    files = mod_names(paths)
     require_manifests(files)
     annotation = git_bytes(root, 'cat-file', 'tag', tag_object).split(b'\n\n', 1)[1].decode().strip()
     if not annotation:

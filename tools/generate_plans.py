@@ -11,6 +11,7 @@ from spine_geometry import Layout, validate
 from spine_bounds import fit
 
 ROOT = Path(__file__).resolve().parents[1]
+MOD = ROOT / 'src'
 PREFIX = 'ce_hub_'
 
 
@@ -21,7 +22,7 @@ def xml_bytes(root):
 def generate(reference, bounds_path=None):
     catalog = Catalog(reference)
     measurements=json.loads(bounds_path.read_text(encoding='utf-8')) if bounds_path else None
-    constraints=json.loads((ROOT/'tests/fixtures/spine_layout_constraints.json').read_text(encoding='utf-8'))
+    constraints=json.loads((ROOT/'tests/mod/fixtures/spine_layout_constraints.json').read_text(encoding='utf-8'))
     if measurements and measurements.get('version') != 2:
         raise ValueError('Reimport native bounds with corrected half-extent semantics before generation')
     manifest = {'version': 1, 'evidence': 'reference base+DLC; not installed effective tree',
@@ -91,20 +92,20 @@ def main():
     parser.add_argument('--write',action='store_true',help='Explicitly regenerate production artifacts; default is read-only verification.')
     parser.add_argument('--bounds',type=Path,help='Measured native calibration JSON. Missing data never becomes estimated bounds.')
     args=parser.parse_args()
-    bounds_path=args.bounds or ROOT/'tests/fixtures/spine_native_bounds.json'
+    bounds_path=args.bounds or ROOT/'tests/mod/fixtures/spine_native_bounds.json'
     if not bounds_path.exists():
         if args.bounds: parser.error('Explicit bounds file does not exist')
         bounds_path=None
     plans,data,manifest=generate(args.reference,bounds_path)
     if args.write and any(not r['static_valid'] for r in manifest['races'].values()):
         parser.error('Unresolved race: refusing to replace existing artifacts with incomplete coverage')
-    target=ROOT/'libraries/constructionplans.xml'
+    target=MOD/'libraries/constructionplans.xml'
     root=E.Element('diff')
     block=E.SubElement(root,'add',sel='/plans')
     block.extend(plans)
     updated=xml_bytes(root)
-    artifacts={target:updated, ROOT/'md/ce_construction_data.xml':xml_bytes(data),
-               ROOT/'tests/fixtures/spine_manifest.json':(json.dumps(manifest,indent=2,sort_keys=True)+'\n').encode()}
+    artifacts={target:updated, MOD/'md/ce_construction_data.xml':xml_bytes(data),
+               ROOT/'tests/mod/fixtures/spine_manifest.json':(json.dumps(manifest,indent=2,sort_keys=True)+'\n').encode()}
     stale=[]
     for path,content in artifacts.items():
         if args.write:

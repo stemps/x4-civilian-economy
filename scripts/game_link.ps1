@@ -1,4 +1,4 @@
-# Link or unlink this dev directory into the game's extensions folder via a directory junction.
+# Link or unlink this repo's src/ mod folder into the game's extensions folder via a directory junction.
 # Extensions dir resolution: $env:X4_EXTENSIONS > toolkit .claude/x4-paths.env > $X4_GAME\extensions.
 param(
     [Parameter(Mandatory = $true)][ValidateSet('link', 'unlink', 'status')][string]$Action
@@ -7,6 +7,7 @@ $ErrorActionPreference = 'Stop'
 
 $modDir = Split-Path -Parent $PSScriptRoot
 $modName = Split-Path -Leaf $modDir
+$srcDir = Join-Path $modDir 'src'
 
 function Read-PathsEnv {
     $values = @{}
@@ -41,20 +42,23 @@ $target = if ($isLink) { @($item.Target)[0] } else { $null }
 switch ($Action) {
     'status' {
         if (-not $item) { Write-Output "Not linked: $linkPath does not exist." }
+        elseif ($isLink -and (Resolve-Path -LiteralPath $target).Path -ne (Resolve-Path -LiteralPath $srcDir).Path) {
+            Write-Output "Outdated link: $linkPath -> $target (expected $srcDir). Run 'just unlink' then 'just link'."
+        }
         elseif ($isLink) { Write-Output "Linked: $linkPath -> $target" }
         else { Write-Output "Not a link: $linkPath is a regular folder (copied deploy?)." }
     }
     'link' {
         if ($isLink) {
-            if ((Resolve-Path -LiteralPath $target).Path -eq (Resolve-Path -LiteralPath $modDir).Path) {
+            if ((Resolve-Path -LiteralPath $target).Path -eq (Resolve-Path -LiteralPath $srcDir).Path) {
                 Write-Output "Already linked: $linkPath -> $target"
                 exit 0
             }
             throw "$linkPath already links to $target. Run 'just unlink' first."
         }
         if ($item) { throw "$linkPath exists as a regular folder. Remove or rename it first; refusing to overwrite." }
-        New-Item -ItemType Junction -Path $linkPath -Target $modDir | Out-Null
-        Write-Output "Linked: $linkPath -> $modDir"
+        New-Item -ItemType Junction -Path $linkPath -Target $srcDir | Out-Null
+        Write-Output "Linked: $linkPath -> $srcDir"
     }
     'unlink' {
         if (-not $item) { Write-Output "Nothing to unlink: $linkPath does not exist."; exit 0 }

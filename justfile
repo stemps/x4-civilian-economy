@@ -13,11 +13,11 @@ plans-verify:
 
 # Focused geometry, native-stage and recovery contracts against generated artifacts.
 plans-tests:
-    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests -p 'test_spine*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests -p 'test_spine*.py'; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests/mod -p 'test_spine*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests/mod -p 'test_spine*.py'; exit $LASTEXITCODE }
 
 # Focused production staging and profile checks.
 construction-tests:
-    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests -p '*construction*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests -p '*construction*.py'; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests/mod -p '*construction*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests/mod -p '*construction*.py'; exit $LASTEXITCODE }
 
 # Explicitly regenerate only the isolated production plan artifacts.
 plans-generate:
@@ -36,11 +36,11 @@ schema-only *args:
     if ('{{python}}') { & '{{python}}' tools/check.py --schema --skip-tests {{args}}; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py --schema --skip-tests {{args}}; exit $LASTEXITCODE }
 
 lua:
-    if ('{{python}}') { & '{{python}}' tools/test_initial_construction.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_initial_construction.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tools/test_debug_menu.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_debug_menu.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tools/test_population_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_population_bridge.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tools/test_workforce_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_workforce_bridge.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tools/test_map_status.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tools/test_map_status.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/lua/test_initial_construction.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_initial_construction.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/lua/test_debug_menu.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_debug_menu.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/lua/test_population_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_population_bridge.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/lua/test_workforce_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_workforce_bridge.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/lua/test_map_status.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_map_status.py; exit $LASTEXITCODE }
 
 # Everyday gate: all controller tests, generated plans, static checks and UI.
 check: translations plans-verify validate lua
@@ -53,12 +53,12 @@ check-full: check-release schema-only
 
 # Focused test-tooling contracts, independent of game execution.
 test-tooling:
-    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests -p 'test_tooling*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests -p 'test_tooling*.py'; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests/mod -p 'test_tooling*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests/mod -p 'test_tooling*.py'; exit $LASTEXITCODE }
 
 # Require every English entry in all game locales, including format contracts.
 translations:
-    if ('{{python}}') { & '{{python}}' test/test_translations.py; exit $LASTEXITCODE } else { uv run python test/test_translations.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' test/check_translations.py; exit $LASTEXITCODE } else { uv run python test/check_translations.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/translations/test_translations.py; exit $LASTEXITCODE } else { uv run python tests/translations/test_translations.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/translations/check_translations.py; exit $LASTEXITCODE } else { uv run python tests/translations/check_translations.py; exit $LASTEXITCODE }
 
 # Validate, record, push, package and publish a release from clean main.
 release:
@@ -98,14 +98,14 @@ nexus-description ref:
 
 # Exercise releases using temporary repositories and local remotes only.
 test-release:
-    if ('{{python}}') { & '{{python}}' test/test_release.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_release.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' test/test_manual_bbcode.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_manual_bbcode.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' test/test_nexus.py; exit $LASTEXITCODE } else { uv run python test/test_nexus.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' test/test_archive.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_archive.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' test/test_release_support.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python test/test_release_support.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' test/test_workshop.py; exit $LASTEXITCODE } else { uv run python test/test_workshop.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/release/test_release.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_release.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/release/test_manual_bbcode.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_manual_bbcode.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/release/test_nexus.py; exit $LASTEXITCODE } else { uv run python tests/release/test_nexus.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/release/test_archive.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_archive.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/release/test_release_support.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_release_support.py; exit $LASTEXITCODE }
+    if ('{{python}}') { & '{{python}}' tests/release/test_workshop.py; exit $LASTEXITCODE } else { uv run python tests/release/test_workshop.py; exit $LASTEXITCODE }
 
-# Junction this dev directory into the game's extensions folder for in-game testing.
+# Junction src/ into the game's extensions folder for in-game testing.
 link:
     & ./scripts/game_link.ps1 link
 
@@ -119,4 +119,4 @@ link-status:
 
 # Exercise the optional installed VTL source without redistributing it.
 vtl moddir:
-    uv run --offline --with lxml --with lupa python tools/test_transaction_log.py "{{moddir}}"
+    uv run --offline --with lxml --with lupa python tests/lua/test_transaction_log.py "{{moddir}}"

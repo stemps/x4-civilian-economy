@@ -13,6 +13,7 @@ from lxml import etree
 from check_timings import Timings
 
 ROOT = Path(__file__).resolve().parents[1]
+MOD = ROOT / "src"
 
 
 def main():
@@ -38,16 +39,16 @@ def run_checks(args, timings):
         print("Controller tests omitted (--skip-tests); static validation still runs.", flush=True)
     else:
         with timings.stage('test discovery'):
-            suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
+            suite = unittest.defaultTestLoader.discover(str(ROOT / "tests" / "mod"))
         with timings.stage('controller tests'):
             result = timings.runner().run(suite)
         if not result.wasSuccessful():
             return 1
     with timings.stage('XML parsing and UI schema'):
-        for file in ROOT.rglob("*.xml"):
-            if not any(p.startswith(".") for p in file.relative_to(ROOT).parts):
+        for file in MOD.rglob("*.xml"):
+            if not any(p.startswith(".") for p in file.relative_to(MOD).parts):
                 etree.parse(str(file))
-        etree.XMLSchema(etree.parse(str(reference / "ui/core/addon.xsd"))).assertValid(etree.parse(str(ROOT / "ui.xml")))
+        etree.XMLSchema(etree.parse(str(reference / "ui/core/addon.xsd"))).assertValid(etree.parse(str(MOD / "ui.xml")))
     toolkit = args.toolkit.resolve()
     package = toolkit / "tools" / "x4validate"
     sys.path.insert(0, str(package))
@@ -55,7 +56,7 @@ def run_checks(args, timings):
     # Append pure-Python dependencies without shadowing this interpreter's lxml.
     sys.path.append(str(package / ".venv" / "Lib" / "site-packages"))
     from x4validate._cli import main as validate
-    sys.argv = ["x4validate", str(ROOT), "--reference", str(reference)]
+    sys.argv = ["x4validate", str(MOD), "--reference", str(reference)]
     if args.schema:
         sys.argv.append("--update")
     with timings.stage('toolkit validation (including native schemas)' if args.schema else 'toolkit validation'):
@@ -99,7 +100,7 @@ def validate_merged(reference):
     merged_failed = False
     for folder, root_tag, xsd in (('aiscripts', 'aiscript', 'aiscripts.xsd'), ('md', 'mdscript', 'md.xsd')):
         compiled = _xsd._compiled(str(reference / "libraries" / xsd))
-        for path in sorted((ROOT / folder).glob('*.xml')):
+        for path in sorted((MOD / folder).glob('*.xml')):
             patch = etree.parse(str(path))
             if patch.getroot().tag == root_tag:
                 if folder == 'aiscripts':

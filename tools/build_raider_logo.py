@@ -31,7 +31,7 @@ def main():
     struct.pack_into('<I', header, 28, len(levels))
     struct.pack_into('<I', header, 108, struct.unpack_from('<I', header, 108)[0] | 0x400008)
     payload = bytes(header) + b''.join(levels)
-    target = ROOT / 'assets/textures/ui/factions/ce_unrest_skull.gz'
+    target = ROOT / 'src/assets/textures/ui/factions/ce_unrest_skull.gz'
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(gzip.compress(payload, mtime=0))
     with Image.open(io.BytesIO(gzip.decompress(target.read_bytes()))) as decoded:

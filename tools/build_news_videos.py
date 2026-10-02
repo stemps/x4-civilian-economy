@@ -12,6 +12,7 @@ from xml.etree import ElementTree as E
 import imageio_ffmpeg
 
 ROOT = Path(__file__).resolve().parents[1]
+MOD = ROOT / 'src'
 
 
 def main():
@@ -22,7 +23,7 @@ def main():
         parser.error('Supply an installed TrueType font with --font')
     font = args.font.resolve().as_posix().replace(':', r'\:').replace("'", r"\'")
     strings = {int(t.get('id')): ''.join(t.itertext())
-               for t in E.parse(ROOT / 't/0001-l044.xml').iter('t')}
+               for t in E.parse(MOD / 't/0001-l044.xml').iter('t')}
     scratch = ROOT / '.cache/news-text'
     scratch.mkdir(parents=True, exist_ok=True)
     (ROOT / 'output').mkdir(exist_ok=True)
@@ -47,7 +48,7 @@ def main():
             )
         source = ROOT / f'images/broadcast/{artwork}.png'
         # Extension root: WorkshopTool refuses a videos/ folder.
-        destination = ROOT / f'ce_news_{kind}.mkv'
+        destination = MOD / f'ce_news_{kind}.mkv'
         temporary = destination.with_name(destination.stem + '.tmp' + destination.suffix)
         subprocess.run([ffmpeg, '-y', '-hide_banner', '-loglevel', 'error',
                         '-loop', '1', '-framerate', '24', '-i', str(source),
