@@ -13,9 +13,8 @@ import shutil
 import subprocess
 import tempfile
 
-from release_archive import ReleaseError, MOD, working_files, tagged_files
+from release_archive import ReleaseError, MOD, identity, working_files, tagged_files
 
-FOLDER = 'civilian_economy'
 CATALOG = 'ext_01.cat'
 # MEASURED (WorkshopTool 1.15): uploads .mkv files only from the folder root and
 # rejects a videos/ subfolder. Videos are not packed, like every Egosoft video.
@@ -84,7 +83,12 @@ def set_attribute(opening, name, value):
 
 
 def workshop_manifest(manifest, published_file_id, dependencies):
-    """Rewrite only the root id/sync and add ws_ twins of optional dependencies."""
+    """Rewrite the root id/sync and map dependencies to their Workshop ids.
+
+    An optional dependency keeps its entry and gains a ws_ twin, so either copy
+    satisfies it. A required one is replaced: a manifest cannot require one of two
+    ids, and Workshop players have the Workshop copy.
+    """
     if not published_file_id:
         raise ReleaseError('steam.json has no published_file_id. Create the Workshop item first.')
     match = opening_tag(manifest)
@@ -98,12 +102,13 @@ def workshop_manifest(manifest, published_file_id, dependencies):
         if not line:
             raise ReleaseError(f'Mapped Workshop dependency {original} is not declared in content.xml.')
         entry = line.group()
-        if not re.search(rb'\boptional="true"', entry):
-            raise ReleaseError(f'Only optional dependencies can get a Workshop twin: {original}')
         if re.search(rb'\bid="' + re.escape(workshop.encode()) + rb'"', manifest):
             raise ReleaseError(f'content.xml already declares {workshop}.')
         twin = entry.replace(b'id="' + original.encode() + b'"', b'id="' + workshop.encode() + b'"', 1)
-        manifest = manifest[:line.end()] + twin + manifest[line.end():]
+        if re.search(rb'\boptional="true"', entry):
+            manifest = manifest[:line.end()] + twin + manifest[line.end():]
+        else:
+            manifest = manifest[:line.start()] + twin + manifest[line.end():]
     return manifest
 
 
@@ -148,9 +153,10 @@ def content_digest(files):
 
 
 def stage(root, names, read, destination, cfg, pack=None):
-    """Build destination/civilian_economy and return (folder, content digest)."""
+    """Build destination/<mod id> and return (folder, content digest)."""
     root = Path(root)
     files = {name: read(name) for name in names}
+    package, _ = identity(files['content.xml'])
     files['content.xml'] = workshop_manifest(files['content.xml'], cfg.get('published_file_id'),
                                              cfg.get('workshop_dependencies', {}))
     packed = {name: data for name, data in files.items() if not is_loose(name)}
@@ -158,9 +164,9 @@ def stage(root, names, read, destination, cfg, pack=None):
         raise ReleaseError('Nothing to pack into the Workshop catalog.')
     if destination.exists():
         shutil.rmtree(destination)
-    folder = destination / FOLDER
+    folder = destination / package
     folder.mkdir(parents=True)
-    with tempfile.TemporaryDirectory(prefix='ce-workshop-') as directory:
+    with tempfile.TemporaryDirectory(prefix='workshop-stage-') as directory:
         source = Path(directory) / 'src'
         for name, data in packed.items():
             path = source / name
@@ -210,12 +216,15 @@ def placeholder(root):
     # Keep the root attributes WorkshopTool reads (name, description, version);
     # drop dependencies so the first upload needs nothing else on Workshop.
     body = match.group() + b'\n</content>\n'
-    destination = root / 'dist' / 'workshop' / 'placeholder' / FOLDER
+    package, _ = identity(manifest)
+    name = opening_tag(manifest).group().decode('utf-8')
+    name = re.search(r'\sname\s*=\s*"([^"]*)"', name)[1]
+    destination = root / 'dist' / 'workshop' / 'placeholder' / package
     if destination.parent.exists():
         shutil.rmtree(destination.parent)
     destination.mkdir(parents=True)
     (destination / 'content.xml').write_bytes(b'<?xml version="1.0" encoding="utf-8"?>\n' + body)
-    (destination / 'readme.txt').write_text('Civilian Economy - placeholder upload, replaced by the first release.\n',
+    (destination / 'readme.txt').write_text(f'{name} - placeholder upload, replaced by the first release.\n',
                                             encoding='utf-8')
     # MEASURED (WorkshopTool 1.15): publishx4 refuses a folder without a catalog
     # unless -buildcat packs one; that catalog only exists until the first release.

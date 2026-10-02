@@ -10,7 +10,8 @@ import sys
 import tempfile
 import zipfile
 
-from release_archive import ReleaseError, MOD, repo_path, working_files, write_zip, git_bytes
+from release_archive import (ReleaseError, MOD, repo_path, identity, archive_path, working_files,
+                             write_zip, git_bytes)
 
 
 def version_tuple(value):
@@ -88,15 +89,15 @@ class Release:
         history = f"{previous}..HEAD" if previous else "HEAD"
         subjects = self.git("log", "--reverse", "--format=%s", history).splitlines()
         editor = self.git("var", "GIT_EDITOR")
-        with tempfile.TemporaryDirectory(prefix="ce-notes-") as directory:
+        with tempfile.TemporaryDirectory(prefix="release-notes-") as directory:
             path = Path(directory) / "release-notes.md"
             path.write_text("\n".join(f"- {s}" for s in subjects) + "\n", encoding="utf-8")
             # Git editors are shell command strings. Let Git's shell interpret the
             # configured editor, but pass the filename as a separate positional arg.
             result = subprocess.run(
-                ["git", "-c", 'alias.ce-release-editor=!' + editor + ' "$CE_NOTES"',
-                 "ce-release-editor"], cwd=self.root,
-                env={**os.environ, "GIT_EDITOR": editor, "CE_NOTES": str(path)})
+                ["git", "-c", 'alias.mod-release-editor=!' + editor + ' "$RELEASE_NOTES"',
+                 "mod-release-editor"], cwd=self.root,
+                env={**os.environ, "GIT_EDITOR": editor, "RELEASE_NOTES": str(path)})
             if result.returncode:
                 raise ReleaseError("Release notes editor failed.")
             notes = path.read_text(encoding="utf-8").strip()
@@ -157,7 +158,7 @@ class Release:
         tag = "v" + version
         if tag in self.git("tag", "--list").splitlines():
             raise ReleaseError(f"Tag {tag} already exists.")
-        final = self.root / "dist" / f"Civilian-Economy-{version}.zip"
+        final = archive_path(self.root, version)
         if final.exists():
             raise ReleaseError(f"Archive already exists: {final}")
         notes = self.notes(previous)
@@ -177,7 +178,7 @@ class Release:
                 subprocess.run(["just", "check-release"], cwd=self.root, check=True)
             self.check_unchanged(head, written)
             files = self.runtime_files()
-            with tempfile.TemporaryDirectory(prefix="ce-release-") as directory:
+            with tempfile.TemporaryDirectory(prefix="release-build-") as directory:
                 archive = Path(directory) / final.name
                 self.build_zip(archive, files)
                 self.check_unchanged(head, written)
@@ -194,10 +195,11 @@ class Release:
                 # Hooks must not silently change the release contents.
                 if self.status():
                     raise ReleaseError("Working tree changed during release commit.")
+                folder, _ = identity((self.root / self.manifest).read_bytes())
                 with zipfile.ZipFile(archive) as built:
                     for name in files:
                         digest = subprocess.run(["git", "hash-object", "--stdin", "--path", repo_path(name)],
-                                                input=built.read("civilian_economy/" + name), cwd=self.root,
+                                                input=built.read(f"{folder}/{name}"), cwd=self.root,
                                                 capture_output=True, check=True).stdout.decode().strip()
                         if digest != self.git("rev-parse", f"HEAD:{repo_path(name)}"):
                             raise ReleaseError(f"Committed file differs from archive: {name}")
@@ -294,7 +296,7 @@ def main():
     if args.command == 'publish-steam':
         if not args.tag:
             parser.error('publish-steam requires a tag')
-        if not steam.enabled:
+        if steam.config is None:
             raise ReleaseError('steam.json is missing.')
         publish_steam(root, args.tag, steam, args.confirm_uploaded, args.retry_upload, args.minor)
         return
@@ -303,8 +305,10 @@ def main():
         if args.tag:
             parser.error('release takes no tag')
         targets = (publisher, steam) if steam.enabled else (publisher,)
+        if steam.config and not steam.enabled:
+            print('Steam Workshop skipped: steam.json has no published_file_id yet.')
         archive = Release(root).run(publisher=Preflights(*targets))
-        tag = 'v' + archive.stem.removeprefix('Civilian-Economy-')
+        tag = 'v' + archive.stem.rsplit('-', 1)[1]
     else:
         if not args.tag:
             parser.error('publish-nexus requires a tag')

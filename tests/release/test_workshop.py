@@ -16,8 +16,8 @@ from steam_publish import SteamPublisher, update_command
 from release_archive import ReleaseError
 
 MANIFEST = (b'<?xml version="1.0" encoding="utf-8"?>\n'
-            b'<content id="civilian_economy"\n  name="Civilian Economy"\n  version="100"\n  save="true">\n'
-            b'  <text language="44" name="Civilian Economy" description="x" />\n'
+            b'<content id="example_mod"\n  name="Example Mod"\n  version="100"\n  save="true">\n'
+            b'  <text language="44" name="Example Mod" description="x" />\n'
             b'  <dependency version="900" name="X4: Foundations" />\n'
             b'  <dependency id="ws_2042901274" optional="false" name="Mod Support APIs" />\n'
             b'  <dependency id="kuerteeUIExtensionsAndHUD" optional="true" name="kuertee UI Extensions and HUD" />\n'
@@ -41,12 +41,12 @@ def fake_pack(root, source, catalog):
 class ManifestTests(unittest.TestCase):
     def test_rewrites_id_adds_sync_and_workshop_twin(self):
         out = workshop_manifest(MANIFEST, '1234', CONFIG['workshop_dependencies'])
-        self.assertIn(b'<content id="ws_1234"\n  name="Civilian Economy"\n  version="100"\n  save="true" sync="false">',
+        self.assertIn(b'<content id="ws_1234"\n  name="Example Mod"\n  version="100"\n  save="true" sync="false">',
                       out)
         self.assertIn(b'id="kuerteeUIExtensionsAndHUD" optional="true"', out)
         self.assertIn(b'  <dependency id="ws_3477279743" optional="true" name="kuertee UI Extensions and HUD" />\n', out)
         # Nothing else changes.
-        restored = out.replace(b'ws_1234"', b'civilian_economy"').replace(b' sync="false"', b'')
+        restored = out.replace(b'ws_1234"', b'example_mod"').replace(b' sync="false"', b'')
         restored = restored.replace(b'  <dependency id="ws_3477279743" optional="true" '
                                     b'name="kuertee UI Extensions and HUD" />\n', b'')
         self.assertEqual(restored, MANIFEST)
@@ -59,10 +59,18 @@ class ManifestTests(unittest.TestCase):
     def test_refusals(self):
         for item, deps, message in ((None, {}, 'published_file_id'),
                                     ('1234', {'Missing': 'ws_1'}, 'not declared'),
-                                    ('1234', {'ws_2042901274': 'ws_1'}, 'Only optional'),
                                     ('1234', {'kuerteeUIExtensionsAndHUD': 'ws_2042901274'}, 'already declares')):
             with self.subTest(message=message), self.assertRaisesRegex(ReleaseError, message):
                 workshop_manifest(MANIFEST, item, deps)
+
+    def test_required_dependency_is_replaced_not_twinned(self):
+        # A manifest cannot require one of two ids; Workshop players have the Workshop copy.
+        required = MANIFEST.replace(b'id="kuerteeUIExtensionsAndHUD" optional="true"',
+                                    b'id="kuerteeUIExtensionsAndHUD" optional="false"')
+        out = workshop_manifest(required, '1234', {'kuerteeUIExtensionsAndHUD': 'ws_3477279743'})
+        self.assertNotIn(b'kuerteeUIExtensionsAndHUD', out)
+        self.assertIn(b'  <dependency id="ws_3477279743" optional="false" name="kuertee UI Extensions and HUD" />\n',
+                      out)
 
     def test_live_manifest_and_config_are_compatible(self):
         root = Path(__file__).resolve().parents[2]
@@ -95,7 +103,7 @@ class StageTests(unittest.TestCase):
 
     def test_layout_content_xml_and_root_videos_loose_rest_packed(self):
         folder, digest = self.stage()
-        self.assertEqual(folder.name, 'civilian_economy')
+        self.assertEqual(folder.name, 'example_mod')
         loose = sorted(p.relative_to(folder).as_posix() for p in folder.rglob('*') if p.is_file())
         self.assertEqual(loose, ['a.mkv', 'content.xml', 'ext_01.cat', 'ext_01.dat'])
         self.assertEqual(set(workshop_build.parse_catalog(folder / 'ext_01.cat')), {'ui.xml', 'ui/a.lua', 'md/a.xml'})
@@ -158,7 +166,7 @@ class PublisherTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
         (self.root / 'steam.json').write_text(json.dumps(CONFIG), encoding='utf-8')
-        self.folder = self.root / 'staged' / 'civilian_economy'
+        self.folder = self.root / 'staged' / 'example_mod'
         self.folder.mkdir(parents=True)
         (self.folder / 'content.xml').write_bytes(b'<content id="ws_1234"></content>\n')
         self.tool = str(self.root / 'X Tools' / 'WorkshopTool.exe')
@@ -233,6 +241,13 @@ class PublisherTests(unittest.TestCase):
         self.publish(FakeWorkshopTool())
         with self.assertRaisesRegex(ReleaseError, 'differ from the saved receipt'):
             self.publisher(FakeWorkshopTool()).publish('v1.2.3', 'commit', self.folder, 'other', 'Notes')
+
+    def test_missing_item_id_disables_releases_but_not_config(self):
+        self.assertTrue(self.publisher(FakeWorkshopTool()).enabled)
+        (self.root / 'steam.json').write_text(json.dumps({**CONFIG, 'published_file_id': None}), encoding='utf-8')
+        publisher = SteamPublisher(self.root)
+        self.assertIsNotNone(publisher.config)
+        self.assertFalse(publisher.enabled)
 
     def test_preflight_refuses_other_game_and_closed_steam(self):
         publisher = SteamPublisher(self.root, running=lambda: True,

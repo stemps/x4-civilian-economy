@@ -52,7 +52,7 @@ class Client:
             raise ReleaseError('Nexus upload URLs must use HTTPS.')
         request_headers = dict(headers or {})
         if not storage:
-            request_headers.update({'apikey': self.key, 'User-Agent': 'Civilian-Economy-release/1.0',
+            request_headers.update({'apikey': self.key, 'User-Agent': 'x4-mod-release/1.0',
                                     'Content-Type': 'application/json'})
         data = json.dumps(body).encode() if body is not None else raw
         label = 'Storage transfer' if storage else f'Nexus {method} {path.split("?")[0]}'

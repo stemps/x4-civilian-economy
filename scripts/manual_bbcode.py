@@ -36,7 +36,7 @@ def convert(source):
                                'Use headings, paragraphs, emphasis, links or lists instead.')
         if kind == 'ordered_list' and node.attrs.get('start', 1) != 1:
             # Nexus has no ordered-list start attribute. Preserve explicit
-            # numbering for continued lists (including CE's dependency section).
+            # numbering for continued lists.
             return '\n\n'.join(
                 f'{number}. ' + ''.join(render(child) for child in item.children).strip()
                 for number, item in enumerate(node.children, node.attrs['start'])

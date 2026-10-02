@@ -19,8 +19,9 @@ lifetimes, compatibility contracts and the native acceptance checklist.
   `tests/release/` the release tooling tests and `tests/translations/` the
   translation checks.
 - `tools/` holds the check runner, the MD test runtime and the generators for
-  files in `src/`; `scripts/` holds release, publishing and the `just link`
-  junction. `docs/` and `images/` hold documentation and promotional material.
+  files in `src/`; `scripts/` holds release, publishing, the `just link`
+  junction and `just log`. `docs/` and `images/` hold documentation and
+  promotional material.
 
 ## Local development setup
 
@@ -36,7 +37,7 @@ layout.
 `src/`, so the game loads your working copy directly. `just unlink` removes only
 the junction and `just link-status` shows its target. The extensions folder comes
 from `X4_EXTENSIONS`, then the toolkit's `.claude/x4-paths.env`, then
-`X4_GAME\extensions`.
+`X4_GAME\extensions`. `just log` follows the game's `debug.txt`.
 
 ## Running checks
 
@@ -101,9 +102,9 @@ preview it before saving; the main page description is not published by the API.
 The converter uses `markdown-it-py==4.0.0`, supplied automatically by `uv` in the
 relevant Just recipes. It supports paragraphs, headings (H1 size 5, H2 size 4,
 H3 size 3, H4-H6 size 2), bold, italic, absolute HTTP/HTTPS/mailto links, and
-nested bullet or numbered lists starting at 1. Markdown source line wraps become
-spaces; explicit line breaks are preserved. Explicit BBCode colour tags pass
-through unchanged. Tables, images, code, HTML, blockquotes, horizontal rules,
+nested bullet or numbered lists. Markdown source line wraps become spaces;
+explicit line breaks are preserved. Explicit BBCode colour tags pass through
+unchanged. Tables, images, code, HTML, blockquotes, horizontal rules,
 strikethrough and task lists are rejected with an actionable error.
 
 Generated descriptions are ignored by Git and excluded from mod ZIPs. A failed

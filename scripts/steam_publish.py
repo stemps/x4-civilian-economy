@@ -25,7 +25,7 @@ def item_details(item):
     """Public details, or None when Steam does not show the item anonymously (e.g. hidden)."""
     body = urllib.parse.urlencode({'itemcount': 1, 'publishedfileids[0]': item}).encode()
     request = urllib.request.Request(DETAILS, data=body, method='POST',
-                                     headers={'User-Agent': 'Civilian-Economy-release/1.0'})
+                                     headers={'User-Agent': 'x4-mod-release/1.0'})
     with urllib.request.urlopen(request, timeout=30) as response:
         details = json.loads(response.read())['response']['publishedfiledetails'][0]
     return details if details.get('result') == 1 else None
@@ -57,7 +57,8 @@ class SteamPublisher:
 
     @property
     def enabled(self):
-        return self.config is not None
+        # Without an item id there is nothing to update yet; releases skip Steam.
+        return bool(self.config and self.config.get('published_file_id'))
 
     def workshoptool(self):
         return workshop_build.tool(self.root, 'X4_WORKSHOPTOOL', None,

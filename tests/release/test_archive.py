@@ -31,7 +31,7 @@ class ArchiveTests(unittest.TestCase):
         archive = local_zip(self.root)
         with zipfile.ZipFile(archive) as zipped:
             for name in modules:
-                self.assertEqual(zipped.read('civilian_economy/' + name),
+                self.assertEqual(zipped.read('example_mod/' + name),
                                  (self.root / 'src' / name).read_bytes())
 
     def test_shipped_license_matches_repository_license(self):
@@ -51,9 +51,9 @@ class ArchiveTests(unittest.TestCase):
         metadata = (self.root / 'src/content.xml').read_bytes()
         archive = local_zip(self.root)
         with zipfile.ZipFile(archive) as zipped:
-            self.assertEqual(set(zipped.namelist()), {'civilian_economy/' + p for p in
+            self.assertEqual(set(zipped.namelist()), {'example_mod/' + p for p in
                              ['content.xml', 'ui.xml', 'ui/example.lua', 'ui/new.lua']})
-            self.assertEqual(zipped.read('civilian_economy/ui/example.lua'), b'return 42\n')
+            self.assertEqual(zipped.read('example_mod/ui/example.lua'), b'return 42\n')
         self.assertEqual(f.cmd('status', '--porcelain'), before)
         self.assertEqual(f.cmd('rev-parse', 'HEAD'), commit)
         self.assertEqual((self.root / 'src/content.xml').read_bytes(), metadata)
@@ -82,9 +82,9 @@ class ArchiveTests(unittest.TestCase):
             self.fixture.write(name, 'outside')
         with zipfile.ZipFile(local_zip(self.root)) as archive:
             expected = {'content.xml', 't/0001.xml', 'ui.xml', 'ui/example.lua', *inside}
-            self.assertEqual(set(archive.namelist()), {'civilian_economy/' + name for name in expected})
+            self.assertEqual(set(archive.namelist()), {'example_mod/' + name for name in expected})
             for name in inside:
-                self.assertEqual(archive.read('civilian_economy/' + name), ('synthetic ' + name).encode())
+                self.assertEqual(archive.read('example_mod/' + name), ('synthetic ' + name).encode())
 
     def test_src_content_in_local_release_and_tagged_archives(self):
         paths = ('src/md/ce_logistics.xml', 'src/libraries/constructionplans.xml', 'src/ce_news_raid.mkv')
@@ -93,15 +93,15 @@ class ArchiveTests(unittest.TestCase):
         local = local_zip(self.root)
         with zipfile.ZipFile(local) as archive:
             for name in paths:
-                self.assertEqual(archive.read('civilian_economy/' + name[4:]), b'<diff/>\n')
+                self.assertEqual(archive.read('example_mod/' + name[4:]), b'<diff/>\n')
         self.fixture.cmd('add', '--', *paths)
-        self.fixture.cmd('commit', '-m', 'Add CE runtime content')
+        self.fixture.cmd('commit', '-m', 'Add runtime content')
         self.fixture.cmd('push', 'origin', 'main')  # fixture's temporary local bare repo
         public = self.fixture.run_release()
         expected = public.read_bytes()
         with zipfile.ZipFile(public) as archive:
             for name in paths:
-                self.assertEqual(archive.read('civilian_economy/' + name[4:]), b'<diff/>\n')
+                self.assertEqual(archive.read('example_mod/' + name[4:]), b'<diff/>\n')
         public.unlink()
         rebuilt, _, _ = tagged_zip(self.root, 'v0.1.0')
         self.assertEqual(rebuilt.read_bytes(), expected)
@@ -145,7 +145,7 @@ class ArchiveTests(unittest.TestCase):
     def test_existing_archive_tampering_rejected(self):
         archive = self.fixture.run_release()
         with zipfile.ZipFile(archive, 'a') as zipped:
-            zipped.writestr('civilian_economy/ui/extra.lua', b'bad')
+            zipped.writestr('example_mod/ui/extra.lua', b'bad')
         with self.assertRaises(ReleaseError):
             tagged_zip(self.root, 'v0.1.0')
 

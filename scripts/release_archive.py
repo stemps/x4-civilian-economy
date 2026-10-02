@@ -18,6 +18,27 @@ def repo_path(name):
     return f'{MOD}/{name}'
 
 
+def identity(manifest):
+    """(package folder, archive name prefix) from content.xml bytes: its id and name.
+
+    Every mod-specific name in the release tooling comes from here, so the
+    tooling itself is identical across mods.
+    """
+    from xml.etree import ElementTree
+    import re
+    root = ElementTree.fromstring(manifest)
+    folder, name = root.get('id', ''), root.get('name', '')
+    if not re.fullmatch(r'[a-z0-9_]+', folder) or not re.search(r'[A-Za-z0-9]', name):
+        raise ReleaseError('content.xml needs a lowercase id and a name to name release packages.')
+    return folder, re.sub(r'[^A-Za-z0-9]+', '-', name).strip('-')
+
+
+def archive_path(root, suffix):
+    """dist/<Name-With-Hyphens>-<suffix>.zip for the current src/ manifest."""
+    _, prefix = identity((Path(root) / MOD / 'content.xml').read_bytes())
+    return Path(root) / 'dist' / f'{prefix}-{suffix}.zip'
+
+
 def mod_names(paths):
     prefix = MOD + '/'
     names = []
@@ -65,30 +86,31 @@ def require_manifests(files):
 def write_zip(path, files, read):
     """Use fixed ZIP metadata, making reconstruction from identical bytes reproducible."""
     require_manifests(files)
+    folder, _ = identity(read('content.xml'))
     with zipfile.ZipFile(path, 'x', zipfile.ZIP_DEFLATED) as archive:
         for name in files:
-            info = zipfile.ZipInfo('civilian_economy/' + name)
+            info = zipfile.ZipInfo(f'{folder}/{name}')
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, read(name))
-    verify_zip(path, files, lambda name, data: data == read(name))
+    verify_zip(path, files, lambda name, data: data == read(name), folder)
 
 
-def verify_zip(path, files, matches):
+def verify_zip(path, files, matches, folder):
     with zipfile.ZipFile(path) as archive:
-        if archive.namelist() != ['civilian_economy/' + name for name in files] or archive.testzip():
+        if archive.namelist() != [f'{folder}/{name}' for name in files] or archive.testzip():
             raise ReleaseError('Archive integrity or membership verification failed.')
         for name in files:
-            if not matches(name, archive.read('civilian_economy/' + name)):
+            if not matches(name, archive.read(f'{folder}/{name}')):
                 raise ReleaseError(f'Archive differs from source: {name}')
 
 
 def local_zip(root):
     root = Path(root).resolve()
     files = working_files(root, local=True)
-    final = root / 'dist' / 'Civilian-Economy-local.zip'
+    final = archive_path(root, 'local')
     final.parent.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='ce-local-', dir=final.parent) as directory:
+    with tempfile.TemporaryDirectory(prefix='release-local-', dir=final.parent) as directory:
         temporary = Path(directory) / final.name
         write_zip(temporary, files, lambda name: (root / MOD / name).read_bytes())
         temporary.replace(final)
@@ -99,16 +121,17 @@ def local_zip(root):
 def tagged_zip(root, tag):
     """Verify remote identity and package blobs without checking out the release."""
     commit, files, read, annotation = tagged_files(root, tag)
-    final = root / 'dist' / f'Civilian-Economy-{tag[1:]}.zip'
+    folder, prefix = identity(read('content.xml'))
+    final = root / 'dist' / f'{prefix}-{tag[1:]}.zip'
     final.parent.mkdir(exist_ok=True)
     if final.exists():
         # Older release ZIPs can contain checkout line endings. Apply Git's clean
         # filters, as the original release script does, when validating them.
         verify_zip(final, files, lambda name, data:
                    git_bytes(root, 'hash-object', '--stdin', '--path', repo_path(name), data=data).strip()
-                   == git_bytes(root, 'rev-parse', f'{commit}:{repo_path(name)}').strip())
+                   == git_bytes(root, 'rev-parse', f'{commit}:{repo_path(name)}').strip(), folder)
     else:
-        with tempfile.TemporaryDirectory(prefix='ce-tag-', dir=final.parent) as directory:
+        with tempfile.TemporaryDirectory(prefix='release-tag-', dir=final.parent) as directory:
             temporary = Path(directory) / final.name
             write_zip(temporary, files, read)
             # No overwrites of a concurrently created public release archive.

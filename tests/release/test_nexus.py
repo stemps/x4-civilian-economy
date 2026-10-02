@@ -97,7 +97,7 @@ class PublishTests(unittest.TestCase):
         self.config = json.loads((Path(__file__).resolve().parents[2] / 'nexus.json').read_text())
         self.config.update(mod_id=2371, file_id=None, create_new_file=False)
         self.write_config()
-        self.archive = self.root / 'Civilian-Economy-0.2.0.zip'
+        self.archive = self.root / 'Example-Mod-0.2.0.zip'
         self.archive.write_bytes(b'archive bytes for transport tests')
         self.fake = FakeNexus()
 

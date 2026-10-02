@@ -139,7 +139,7 @@ class PublicationTests(unittest.TestCase):
             self.publish_steam = stack.enter_context(patch.object(release, 'publish_steam',
                 side_effect=steam_error or (lambda *a, **kw: events.append('steam'))))
             self.run_release = stack.enter_context(patch.object(release.Release, 'run',
-                return_value=Path('dist/Civilian-Economy-1.2.3.zip')))
+                return_value=Path('dist/Example-Mod-1.2.3.zip')))
             stack.enter_context(patch.object(release_archive, 'tagged_zip',
                 return_value=(Path('archive.zip'), 'released-commit', 'Notes')))
             self.local_zip = stack.enter_context(patch.object(release_archive, 'local_zip'))

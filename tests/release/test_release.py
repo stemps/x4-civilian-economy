@@ -29,7 +29,7 @@ class ReleaseTests(ReleaseFixture):
 
     def test_first_and_subsequent_release(self):
         archive = self.run_release()
-        self.assertEqual(archive.name, "Civilian-Economy-0.1.0.zip")
+        self.assertEqual(archive.name, "Example-Mod-0.1.0.zip")
         self.assertEqual(self.cmd("status", "--porcelain"), "")
         self.assertEqual((self.root / "VERSION").read_text().strip(), "0.1.0")
         manifest = (self.root / "src/content.xml").read_text(encoding="utf-8")
@@ -38,8 +38,8 @@ class ReleaseTests(ReleaseFixture):
         self.assertEqual(self.cmd("rev-parse", "HEAD"), self.cmd("rev-parse", "origin/main"))
         self.assertEqual(self.cmd("cat-file", "-t", "v0.1.0"), "tag")
         with zipfile.ZipFile(archive) as zipped:
-            self.assertFalse(any(name.startswith("civilian_economy/assets/") for name in zipped.namelist()))
-            self.assertEqual(set(zipped.namelist()), {"civilian_economy/" + p for p in
+            self.assertFalse(any(name.startswith("example_mod/assets/") for name in zipped.namelist()))
+            self.assertEqual(set(zipped.namelist()), {"example_mod/" + p for p in
                              ("content.xml", "ui.xml", "ui/example.lua", "t/0001.xml")})
             for name in zipped.namelist():
                 blob = subprocess.run(["git", "show", "v0.1.0:src/" + name.split("/", 1)[1]],
@@ -117,9 +117,9 @@ class ReleaseTests(ReleaseFixture):
         with self.assertRaises(release.ReleaseError): self.run_release("0.2.0")
 
     def test_existing_zip(self):
-        self.write("dist/Civilian-Economy-0.1.0.zip", "keep")
+        self.write("dist/Example-Mod-0.1.0.zip", "keep")
         with self.assertRaises(release.ReleaseError): self.run_release()
-        self.assertEqual((self.root / "dist/Civilian-Economy-0.1.0.zip").read_text(), "keep")
+        self.assertEqual((self.root / "dist/Example-Mod-0.1.0.zip").read_text(), "keep")
 
     # GIT_EDITOR/VISUAL/EDITOR outrank core.editor; clear them so the configured one runs.
     @patch.dict(os.environ, {"GIT_EDITOR": "", "VISUAL": "", "EDITOR": ""})

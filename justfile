@@ -1,109 +1,130 @@
-set windows-shell := ["powershell", "-NoProfile", "-Command"]
-python := env_var_or_default("CE_PYTHON", "")
+# Requires just and uv on PATH. Commands run from this file's directory.
+set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
 
+toolkit := env('X4_TOOLKIT', '../..')
+reference := env('X4_REFERENCE', toolkit + '/reference')
+
+# List available tasks.
 default:
     @just --list
+
+# ---------------------------------------------------------------------------
+# Mod checks
+# ---------------------------------------------------------------------------
+
+# Everyday gate: translations, generated plans, controller tests, x4validate and Lua UI.
+check: translations plans-verify validate lua
+
+# Comprehensive gate; controller tests execute once, schemas in a fresh process.
+check-full: check-release schema-only
+
+# Require every English entry in all game locales, including format contracts.
+translations:
+    uv run python tests/translations/test_translations.py
+    uv run python tests/translations/check_translations.py
+
+# Controller tests, XML parsing and x4validate on src/.
+validate *args:
+    uv run --with lxml --with rich --with click python tools/check.py {{args}}
+
+# Full native schemas, including the merged AI patch.
+schema *args:
+    uv run --with lxml --with rich --with click python tools/check.py --schema {{args}}
+
+# Full static/native schema validation without repeating controller tests.
+schema-only *args:
+    uv run --with lxml --with rich --with click python tools/check.py --schema --skip-tests {{args}}
+
+# Lua UI harnesses with a fake engine.
+lua:
+    uv run --with lupa python tests/lua/test_initial_construction.py
+    uv run --with lupa python tests/lua/test_debug_menu.py
+    uv run --with lupa python tests/lua/test_population_bridge.py
+    uv run --with lupa python tests/lua/test_workforce_bridge.py
+    uv run --with lupa python tests/lua/test_map_status.py
+
+# Exercise the optional installed VTL source without redistributing it.
+vtl moddir:
+    uv run --with lxml --with lupa python tests/lua/test_transaction_log.py "{{moddir}}"
+
+# Focused test-tooling contracts, independent of game execution.
+test-tooling:
+    uv run --with lxml python -m unittest discover -s tests/mod -p 'test_tooling*.py'
 
 # Read-only production plan reproducibility, snap geometry and construction contracts.
 plans-check: plans-verify plans-tests construction-tests
 
 # Artifact verification only; validate already discovers the focused plan tests.
 plans-verify:
-    if ('{{python}}') { & '{{python}}' tools/generate_plans.py; exit $LASTEXITCODE } else { uv run --offline --with lxml python tools/generate_plans.py; exit $LASTEXITCODE }
+    uv run --with lxml python tools/generate_plans.py
 
 # Focused geometry, native-stage and recovery contracts against generated artifacts.
 plans-tests:
-    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests/mod -p 'test_spine*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests/mod -p 'test_spine*.py'; exit $LASTEXITCODE }
+    uv run --with lxml python -m unittest discover -s tests/mod -p 'test_spine*.py'
 
 # Focused production staging and profile checks.
 construction-tests:
-    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests/mod -p '*construction*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests/mod -p '*construction*.py'; exit $LASTEXITCODE }
+    uv run --with lxml python -m unittest discover -s tests/mod -p '*construction*.py'
+
+# ---------------------------------------------------------------------------
+# Mod assets
+# ---------------------------------------------------------------------------
 
 # Explicitly regenerate only the isolated production plan artifacts.
 plans-generate:
-    if ('{{python}}') { & '{{python}}' tools/generate_plans.py --write; exit $LASTEXITCODE } else { uv run --offline --with lxml python tools/generate_plans.py --write; exit $LASTEXITCODE }
-
-# Controller tests, XML parsing and x4validate (uses the configured Python).
-validate *args:
-    if ('{{python}}') { & '{{python}}' tools/check.py {{args}}; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py {{args}}; exit $LASTEXITCODE }
-
-# Full native schemas, including the merged AI patch.
-schema *args:
-    if ('{{python}}') { & '{{python}}' tools/check.py --schema {{args}}; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py --schema {{args}}; exit $LASTEXITCODE }
-
-# Full static/native schema validation without repeating controller tests.
-schema-only *args:
-    if ('{{python}}') { & '{{python}}' tools/check.py --schema --skip-tests {{args}}; exit $LASTEXITCODE } else { uv run --offline --with lxml --with rich --with click python tools/check.py --schema --skip-tests {{args}}; exit $LASTEXITCODE }
-
-lua:
-    if ('{{python}}') { & '{{python}}' tests/lua/test_initial_construction.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_initial_construction.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/lua/test_debug_menu.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_debug_menu.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/lua/test_population_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_population_bridge.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/lua/test_workforce_bridge.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_workforce_bridge.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/lua/test_map_status.py; exit $LASTEXITCODE } else { uv run --offline --with lupa python tests/lua/test_map_status.py; exit $LASTEXITCODE }
-
-# Everyday gate: all controller tests, generated plans, static checks and UI.
-check: translations plans-verify validate lua
-
-# Preserve the release gate's integration coverage.
-check-release: check test-release
-
-# Comprehensive gate; controller tests execute once, schemas in a fresh process.
-check-full: check-release schema-only
-
-# Focused test-tooling contracts, independent of game execution.
-test-tooling:
-    if ('{{python}}') { & '{{python}}' -m unittest discover -s tests/mod -p 'test_tooling*.py'; exit $LASTEXITCODE } else { uv run --offline --with lxml python -m unittest discover -s tests/mod -p 'test_tooling*.py'; exit $LASTEXITCODE }
-
-# Require every English entry in all game locales, including format contracts.
-translations:
-    if ('{{python}}') { & '{{python}}' tests/translations/test_translations.py; exit $LASTEXITCODE } else { uv run python tests/translations/test_translations.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/translations/check_translations.py; exit $LASTEXITCODE } else { uv run python tests/translations/check_translations.py; exit $LASTEXITCODE }
-
-# Validate, record, push, package and publish a release from clean main.
-release:
-    if ('{{python}}') { & '{{python}}' scripts/release.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/release.py; exit $LASTEXITCODE }
-
-# Package the current working tree, including uncommitted runtime files.
-build-zip:
-    if ('{{python}}') { & '{{python}}' scripts/release.py build-zip; exit $LASTEXITCODE } else { uv run python scripts/release.py build-zip; exit $LASTEXITCODE }
+    uv run --with lxml python tools/generate_plans.py --write
 
 # Encode the raider skull source as a mipmapped game texture.
 raider-logo:
-    if ('{{python}}') { & '{{python}}' tools/build_raider_logo.py; exit $LASTEXITCODE } else { uv run --with pillow python tools/build_raider_logo.py; exit $LASTEXITCODE }
+    uv run --with pillow python tools/build_raider_logo.py
 
 # Render and fully decode the approved runtime broadcast videos.
 news-videos:
-    if ('{{python}}') { & '{{python}}' tools/build_news_videos.py; exit $LASTEXITCODE } else { uv run --with imageio-ffmpeg python tools/build_news_videos.py; exit $LASTEXITCODE }
+    uv run --with imageio-ffmpeg python tools/build_news_videos.py
 
-# Publish or resume an existing tagged release on Nexus Mods.
-publish-nexus tag *args:
-    if ('{{python}}') { & '{{python}}' scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/release.py publish-nexus "{{tag}}" {{args}}; exit $LASTEXITCODE }
+# ---------------------------------------------------------------------------
+# Shared tasks: keep this block identical in every mod repository.
+# ---------------------------------------------------------------------------
 
-# Publish or resume a tagged release on the Steam Workshop (WorkshopTool; Steam must be running).
-publish-steam tag *args:
-    if ('{{python}}') { & '{{python}}' scripts/release.py publish-steam "{{tag}}" {{args}}; exit $LASTEXITCODE } else { uv run python scripts/release.py publish-steam "{{tag}}" {{args}}; exit $LASTEXITCODE }
-
-# Stage the working tree as a Workshop folder (ws_ manifest, packed catalog) in dist/workshop/local.
-build-workshop:
-    if ('{{python}}') { & '{{python}}' scripts/release.py build-workshop; exit $LASTEXITCODE } else { uv run python scripts/release.py build-workshop; exit $LASTEXITCODE }
-
-# Minimal folder for the one-time WorkshopTool publish that creates the Workshop item.
-workshop-placeholder:
-    if ('{{python}}') { & '{{python}}' scripts/release.py workshop-placeholder; exit $LASTEXITCODE } else { uv run python scripts/release.py workshop-placeholder; exit $LASTEXITCODE }
-
-# Render and open the manual at a release tag, branch or commit without publishing anything.
-nexus-description ref:
-    if ('{{python}}') { & '{{python}}' scripts/manual_bbcode.py "{{ref}}"; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python scripts/manual_bbcode.py "{{ref}}"; exit $LASTEXITCODE }
+# Release gate: the mod checks plus the release tooling tests.
+check-release: check test-release
 
 # Exercise releases using temporary repositories and local remotes only.
 test-release:
-    if ('{{python}}') { & '{{python}}' tests/release/test_release.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_release.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/release/test_manual_bbcode.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_manual_bbcode.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/release/test_nexus.py; exit $LASTEXITCODE } else { uv run python tests/release/test_nexus.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/release/test_archive.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_archive.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/release/test_release_support.py; exit $LASTEXITCODE } else { uv run --with markdown-it-py==4.0.0 python tests/release/test_release_support.py; exit $LASTEXITCODE }
-    if ('{{python}}') { & '{{python}}' tests/release/test_workshop.py; exit $LASTEXITCODE } else { uv run python tests/release/test_workshop.py; exit $LASTEXITCODE }
+    uv run --with markdown-it-py==4.0.0 python tests/release/test_release.py
+    uv run --with markdown-it-py==4.0.0 python tests/release/test_manual_bbcode.py
+    uv run python tests/release/test_nexus.py
+    uv run --with markdown-it-py==4.0.0 python tests/release/test_archive.py
+    uv run --with markdown-it-py==4.0.0 python tests/release/test_release_support.py
+    uv run python tests/release/test_workshop.py
+
+# Validate, record, push, package and publish a release from clean main.
+release:
+    uv run --with markdown-it-py==4.0.0 python scripts/release.py
+
+# Package src/ from the working tree, including uncommitted files.
+build-zip:
+    uv run python scripts/release.py build-zip
+
+# Stage src/ as a Workshop folder (ws_ manifest, packed catalog) in dist/workshop/local.
+build-workshop:
+    uv run python scripts/release.py build-workshop
+
+# Minimal folder for the one-time WorkshopTool publish that creates the Workshop item.
+workshop-placeholder:
+    uv run python scripts/release.py workshop-placeholder
+
+# Publish or resume an existing tagged release on Nexus Mods.
+publish-nexus tag *args:
+    uv run --with markdown-it-py==4.0.0 python scripts/release.py publish-nexus "{{tag}}" {{args}}
+
+# Publish or resume a tagged release on the Steam Workshop (WorkshopTool; Steam must be running).
+publish-steam tag *args:
+    uv run python scripts/release.py publish-steam "{{tag}}" {{args}}
+
+# Render and open the manual at a release tag, branch or commit without publishing anything.
+nexus-description ref:
+    uv run --with markdown-it-py==4.0.0 python scripts/manual_bbcode.py "{{ref}}"
 
 # Junction src/ into the game's extensions folder for in-game testing.
 link:
@@ -117,6 +138,6 @@ unlink:
 link-status:
     & ./scripts/game_link.ps1 status
 
-# Exercise the optional installed VTL source without redistributing it.
-vtl moddir:
-    uv run --offline --with lxml --with lupa python tests/lua/test_transaction_log.py "{{moddir}}"
+# Follow the game's debug log; press Ctrl+C to stop.
+log:
+    & ./scripts/game_log.ps1

@@ -21,7 +21,7 @@ spec.loader.exec_module(release)
 @lru_cache(maxsize=1)
 def seed_repository():
     """One pristine seed per process; tests receive independent ordinary copies."""
-    temp = tempfile.TemporaryDirectory(prefix='ce-release-seed-')
+    temp = tempfile.TemporaryDirectory(prefix='release-seed-')
     fixture = ReleaseFixture()
     fixture.root = Path(temp.name) / 'mod'
     fixture.remote = Path(temp.name) / 'origin.git'
@@ -62,7 +62,7 @@ class ReleaseFixture(unittest.TestCase):
         self.cmd("config", "core.autocrlf", "false")
         self.cmd("config", "core.editor", "true")
         self.write(".gitignore", "/dist/\n")
-        self.write("src/content.xml", '<content id="civilian_economy" version="0" date="2026-09-06">\n<text name="日本語"/>\n</content>\n')
+        self.write("src/content.xml", '<content id="example_mod" name="Example Mod" version="0" date="2026-09-06">\n<text name="日本語"/>\n</content>\n')
         self.write("src/ui.xml", "<addon/>\n")
         self.write("src/ui/example.lua", "return 1\n")
         self.write("src/t/0001.xml", "<language/>\n")
