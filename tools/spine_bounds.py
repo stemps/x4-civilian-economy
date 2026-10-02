@@ -1,71 +1,14 @@
-"""Native numeric bounds import and deterministic envelope fitting.
+"""Deterministic envelope fitting against measured native module bounds.
 
 No meshes/assets are copied. AABB separation is a conservative screen, not a
 docking/approach test. Missing measurements must never become estimated bounds.
 """
-import argparse
 import hashlib
 import itertools
 import json
 import math
-import re
-from pathlib import Path
 
 from spine_geometry import Layout, add, rotate, validate
-
-NUMBER = r'[-+0-9.eE]+'
-ROW = re.compile(r'\[CE Spine\] CALIBRATION macro=(\w+) max=('+NUMBER+r'),('+NUMBER+r'),('+NUMBER+r') center=('+NUMBER+r'),('+NUMBER+r'),('+NUMBER+r')')
-
-
-def import_log(path):
-    raw = Path(path).read_bytes()
-    lines = raw.decode('utf-8', errors='replace').splitlines()
-    # Never combine observations from separate runs or layouts silently.
-    groups = []
-    active = None
-    for line in lines:
-        begin = re.search(r'CALIBRATION_BEGIN token=(\d+) race=(\w+) fingerprint=(\w+)', line)
-        if begin:
-            key = (begin[1], begin[3])
-            if not groups or begin[2]=='argon' or groups[-1]['key'] != key:
-                groups.append({'key':key, 'macros': {}, 'races': set(), 'missing': set()})
-            group=groups[-1]
-            if begin[2] in group['races']:
-                raise ValueError('Duplicate race calibration in one run')
-            active = begin[2]
-        elif active:
-            group = groups[-1]
-            row = ROW.search(line)
-            if row:
-                values = [float(v) for v in row.groups()[1:]]
-                half_extent, center = values[:3], values[3:]
-                minimum = [c-h for c,h in zip(center,half_extent)]
-                maximum = [c+h for c,h in zip(center,half_extent)]
-                if not all(math.isfinite(v) for v in values) or any(h<0 for h in half_extent):
-                    raise ValueError('Invalid native bounds: '+row[1])
-                box = {'min':minimum, 'max':maximum, 'native_max':half_extent, 'center':center}
-                if row[1] in group['macros'] and group['macros'][row[1]] != box:
-                    raise ValueError('Conflicting measurements: '+row[1])
-                group['macros'][row[1]] = box
-            missing = re.search(r'CALIBRATION_MISSING macro=(\w+)', line)
-            if missing:
-                group['missing'].add(missing[1])
-            end = re.search(r'CALIBRATION_END race=(\w+)', line)
-            if end:
-                if end[1] != active:
-                    raise ValueError('Mismatched calibration end')
-                group['races'].add(end[1])
-                active = None
-    if not groups:
-        raise ValueError('No native calibration records. Run the updated smoke test first.')
-    group = groups[-1]
-    key = group['key']
-    from spine_catalog import RACES
-    if group['races'] != set(RACES) or group['missing']:
-        raise ValueError(f'Incomplete latest calibration: races={sorted(group["races"])} missing={sorted(group["missing"])}')
-    return {'version':2, 'evidence':'MEASURED native max/center; corners derived as center +/- max, reconciled with native station spans; mesh collisions and approach volumes unmeasured',
-            'log_sha256':hashlib.sha256(raw).hexdigest(), 'layout_fingerprint':key[1],
-            'run_token':key[0], 'races':sorted(group['races']), 'macros':dict(sorted(group['macros'].items()))}
 
 
 def box(entry, bounds):
@@ -129,15 +72,3 @@ def fit(catalog, selection, bounds, constraint=None):
     _,stages,report=best
     return stages,report
 
-
-def main():
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('log',type=Path)
-    parser.add_argument('output',type=Path)
-    args=parser.parse_args()
-    result=import_log(args.log)
-    args.output.write_text(json.dumps(result,indent=2,sort_keys=True)+'\n',encoding='utf-8')
-    print(f'Imported {len(result["macros"])} native macro bounds from six races; no docking acceptance implied')
-
-
-if __name__=='__main__': main()

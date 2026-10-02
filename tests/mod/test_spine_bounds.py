@@ -1,48 +1,13 @@
-"""Synthetic fitter/importer tests, never evidence of native clearance."""
+"""Synthetic fitter tests, never evidence of native clearance."""
 import json
-import tempfile
 import unittest
 from copy import deepcopy
-from pathlib import Path
 from unittest.mock import patch
 from support import ROOT
-from spine_catalog import RACES
-from spine_bounds import import_log, box, fit
+from spine_bounds import box, fit
 
 
 class BoundsTests(unittest.TestCase):
-    def parse(self, text):
-        with tempfile.TemporaryDirectory() as d:
-            p=Path(d)/'debug.txt';p.write_text(text,encoding='utf-8')
-            return import_log(p)
-
-    def records(self, races=RACES, token=1):
-        return '\n'.join(f'[CE Spine] CALIBRATION_BEGIN token={token} race={race} fingerprint=abc\n'
-            '[CE Spine] CALIBRATION macro=test_macro max=20,30,40 center=5,0,-5\n'
-            f'[CE Spine] CALIBRATION_END race={race}' for race in races)
-
-    def test_import_requires_latest_complete_run_and_keeps_provenance(self):
-        result=self.parse(self.records())
-        self.assertEqual(result['macros']['test_macro']['min'],[-15,-30,-45])
-        self.assertEqual(result['macros']['test_macro']['max'],[25,30,35])
-        self.assertEqual(len(result['races']),6)
-        self.assertEqual(result['layout_fingerprint'],'abc')
-        self.assertEqual(len(result['log_sha256']),64)
-        for tail in (self.records(['argon']),self.records(['argon'],2)):
-            with self.assertRaisesRegex(ValueError,'Incomplete'):
-                self.parse(self.records()+'\n'+tail)
-        with self.assertRaisesRegex(ValueError,'No native'):
-            self.parse('[CE Spine] BOUNDS outside plot')
-
-    def test_conflicting_missing_and_invalid_measurements_are_rejected(self):
-        text=self.records()
-        with self.assertRaisesRegex(ValueError,'Conflicting'):
-            self.parse(text.replace('max=20,30,40','max=21,30,40',1))
-        with self.assertRaisesRegex(ValueError,'Invalid'):
-            self.parse(text.replace('max=20,30,40','max=-20,30,40'))
-        with self.assertRaisesRegex(ValueError,'Incomplete'):
-            self.parse(text.replace('CALIBRATION macro=test_macro max=20,30,40 center=5,0,-5','CALIBRATION_MISSING macro=test_macro'))
-
     def test_envelope_rotates_all_eight_corners_including_asymmetric_bounds(self):
         lo,hi=box({'macro':'m','position':(100,200,300),'yaw':90},{'m':{'min':[-10,-20,-30],'max':[40,50,60]}})
         for actual,expected in zip(lo,(70,180,260)): self.assertAlmostEqual(actual,expected)
