@@ -6,7 +6,7 @@ from support import Runner, Table, List, Component, NIL, definitions
 class ResetTests(unittest.TestCase):
     def setUp(self):
         self.r = r = Runner()
-        self.sector = Component(exists=True, isclass=Table(sector=True))
+        self.sector = Component(exists=True, isclass=Table(sector=True), macro=Table(id='test_sector_macro'))
         self.builder = Component(exists=True, owner='npc')
         self.storage = Component(exists=True, owner='civilian', isclass=Table(ship=False),
             builds=Table(queued=List(['queued']), inprogress=List(['active'])),
@@ -153,7 +153,7 @@ class ResetTests(unittest.TestCase):
         r=self.r;definitions(r)
         r.env['md'].CE_CivilianHub.Init=self.controller
         self.sector.owner=Table(primaryrace=r.env['lookup'].race.list[1])
-        empty=Component(exists=True,isclass=Table(sector=True),owner=self.sector.owner)
+        empty=Component(exists=True,isclass=Table(sector=True),owner=self.sector.owner,macro=Table(id='empty_sector_macro'))
         r.env.update(Registry=self.controller.Registry, SectorProfiles=self.controller.SectorProfiles,
             RaceProfiles=self.controller.RaceProfiles, PopulationRequest=8, PopulationApplied=7)
         r.env['player'].galaxy='galaxy'

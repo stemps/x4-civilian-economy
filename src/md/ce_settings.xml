@@ -53,7 +53,8 @@
         <do_elseif value="$SettingKey == '$TaxPercent'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$TaxPercent"/></do_elseif>
         <set_value name="$SettingType" exact="typeof $SettingValue"/>
         <do_if value="$SettingKey == '$Debug' or $SettingKey == '$TaxNotifications' or $SettingKey == '$NewsVideos'">
-          <do_if value="$SettingValue == 0 or $SettingValue == 1 or $SettingValue == false or $SettingValue == true">
+          <!-- Typed: MD null equals 0/false and would otherwise be accepted as false. -->
+          <do_if value="$SettingType.isnumeric and ($SettingValue == 0 or $SettingValue == 1)">
             <set_value name="$SettingValue" exact="$SettingValue == 1 or $SettingValue == true"/>
             <set_value name="$SettingValid" exact="true"/>
           </do_if>

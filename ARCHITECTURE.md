@@ -330,6 +330,8 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | --- | --- |
 | `md/ce_settings.xml` | Per-save settings, defaults, validation, live economic transitions and shared growth-time calculation. Publishes the debug-menu visibility flag. |
 | `md/ce_options.xml` | Civilian Economy page in Mod Support APIs Extension Options; checkbox and stepped-slider callbacks. |
+| `md/ce_population_overrides.xml` | Per-save population override layers (native, preset, player), anchored resolution, validation, cached native readings and the sector macro map. |
+| `md/ce_population_options.xml` | Customize Population section of the options page: override rows, add dropdown, unconfirmed draft and callbacks. |
 | `md/ce_civilian_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
 | `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
 | `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers and pricing. Retains payment watcher cues; provisioning belongs to CE_Accounts. |
@@ -455,7 +457,7 @@ are selected by exact hub identity.
 DemandMultiplier=1.0, TimeMultiplier=1.0, TaxNotifications=true and TaxPercent=15.
 Ensure fills only absent fields; Read provides defaults even before initialization.
 No UI userdata is written and loading another save restores that save's settings.
-`CE_Options` registers its three-section page whenever `Simple_Menu_API.Reloaded`
+`CE_Options` registers its four-section page whenever `Simple_Menu_API.Reloaded`
 signals. It uses the installed Mod Support APIs manifest ID `ws_2042901274`.
 Checkboxes use equal width and height from Helper.standardTextHeight and update
 on click. Sliders update on confirmation, with multipliers ranging from 0.1 to
@@ -481,8 +483,40 @@ Broadcast reads the setting each time; disabling it retains the ticker and one
 logbook entry without a replacement popup. Enabled playback still falls back to
 the interactive popup if the engine returns no cutscene handle. Critical warnings
 are independent. The Display checkbox affects future broadcasts only.
-Sections are ordered Debug, Gameplay, Display, with an unselectable 8-pixel
-text spacer before Gameplay and Display; native UI scaling applies.
+Sections are ordered Debug, Gameplay, Display, Customize Population, with an
+unselectable 8-pixel text spacer before each section after the first; native UI
+scaling applies. The page has three columns (55% / rest / 15%); existing controls
+span columns 2-3. Slider confirmation signals `Refresh_Menu` to show normalized
+values, because the API's `Update_Widget` cannot update slider cells.
+
+### Population overrides
+
+`CE_PopulationOverrides.State` stores, per save, `$Player` ('$' + sector macro ID
+-> `table[$Population, $Baseline]`), `$PresetBaselines`, `$Native` (last Lua bridge
+reading per key) and `$Sectors` (macro key -> sector, rebuilt by each `Reconcile`).
+`$Presets` is rebuilt by `LoadPresets` on start and load and is empty for now; it
+is the extension point for shipped presets (for example total conversions).
+`Effective` resolves native < preset < player, where a preset counts only if its
+macro exists in the current galaxy, and adds anchored growth
+`max(0, native - baseline)`. `ReconcileSector` calls it with the native input; the
+debug fixed population (`$R.$PopulationOverride`) bypasses it and wins. Every other
+consumer reads `$R.$Population`/`$R.$Factor` and needs no override awareness.
+
+`PopulationReceived` caches each native reading before reconciling it.
+`Reconcile` reapplies player and preset overrides through `ReconcileOverrides`, so
+they work without a native reading. `Change` ('add', 'set', 'reset') validates
+0-100,000 million in whole millions, rejects adding a listed sector, and signals
+`CE_CivilianHub.PopulationOverrideChanged`. That Init sub-cue runs in the
+controller namespace and reconciles the sector immediately (skipped during a debug
+reset); a reset with no native reading waits for the next reconcile. The global
+debug reset clears the registry but keeps overrides.
+
+`CE_PopulationOptions.Build` lists overridden sectors (player entries, then presets
+present in this galaxy) sorted by name, each with a slider in millions and a
+Remove or Reset button on the row below (Reset is disabled while the preset value applies). The engine rejects any other interactive cell in a slider row. The add
+dropdown offers every galaxy sector without an entry or preset. Picking one creates
+a draft row starting at the cached native value, with Cancel and Confirm on the
+row below. Every callback signals `Refresh_Menu`.
 
 ## Local demand profiles
 

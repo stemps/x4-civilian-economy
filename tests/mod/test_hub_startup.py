@@ -60,7 +60,7 @@ class HubStartupTests(StartupHarness):
 
     def test_two_hubs_complete_out_of_order_and_stale_callback_is_ignored(self):
         self.builder(); self.builder(); first=self.start()
-        other=Component(exists=True,isclass=Table(sector=True),owner=self.owner,knownname='Other')
+        other=Component(exists=True,isclass=Table(sector=True),owner=self.owner,knownname='Other',macro=Table(id='other_sector_macro'))
         second=self.start(other)
         self.complete(index=1); self.complete(index=0)
         ordered=[hub for kind,hub in self.events if kind=='order']

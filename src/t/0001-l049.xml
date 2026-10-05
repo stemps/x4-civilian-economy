@@ -279,5 +279,21 @@
     <t id="431">Bonus</t>
     <t id="432">Wirkung</t>
     <t id="433">Deaktiviert</t>
+    <t id="434">Bevölkerung anpassen</t>
+    <t id="435">Bevölkerungswert festlegen</t>
+    <t id="436">Wähle einen Sektor, um die Bevölkerung festzulegen, die Civilian Economy dort verwendet.</t>
+    <t id="437">Bestätigen</t>
+    <t id="438">Abbrechen</t>
+    <t id="439">Entfernen</t>
+    <t id="440">Zurücksetzen</t>
+    <t id="441"> Mio.</t>
+    <t id="442">Legt die Bevölkerung fest, die Civilian Economy für einen Sektor verwendet, in Millionen. Handelszentren benötigen mindestens 100 Millionen; 0 pausiert ein Handelszentrum. Wachstum durch Terraforming wird zusätzlich addiert.</t>
+    <t id="443">%1 \(Voreinstellung\)</t>
+    <t id="444">Vanilla-Bevölkerung: %1 Millionen.</t>
+    <t id="445">Vanilla-Bevölkerung: noch nicht gemessen.</t>
+    <t id="446">Vanilla-Bevölkerung: %1 Millionen. Voreinstellung: %2 Millionen.</t>
+    <t id="447">Diesen Wert entfernen und wieder die Vanilla-Bevölkerung verwenden.</t>
+    <t id="448">Deine Änderung verwerfen und wieder die voreingestellte Bevölkerung verwenden.</t>
+    <t id="449">Vanilla-Bevölkerung: noch nicht gemessen. Voreinstellung: %1 Millionen.</t>
   </page>
 </language>

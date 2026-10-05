@@ -266,5 +266,21 @@
     <t id="431">Bonus</t>
     <t id="432">Benefit</t>
     <t id="433">Disabled</t>
+    <t id="434">Customize Population</t>
+    <t id="435">Add population override</t>
+    <t id="436">Choose a sector to override the population Civilian Economy uses there.</t>
+    <t id="437">Confirm</t>
+    <t id="438">Cancel</t>
+    <t id="439">Remove</t>
+    <t id="440">Reset</t>
+    <t id="441"> M</t>
+    <t id="442">Override the population Civilian Economy uses for a sector, in millions. Hubs need at least 100 million; 0 pauses a hub. Terraforming growth is added on top.</t>
+    <t id="443">%1 \(preset\)</t>
+    <t id="444">Vanilla population: %1 million.</t>
+    <t id="445">Vanilla population: not measured yet.</t>
+    <t id="446">Vanilla population: %1 million. Preset: %2 million.</t>
+    <t id="447">Remove this override and use the vanilla population again.</t>
+    <t id="448">Discard your change and use the preset population again.</t>
+    <t id="449">Vanilla population: not measured yet. Preset: %1 million.</t>
   </page>
 </language>

@@ -279,5 +279,21 @@
     <t id="431">Bonus</t>
     <t id="432">Effet</t>
     <t id="433">Désactivé</t>
+    <t id="434">Personnaliser la population</t>
+    <t id="435">Ajouter une population personnalisée</t>
+    <t id="436">Choisissez un secteur pour remplacer la population qu'y utilise Civilian Economy.</t>
+    <t id="437">Confirmer</t>
+    <t id="438">Annuler</t>
+    <t id="439">Supprimer</t>
+    <t id="440">Réinitialiser</t>
+    <t id="441"> M</t>
+    <t id="442">Remplace la population utilisée par Civilian Economy pour un secteur, en millions. Les centres nécessitent au moins 100 millions ; 0 met un centre en pause. La croissance due à la terraformation s'ajoute en plus.</t>
+    <t id="443">%1 \(préréglage\)</t>
+    <t id="444">Population d'origine : %1 millions.</t>
+    <t id="445">Population d'origine : pas encore mesurée.</t>
+    <t id="446">Population d'origine : %1 millions. Préréglage : %2 millions.</t>
+    <t id="447">Supprimer ce remplacement et utiliser à nouveau la population d'origine.</t>
+    <t id="448">Annuler votre modification et utiliser à nouveau la population du préréglage.</t>
+    <t id="449">Population d'origine : pas encore mesurée. Préréglage : %1 millions.</t>
   </page>
 </language>

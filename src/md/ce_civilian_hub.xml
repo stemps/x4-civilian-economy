@@ -189,6 +189,31 @@
           <conditions><event_cue_signalled/></conditions>
           <actions><do_if value="@md.CE_DebugReset.State.$Busy and md.CE_DebugReset.State.$Phase == 'initializing'"><set_value name="$InitialPopulationPass" exact="true"/><include_actions ref="Reconcile"/></do_if></actions>
         </cue>
+        <cue name="PopulationOverrideChanged" instantiate="true">
+          <conditions><event_cue_signalled/></conditions>
+          <actions>
+            <do_if value="not @md.CE_DebugReset.State.$Busy and event.param.exists">
+              <set_value name="$Sector" exact="event.param"/>
+              <include_actions ref="md.CE_PopulationOverrides.Native"/>
+              <set_value name="$OverrideNativeInput" exact="$Population"/>
+              <include_actions ref="md.CE_PopulationOverrides.Effective"/>
+              <!-- A removed override with no native reading yet waits for the next reconcile.
+                   Typed test: MD null equals 0, and a zero population must still apply. -->
+              <set_value name="$OverrideResultType" exact="typeof $Population"/>
+              <do_if value="$OverrideResultType.isnumeric">
+                <!-- ReconcileSector resolves the layers itself from the native input. -->
+                <set_value name="$Population" exact="$OverrideNativeInput"/>
+                <include_actions ref="ReconcileSector"/>
+                <do_if value="$Registry.{$Sector}?">
+                  <set_value name="$R" exact="$Registry.{$Sector}"/>
+                  <include_actions ref="UpdateHub"/>
+                  <include_actions ref="PublishDiagnostics"/>
+                </do_if>
+                <include_actions ref="PublishAllDiagnostics"/>
+              </do_if>
+            </do_if>
+          </actions>
+        </cue>
         <cue name="PopulationReceived" instantiate="true">
           <conditions>
             <event_ui_triggered screen="'CEPopulation'" control="'ready'"/>
@@ -201,6 +226,7 @@
                 <set_value name="$Sector" exact="$PopulationRow.{1}"/>
                 <set_value name="$Population" exact="$PopulationRow.{2}"/>
                 <do_if value="$Sector.exists and $Sector.isclass.sector and $Population ge 0">
+                  <include_actions ref="md.CE_PopulationOverrides.RememberNative"/>
                   <include_actions ref="ReconcileSector"/>
                   <do_if value="$Registry.{$Sector}?">
                     <set_value name="$R" exact="$Registry.{$Sector}"/>
@@ -223,9 +249,13 @@
         <set_value name="$NextReconcile" exact="player.age + 5min"/>
         <include_actions ref="md.CE_DebugCreate.ReconcileOverrides"/>
         <find_sector name="$PopulationSectors" space="player.galaxy" multiple="true"/>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <set_value name="md.CE_PopulationOverrides.State.$Sectors" exact="table[]"/>
         <do_for_each name="$Sector" in="$PopulationSectors">
+          <include_actions ref="md.CE_PopulationOverrides.RememberSector"/>
           <include_actions ref="CaptureSectorProfile"/>
         </do_for_each>
+        <include_actions ref="md.CE_PopulationOverrides.ReconcileOverrides"/>
         <set_value name="$PopulationRequest" exact="if $PopulationRequest? then $PopulationRequest + 1 else 1"/>
         <set_value name="player.entity.$ce_population_request" exact="[$PopulationRequest,$PopulationSectors]"/>
         <raise_lua_event name="'CEPopulationRequest'"/>
@@ -434,7 +464,9 @@
     </library>
     <library name="ReconcileSector">
       <actions>
+        <!-- $Population is the native reading (or null when only an override is known). -->
         <do_if value="@$Registry.{$Sector}.$PopulationOverride"><set_value name="$Population" exact="$Registry.{$Sector}.$PopulationOverride"/></do_if>
+        <do_else><include_actions ref="md.CE_PopulationOverrides.Effective"/></do_else>
         <include_actions ref="CaptureSectorProfile"/>
         <do_if value="$Sector and ($Population ge 100000000 or $Registry.{$Sector}?)">
           <include_actions ref="EnsureRecord"/>

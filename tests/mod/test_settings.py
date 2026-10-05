@@ -164,7 +164,9 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
 
     def test_options_builds_selectable_controls_and_callbacks_use_confirmed_values(self):
         calls = []
-        self.run.native['signal_cue_instantly'] = lambda n: calls.append((n.get('cue'), self.run.expr(n.get('param'))))
+        self.run.native['signal_cue_instantly'] = lambda n: calls.append((n.get('cue'), self.run.expr(n.get('param') or 'null')))
+        sector = Component(exists=True, isclass=Table(sector=True), knownname='Sector', macro=Table(id='sector_macro'))
+        self.run.native['find_sector'] = lambda n: self.run.set(n.get('name'), List([sector]))
         self.run.library('md.CE_Options.Build')
         selectable = False
         controls = []
@@ -175,6 +177,10 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
                 self.assertTrue(selectable)
                 controls.append(args)
         self.assertEqual(len(controls), 6)
+        from test_population_overrides import assert_slider_rows_exclusive
+        assert_slider_rows_exclusive(self, calls)
+        self.assertEqual([args.options[1].text for cue, args in calls if cue.endswith('Make_Dropdown')], ['Sector'])
+        self.assertTrue(all(args.col + (args.colSpan or 1) - 1 <= 3 for cue, args in calls if not cue.endswith(('Add_Row', 'Call_Table_Method'))))
         debug, demand, time, tax, notifications, news = controls
         self.assertFalse(debug.checked)
         self.assertTrue(news.checked)
@@ -192,8 +198,11 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
         self.run.actions(slider_actions)
         self.assertEqual(self.state.TimeMultiplier, 1)
         self.run.env['event'].param.valuechanged = True
+        calls.clear()
         self.run.actions(slider_actions)
         self.assertEqual(self.state.TimeMultiplier, .2)
+        # Update_Widget cannot update slider cells; the page is rebuilt instead.
+        self.assertEqual([cue for cue, args in calls], ['md.Simple_Menu_API.Refresh_Menu'])
         self.run.env['event'] = Table(param=Table(echo='$Debug', checked=1))
         self.run.actions(tree.xpath('//cue[@name="Checkbox"]/actions')[0])
         self.assertTrue(self.state.Debug)

@@ -9,6 +9,12 @@ from md_expressions import compile_expression, normalize_path
 class Missing:
     def __deepcopy__(self, memo): return self
     def __bool__(self): return False
+    # MD null compares equal to numeric zero (and so to false) (2026-10-05: a live 0 override was skipped
+    # by "$Population != null" while 100000 applied through the same path).
+    def __eq__(self, other):
+        return isinstance(other, Missing) or (isinstance(other, (int, float)) and other == 0)
+    def __ne__(self, other): return not self.__eq__(other)
+    __hash__ = object.__hash__
     def __getattr__(self, key): return False if key == 'exists' else (0 if key == 'count' else self)
     def __getitem__(self, key): return self
 NIL = Missing()
@@ -25,10 +31,30 @@ class DataType(str):
 def datatype_of(value):
     if isinstance(value,List):return DataType('list')
     if isinstance(value,Table):return DataType('table')
-    if type(value) is int:return DataType('integer')
+    # MD booleans are integers (true == 1, false == 0).
+    if type(value) in (int,bool) or isinstance(value,Int32):return DataType('integer')
     if type(value) is float:return DataType('float')
     if type(value) is str:return DataType('string')
     return DataType('other')
+
+class Int32(int):
+    """Result of an MD '(x)i' cast. Integer arithmetic with another 32-bit value wraps
+    like the engine (MEASURED: 6182 * 1000000 stored 1887032704); a largeint operand
+    (a plain int outside 32 bits) promotes instead. Floats are unaffected."""
+    def __new__(cls, value): return super().__new__(cls, int(value))
+    @staticmethod
+    def _wrap(value): return Int32(((int(value) + 2**31) % 2**32) - 2**31)
+    def _op(self, other, fn):
+        if isinstance(other, bool) or not isinstance(other, int): return fn(int(self), other)
+        result = fn(int(self), int(other))
+        return Int32._wrap(result) if isinstance(other, Int32) or -2**31 <= other < 2**31 else result
+    def __add__(self, o): return self._op(o, lambda a, b: a + b)
+    def __radd__(self, o): return self._op(o, lambda a, b: b + a)
+    def __sub__(self, o): return self._op(o, lambda a, b: a - b)
+    def __rsub__(self, o): return self._op(o, lambda a, b: b - a)
+    def __mul__(self, o): return self._op(o, lambda a, b: a * b)
+    def __rmul__(self, o): return self._op(o, lambda a, b: b * a)
+
 
 class PseudoValue:
     """Native property path intermediate; cannot be saved as an MD value."""
@@ -163,7 +189,7 @@ class Runner:
             return (int(textref[1]), self.expr(textref[2]),
                     tuple(self.expr(arg) for arg in split(textref[3] or '')))
         code = compile_expression(s)
-        return wrap(eval(code, {'__builtins__':{},'Angle':Angle,'List':List,'min':min,'max':max,'abs':abs,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
+        return wrap(eval(code, {'__builtins__':{},'Angle':Angle,'List':List,'Int32':Int32,'min':min,'max':max,'abs':abs,'int':int,'float':float,'datatype_of':datatype_of,'defined':lambda x:x is not NIL},self.env))
     def set(self,path,v,remove=False):
         if isinstance(v, PseudoValue):
             raise ValueError('Native pseudo-values cannot be stored; read a property directly')
@@ -258,6 +284,15 @@ class Runner:
                 self.signals.append((n.get('cue'),self.expr(n.get('param','null'))))
             elif tag=='append_to_list': self.expr(n.get('name')).append(self.expr(n.get('exact')))
             elif tag=='append_list_elements': self.expr(n.get('name')).extend(self.expr(n.get('other')))
+            elif tag=='sort_list' and tag not in self.native:
+                # Stable sort by a loop.element expression; native string ordering is assumed lexical.
+                items=self.expr(n.get('list')); key=n.get('sortbyvalue')
+                def value(element):
+                    if key is None: return element
+                    saved=self.env.get('loop',NIL); self.env['loop']=Table(element=element)
+                    try: return self.expr(key)
+                    finally: self.env['loop']=saved
+                items.sort(key=value,reverse=n.get('sortdescending')=='true')
             elif tag=='remove_value': self.set(n.get('name'),None,remove=True)
             elif tag=='clear_table': self.expr(n.get('table')).clear()
             elif tag=='debug_text':

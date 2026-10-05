@@ -2561,3 +2561,74 @@ Historical single-event model; superseded by concurrent-sector-events below.
   authorised upload); Verbose Transaction Log has no Workshop copy.
 - Open: whether the Workshop installs the item as `extensions/civilian_economy`
   (WorkshopTool's default folder name). The video paths depend on it.
+
+## 2026-10-02 - population-overrides
+
+- IMPLEMENTED: per-save population overrides, used in place of native population
+  wherever CE uses population. Layers: native < preset (shipped config, empty for
+  now) < player < debug fixed 5B. Resolution happens only in
+  `CE_PopulationOverrides.Effective`, called from `ReconcileSector` with the
+  NATIVE value as input. Callers must never pass an already-resolved value:
+  resolving twice adds anchored growth twice. The debug fixed value skips the
+  resolver, so it is never recorded as a native baseline.
+- Keys are `'$' + sector.macro.id`. A shipped config can name macros but not
+  components. MD string table keys need the `$` prefix (see profile-key entry).
+  A preset counts, and its options row is shown, only when its macro is in the
+  macro -> sector map rebuilt by every `Reconcile`, so a TC preset is inert in a
+  vanilla galaxy.
+- Anchoring: effective = override + max(0, native - baseline). The baseline is
+  the native reading when the value was saved or the preset first applied, and
+  is filled from the first reading if none existed yet. Reason (READ, vanilla
+  sweep 2026-10-01): vanilla population only grows (terraforming housing
+  projects, two Cradle of Humanity story planets) and never decreases, so
+  terraforming still counts on overridden sectors and lowering still works.
+- A zero override is valid. Test override existence with `?`, never `@`, which
+  treats 0 as absent.
+- Hub creation needs no extra path: `Reconcile` already sends every galaxy
+  sector to the Lua bridge, and an override of at least 100M passes the existing
+  threshold in `ReconcileSector`.
+- READ (Mod Support APIs v195, packed; loose copy in
+  `.validation/settings-research-cache/`): `Update_Widget` never updates sliders.
+  Its Lua checks `cell.type == "slider"` while native Helper tags them
+  `"slidercell"`. CE previously relied on it to show rounded typed values; it now
+  signals `Refresh_Menu`, which re-runs `onOpen`. Per-menu limits
+  (widget_fullscreen.lua): 15 edit boxes, 40 dropdowns, 50 sliders, 170 rows;
+  about 45 overrides fit in the slider budget. Dropdown options are tables; the
+  confirm callback returns `$option_index` and the original `$option`, custom
+  fields included. MD cannot parse text into numbers, so numeric input uses
+  typed sliders, not edit boxes.
+- READ (installed mods): `sort_list sortbyvalue="loop.element.idcode"` sorts by
+  a string, so sector name sorting via `knownname` is expected to work. Not yet
+  seen in game for `knownname`.
+- MEASURED (debug.txt, 2026-10-05): a row holding a slider cannot hold any other
+  interactive cell. The engine rejects the whole frame with `Invalid cell content
+  [row: 16, col: 4]. Button defined although excluded by other row content. E.g.
+  slidercell.` and the options page fails to open. Column numbers include the
+  options page's extra back-arrow column. The rule is in engine C++, not the
+  reference Lua, so a schema or Lua read cannot find it. Each slider row now has
+  only a label beside it; its buttons go on the next row. `tests/mod` checks
+  this for every built row.
+- MEASURED (debug.txt + reported values, 2026-10-05): MD `(x)i` casts and plain
+  integer literals are 32-bit and multiplication WRAPS silently, with no error.
+  `((6182 + 0.5f)i) * 1000000` stored 1,887,032,704 (shown as 1.8B), and 38518 M
+  wrapped to -136,705,664. Use largeint, as vanilla does: `(x)L * 1000000L`. The
+  test runtime now models this: an `i` cast yields `Int32`, whose arithmetic with
+  another 32-bit value wraps and with a larger int promotes. It reproduced both
+  in-game values exactly before the fix.
+- MEASURED (same log): a slider whose start is outside its min/max makes the engine
+  reject the whole frame (`Start value is smaller than min select value`). Slider
+  starts are now clamped, and `CE_PopulationOverrides.Repair` (start and load)
+  drops saved player entries that are non-numeric, negative or above 100,000 M.
+- MEASURED symptom, mechanism strongly INFERRED (debug.txt, 2026-10-05): MD null
+  compares equal to 0. Through one code path guarded by `$Population != null`,
+  `set 100000` applied immediately while `set 0` twice and a reset to a native 0
+  were skipped (the reset applied 39 s later via the normal reconcile). The value
+  was the only difference. No Egosoft documentation was found. Since MD booleans
+  are 0/1, null presumably also equals `false`. Rule: to separate "unknown" from a
+  real zero, use `typeof $x` then `.isnumeric`, never `!= null`. `CE_Settings`
+  boolean validation is now typed for the same reason. The test runtime models
+  `null == 0` (and booleans as integers). Swept 2026-10-05: the remaining six
+  `!= null`/`== null` checks in `src/` compare objects (hubs, sequences), not
+  numbers.
+- Not yet tested in game: the population section's rendering after that fix,
+  typed input up to 100000 in a slider, and hub creation from an override.

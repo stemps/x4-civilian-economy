@@ -7,7 +7,7 @@
       <actions>
         <include_actions ref="md.CE_Settings.Ensure"/>
         <include_actions ref="md.CE_Settings.Publish"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Register_Options_Menu" param="table[$id='civilian_economy',$title={974201,142},$columns=2,$onOpen=md.CE_Options.Open]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Register_Options_Menu" param="table[$id='civilian_economy',$title={974201,142},$columns=3,$onOpen=md.CE_Options.Open]"/>
       </actions>
     </cue>
     <cue name="Open" instantiate="true" namespace="this">
@@ -17,35 +17,37 @@
     <library name="Build">
       <actions>
         <include_actions ref="md.CE_Settings.Ensure"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Call_Table_Method" param="table[$method='setColWidthPercent',$col=1,$width=65]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Call_Table_Method" param="table[$method='setColWidthPercent',$col=1,$width=55]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Call_Table_Method" param="table[$method='setColWidthPercent',$col=3,$width=15]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=2,$text={974201,143},$font='Zekton bold']"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text={974201,143},$font='Zekton bold']"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,145},$wordwrap=true,$mouseOverText={974201,150}]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$id='ce_debug',$echo='$Debug',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$Debug,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,150}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$colSpan=2,$id='ce_debug',$echo='$Debug',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$Debug,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,150}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=2,$text=' ',$fontsize=1,$height=8]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text=' ',$fontsize=1,$height=8]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=2,$text={974201,144},$font='Zekton bold']"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text={974201,144},$font='Zekton bold']"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,146},$wordwrap=true,$mouseOverText={974201,151}]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$id='ce_demand',$echo='$DemandMultiplier',$min=0.1f,$max=10.0f,$step=0.1f,$start=md.CE_Settings.State.$DemandMultiplier,$hideMaxValue=true,$onSliderCellConfirm=md.CE_Options.Slider,$mouseOverText={974201,151}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$colSpan=2,$id='ce_demand',$echo='$DemandMultiplier',$min=0.1f,$max=10.0f,$step=0.1f,$start=md.CE_Settings.State.$DemandMultiplier,$hideMaxValue=true,$onSliderCellConfirm=md.CE_Options.Slider,$mouseOverText={974201,151}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,147},$wordwrap=true,$mouseOverText={974201,152}]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$id='ce_time',$echo='$TimeMultiplier',$min=0.1f,$max=10.0f,$step=0.1f,$start=md.CE_Settings.State.$TimeMultiplier,$hideMaxValue=true,$onSliderCellConfirm=md.CE_Options.Slider,$mouseOverText={974201,152}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$colSpan=2,$id='ce_time',$echo='$TimeMultiplier',$min=0.1f,$max=10.0f,$step=0.1f,$start=md.CE_Settings.State.$TimeMultiplier,$hideMaxValue=true,$onSliderCellConfirm=md.CE_Options.Slider,$mouseOverText={974201,152}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,149},$wordwrap=true,$mouseOverText={974201,154}]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$id='ce_tax',$echo='$TaxPercent',$min=0,$max=50,$step=1,$start=md.CE_Settings.State.$TaxPercent,$suffix='%',$hideMaxValue=true,$onSliderCellConfirm=md.CE_Options.Slider,$mouseOverText={974201,154}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$colSpan=2,$id='ce_tax',$echo='$TaxPercent',$min=0,$max=50,$step=1,$start=md.CE_Settings.State.$TaxPercent,$suffix='%',$hideMaxValue=true,$onSliderCellConfirm=md.CE_Options.Slider,$mouseOverText={974201,154}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,148},$wordwrap=true,$mouseOverText={974201,153}]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$id='ce_tax_notifications',$echo='$TaxNotifications',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$TaxNotifications,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,153}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$colSpan=2,$id='ce_tax_notifications',$echo='$TaxNotifications',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$TaxNotifications,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,153}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=2,$text=' ',$fontsize=1,$height=8]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text=' ',$fontsize=1,$height=8]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=2,$text={974201,159},$font='Zekton bold']"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text={974201,159},$font='Zekton bold']"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,157},$wordwrap=true,$mouseOverText={974201,158}]"/>
-        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$id='ce_news_videos',$echo='$NewsVideos',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$NewsVideos,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,158}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$colSpan=2,$id='ce_news_videos',$echo='$NewsVideos',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$NewsVideos,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,158}]"/>
+        <include_actions ref="md.CE_PopulationOptions.Build"/>
       </actions>
     </library>
     <cue name="Checkbox" instantiate="true" namespace="this">
@@ -63,9 +65,9 @@
           <set_value name="$SettingKey" exact="event.param.$echo"/>
           <set_value name="$SettingValue" exact="event.param.$value"/>
           <include_actions ref="md.CE_Settings.Change"/>
-          <!-- Reflect normalized typed input (or the retained value after invalid input). -->
-          <set_value name="$SettingDisplay" exact="if $SettingValid then $SettingValue else $SettingCurrent"/>
-          <signal_cue_instantly cue="md.Simple_Menu_API.Update_Widget" param="table[$id=event.param.$id,$value=$SettingDisplay]"/>
+          <!-- Reflect normalized typed input (or the retained value after invalid input).
+               Update_Widget cannot: the API matches 'slider', native cells are 'slidercell'. -->
+          <signal_cue_instantly cue="md.Simple_Menu_API.Refresh_Menu"/>
         </do_if>
       </actions>
     </cue>

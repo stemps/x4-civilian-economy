@@ -279,5 +279,21 @@
     <t id="431">Premia</t>
     <t id="432">Efekt</t>
     <t id="433">Wyłączone</t>
+    <t id="434">Dostosuj populację</t>
+    <t id="435">Dodaj własną populację</t>
+    <t id="436">Wybierz sektor, aby zastąpić populację używaną w nim przez Civilian Economy.</t>
+    <t id="437">Potwierdź</t>
+    <t id="438">Anuluj</t>
+    <t id="439">Usuń</t>
+    <t id="440">Przywróć</t>
+    <t id="441"> mln</t>
+    <t id="442">Zastępuje populację używaną przez Civilian Economy dla sektora, w milionach. Centra wymagają co najmniej 100 milionów; 0 wstrzymuje centrum. Wzrost z terraformowania jest dodawany dodatkowo.</t>
+    <t id="443">%1 \(predefiniowane\)</t>
+    <t id="444">Populacja oryginalna: %1 mln.</t>
+    <t id="445">Populacja oryginalna: jeszcze niezmierzona.</t>
+    <t id="446">Populacja oryginalna: %1 mln. Predefiniowane: %2 mln.</t>
+    <t id="447">Usuń tę wartość i ponownie używaj populacji oryginalnej.</t>
+    <t id="448">Odrzuć zmianę i ponownie używaj populacji predefiniowanej.</t>
+    <t id="449">Populacja oryginalna: jeszcze niezmierzona. Predefiniowane: %1 mln.</t>
   </page>
 </language>

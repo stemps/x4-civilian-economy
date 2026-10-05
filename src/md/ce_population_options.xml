@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_PopulationOptions" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Unconfirmed new override: $Sector and $Millions. Presentation only; state lives in CE_PopulationOverrides. -->
+    <cue name="Draft"><conditions><event_cue_signalled/></conditions></cue>
+    <!-- "Customize Population" section of the CE options page (three columns).
+         Slider starts are clamped: the engine rejects the whole frame if start is outside min/max. -->
+    <library name="Build">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <set_value name="$PopState" exact="md.CE_PopulationOverrides.State"/>
+        <do_if value="@md.CE_PopulationOptions.Draft.$Sector">
+          <set_value name="$Sector" exact="md.CE_PopulationOptions.Draft.$Sector"/>
+          <include_actions ref="md.CE_PopulationOverrides.Key"/>
+          <do_if value="not $Sector.exists or $PopState.$Player.{$OverrideKey}? or $PopState.$Presets.{$OverrideKey}?">
+            <set_value name="md.CE_PopulationOptions.Draft.$Sector" exact="null"/>
+          </do_if>
+        </do_if>
+        <set_value name="$PopDraft" exact="@md.CE_PopulationOptions.Draft.$Sector"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text=' ',$fontsize=1,$height=8]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text={974201,434},$font='Zekton bold']"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text={974201,442},$wordwrap=true]"/>
+        <!-- Existing overrides: player entries and presets whose sector exists in this galaxy. -->
+        <set_value name="$PopRows" exact="[]"/>
+        <do_for_each name="$PopKey" in="$PopState.$Player.keys.list">
+          <do_if value="$PopState.$Sectors.{$PopKey}?"><append_to_list name="$PopRows" exact="$PopState.$Sectors.{$PopKey}"/></do_if>
+        </do_for_each>
+        <do_for_each name="$PopKey" in="$PopState.$Presets.keys.list">
+          <do_if value="$PopState.$Sectors.{$PopKey}? and not $PopState.$Player.{$PopKey}?"><append_to_list name="$PopRows" exact="$PopState.$Sectors.{$PopKey}"/></do_if>
+        </do_for_each>
+        <sort_list list="$PopRows" sortbyvalue="loop.element.knownname"/>
+        <do_for_each name="$Sector" in="$PopRows">
+          <include_actions ref="md.CE_PopulationOverrides.Native"/>
+          <set_value name="$PopNative" exact="$Population"/>
+          <include_actions ref="md.CE_PopulationOverrides.Effective"/>
+          <set_value name="$PopPreset" exact="$PopState.$Presets.{$OverrideKey}?"/>
+          <set_value name="$PopPlayer" exact="$PopState.$Player.{$OverrideKey}?"/>
+          <include_actions ref="md.CE_PopulationOptions.Tooltip"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text=if $PopPreset then {974201,443}.[$Sector.knownname] else $Sector.knownname,$wordwrap=true,$mouseOverText=$PopTip]"/>
+          <!-- The engine rejects any other interactive cell in a slider row, so buttons get their own row. -->
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$colSpan=2,$id='ce_pop_' + $OverrideKey,$echo=table[$Sector=$Sector],$min=0,$max=100000,$step=1,$start=[[($Population / 1000000.0f + 0.5f)i, 0].max, 100000].min,$suffix={974201,441},$hideMaxValue=true,$onSliderCellConfirm=md.CE_PopulationOptions.OverrideSlider,$mouseOverText=$PopTip]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Button" param="table[$col=3,$text=table[$text=if $PopPreset then {974201,440} else {974201,439},$halign='center'],$active=$PopPlayer,$echo=table[$Sector=$Sector],$onClick=md.CE_PopulationOptions.Reset,$mouseOverText=if $PopPreset then {974201,448} else {974201,447}]"/>
+        </do_for_each>
+        <!-- Add: every galaxy sector without a player entry or preset. -->
+        <find_sector name="$PopSectors" space="player.galaxy" multiple="true"/>
+        <sort_list list="$PopSectors" sortbyvalue="loop.element.knownname"/>
+        <set_value name="$PopOptions" exact="[]"/>
+        <set_value name="$PopStart" exact="''"/>
+        <do_for_each name="$Sector" in="$PopSectors">
+          <include_actions ref="md.CE_PopulationOverrides.Key"/>
+          <do_if value="not $PopState.$Player.{$OverrideKey}? and not $PopState.$Presets.{$OverrideKey}?">
+            <append_to_list name="$PopOptions" exact="table[$text=$Sector.knownname,$Sector=$Sector]"/>
+            <do_if value="$PopDraft == $Sector"><set_value name="$PopStart" exact="$PopOptions.count"/></do_if>
+          </do_if>
+        </do_for_each>
+        <do_if value="$PopOptions.count gt 0">
+          <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,435},$wordwrap=true,$mouseOverText={974201,436}]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Dropdown" param="table[$col=2,$colSpan=2,$id='ce_pop_add',$options=$PopOptions,$startOption=$PopStart,$onDropDownConfirmed=md.CE_PopulationOptions.Pick,$mouseOverText={974201,436}]"/>
+        </do_if>
+        <do_if value="$PopDraft">
+          <set_value name="$Sector" exact="$PopDraft"/>
+          <include_actions ref="md.CE_PopulationOverrides.Native"/>
+          <set_value name="$PopNative" exact="$Population"/>
+          <set_value name="$PopPreset" exact="false"/>
+          <include_actions ref="md.CE_PopulationOptions.Tooltip"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text=$Sector.knownname,$wordwrap=true,$mouseOverText=$PopTip]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Slider" param="table[$col=2,$colSpan=2,$id='ce_pop_draft',$min=0,$max=100000,$step=1,$start=[[md.CE_PopulationOptions.Draft.$Millions, 0].max, 100000].min,$suffix={974201,441},$hideMaxValue=true,$onSliderCellConfirm=md.CE_PopulationOptions.DraftSlider,$mouseOverText=$PopTip]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Button" param="table[$col=2,$text=table[$text={974201,438},$halign='center'],$onClick=md.CE_PopulationOptions.Cancel]"/>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Make_Button" param="table[$col=3,$text=table[$text={974201,437},$halign='center'],$onClick=md.CE_PopulationOptions.Confirm]"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Inputs $PopNative (null if not measured) and $PopPreset with $OverrideKey; output $PopTip. -->
+    <library name="Tooltip">
+      <actions>
+        <set_value name="$PopNativeType" exact="typeof $PopNative"/>
+        <set_value name="$PopNativeKnown" exact="$PopNativeType.isnumeric"/>
+        <set_value name="$PopNativeMillions" exact="if $PopNativeKnown then ($PopNative / 1000000.0f + 0.5f)i else null"/>
+        <do_if value="$PopPreset">
+          <set_value name="$PopPresetMillions" exact="(md.CE_PopulationOverrides.State.$Presets.{$OverrideKey} / 1000000.0f + 0.5f)i"/>
+          <set_value name="$PopTip" exact="if $PopNativeKnown then {974201,446}.[$PopNativeMillions,$PopPresetMillions] else {974201,449}.[$PopPresetMillions]"/>
+        </do_if>
+        <do_else>
+          <set_value name="$PopTip" exact="if $PopNativeKnown then {974201,444}.[$PopNativeMillions] else {974201,445}"/>
+        </do_else>
+      </actions>
+    </library>
+    <cue name="OverrideSlider" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <do_if value="event.param.$valuechanged">
+          <set_value name="$OverrideSector" exact="event.param.$echo.$Sector"/>
+          <set_value name="$OverrideAction" exact="'set'"/>
+          <set_value name="$OverrideMillions" exact="event.param.$value"/>
+          <include_actions ref="md.CE_PopulationOverrides.Change"/>
+          <!-- Also restores the slider after invalid typed input. -->
+          <signal_cue_instantly cue="md.Simple_Menu_API.Refresh_Menu"/>
+        </do_if>
+      </actions>
+    </cue>
+    <cue name="Reset" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <set_value name="$OverrideSector" exact="event.param.$echo.$Sector"/>
+        <set_value name="$OverrideAction" exact="'reset'"/>
+        <set_value name="$OverrideMillions" exact="null"/>
+        <include_actions ref="md.CE_PopulationOverrides.Change"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Refresh_Menu"/>
+      </actions>
+    </cue>
+    <cue name="Pick" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <set_value name="$Sector" exact="@event.param.$option.$Sector"/>
+        <do_if value="$Sector.exists">
+          <include_actions ref="md.CE_PopulationOverrides.Native"/>
+          <set_value name="$PopType" exact="typeof $Population"/>
+          <set_value name="md.CE_PopulationOptions.Draft.$Sector" exact="$Sector"/>
+          <set_value name="md.CE_PopulationOptions.Draft.$Millions" exact="if $PopType.isnumeric then [($Population / 1000000.0f + 0.5f)i, 100000].min else 0"/>
+        </do_if>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Refresh_Menu"/>
+      </actions>
+    </cue>
+    <cue name="DraftSlider" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <do_if value="event.param.$valuechanged">
+          <set_value name="$PopValue" exact="event.param.$value"/>
+          <set_value name="$PopType" exact="typeof $PopValue"/>
+          <do_if value="$PopType.isnumeric">
+            <do_if value="$PopValue ge 0 and $PopValue le 100000">
+              <set_value name="md.CE_PopulationOptions.Draft.$Millions" exact="($PopValue + 0.5f)i"/>
+            </do_if>
+          </do_if>
+          <signal_cue_instantly cue="md.Simple_Menu_API.Refresh_Menu"/>
+        </do_if>
+      </actions>
+    </cue>
+    <cue name="Confirm" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <do_if value="@md.CE_PopulationOptions.Draft.$Sector">
+          <set_value name="$OverrideSector" exact="md.CE_PopulationOptions.Draft.$Sector"/>
+          <set_value name="$OverrideAction" exact="'add'"/>
+          <set_value name="$OverrideMillions" exact="md.CE_PopulationOptions.Draft.$Millions"/>
+          <include_actions ref="md.CE_PopulationOverrides.Change"/>
+          <do_if value="$OverrideValid"><set_value name="md.CE_PopulationOptions.Draft.$Sector" exact="null"/></do_if>
+        </do_if>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Refresh_Menu"/>
+      </actions>
+    </cue>
+    <cue name="Cancel" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <set_value name="md.CE_PopulationOptions.Draft.$Sector" exact="null"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Refresh_Menu"/>
+      </actions>
+    </cue>
+  </cues>
+</mdscript>

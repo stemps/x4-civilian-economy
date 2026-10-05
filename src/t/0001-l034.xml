@@ -279,5 +279,21 @@
     <t id="431">Bonificación</t>
     <t id="432">Efecto</t>
     <t id="433">Desactivado</t>
+    <t id="434">Personalizar población</t>
+    <t id="435">Añadir población personalizada</t>
+    <t id="436">Elige un sector para sustituir la población que Civilian Economy usa allí.</t>
+    <t id="437">Confirmar</t>
+    <t id="438">Cancelar</t>
+    <t id="439">Eliminar</t>
+    <t id="440">Restablecer</t>
+    <t id="441"> M</t>
+    <t id="442">Sustituye la población que Civilian Economy usa para un sector, en millones. Los centros necesitan al menos 100 millones; 0 pausa un centro. El crecimiento por terraformación se suma encima.</t>
+    <t id="443">%1 \(predefinido\)</t>
+    <t id="444">Población original: %1 millones.</t>
+    <t id="445">Población original: aún no medida.</t>
+    <t id="446">Población original: %1 millones. Predefinido: %2 millones.</t>
+    <t id="447">Eliminar esta sustitución y volver a usar la población original.</t>
+    <t id="448">Descartar tu cambio y volver a usar la población predefinida.</t>
+    <t id="449">Población original: aún no medida. Predefinido: %1 millones.</t>
   </page>
 </language>

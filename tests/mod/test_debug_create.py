@@ -83,7 +83,7 @@ class DebugCreateTests(StartupHarness):
         self.run.library('ReconcileSector')
         self.assertEqual(saved.Population, 5_000_000_000)
         self.assertIs(saved.DebugInitialHub, saved.Hub)
-        other = Component(exists=True, isclass=Table(sector=True), owner=self.owner,
+        other = Component(exists=True, isclass=Table(sector=True), owner=self.owner, macro=Table(id='other_sector_macro'),
                           coreposition=Table(x=0,z=0), knownname='Ordinary sector')
         normal = self.start(other)
         self.assertEqual(normal.Population, 100_000_000)

@@ -279,5 +279,21 @@
     <t id="431">Bonus</t>
     <t id="432">Účinek</t>
     <t id="433">Vypnuto</t>
+    <t id="434">Upravit populaci</t>
+    <t id="435">Přidat vlastní populaci</t>
+    <t id="436">Vyberte sektor, ve kterém chcete nahradit populaci používanou modem Civilian Economy.</t>
+    <t id="437">Potvrdit</t>
+    <t id="438">Zrušit</t>
+    <t id="439">Odebrat</t>
+    <t id="440">Obnovit</t>
+    <t id="441"> mil.</t>
+    <t id="442">Nahradí populaci, kterou Civilian Economy používá pro sektor, v milionech. Centra vyžadují alespoň 100 milionů; 0 centrum pozastaví. Růst z terraformace se přičítá navíc.</t>
+    <t id="443">%1 \(předvolba\)</t>
+    <t id="444">Původní populace: %1 milionů.</t>
+    <t id="445">Původní populace: zatím nezměřena.</t>
+    <t id="446">Původní populace: %1 milionů. Předvolba: %2 milionů.</t>
+    <t id="447">Odebrat tuto hodnotu a znovu použít původní populaci.</t>
+    <t id="448">Zahodit změnu a znovu použít populaci z předvolby.</t>
+    <t id="449">Původní populace: zatím nezměřena. Předvolba: %1 milionů.</t>
   </page>
 </language>

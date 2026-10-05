@@ -21,7 +21,7 @@ class GalaxyTests(unittest.TestCase):
                        isclass=Table(container=False),buildstorage=NIL)
             self.created.append(hub);self.run.env['NewHub']=hub
         self.run.native['create_station']=create
-    def sector(self):return Object(exists=True,isclass=Table(sector=True),owner=Table(primaryrace=self.run.env["lookup"].race.list[1]))
+    def sector(self):return Object(exists=True,isclass=Table(sector=True),owner=Table(primaryrace=self.run.env["lookup"].race.list[1]),macro=Table(id="sector_%d_macro" % id(object())))
     def reconcile(self,sector,pop):
         self.run.env.update(Sector=sector,Population=pop)
         self.run.library('ReconcileSector')

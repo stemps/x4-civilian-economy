@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_PopulationOverrides" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!--
+      Per-save population layers: native < preset < player < debug fixed population.
+      Keys are '$' + sector macro ID so shipped presets can name sectors.
+      Overrides are anchored: effective = value + max(0, native - baseline), so
+      native growth (terraforming) still adds to an overridden sector.
+    -->
+    <cue name="State"><conditions><event_cue_signalled/></conditions></cue>
+    <cue name="Start" checkinterval="1s">
+      <conditions><check_value value="player.age ge 1s"/></conditions>
+      <actions><include_actions ref="LoadPresets"/><include_actions ref="Repair"/></actions>
+    </cue>
+    <cue name="Reload" instantiate="true">
+      <conditions><event_game_loaded/></conditions>
+      <actions><include_actions ref="LoadPresets"/><include_actions ref="Repair"/></actions>
+    </cue>
+    <!-- Drops impossible saved entries (an early build overflowed 32-bit integers to negative values). -->
+    <library name="Repair">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <do_for_each name="$OverrideLoopKey" in="md.CE_PopulationOverrides.State.$Player.keys.list">
+          <set_value name="$OverrideRepairEntry" exact="md.CE_PopulationOverrides.State.$Player.{$OverrideLoopKey}"/>
+          <set_value name="$OverrideRepairType" exact="typeof $OverrideRepairEntry.$Population"/>
+          <do_if value="not $OverrideRepairType.isnumeric">
+            <remove_value name="md.CE_PopulationOverrides.State.$Player.{$OverrideLoopKey}"/>
+          </do_if>
+          <do_elseif value="$OverrideRepairEntry.$Population lt 0 or $OverrideRepairEntry.$Population gt 100000000000L">
+            <debug_text text="'[CE] Population override removed: invalid saved value key=%s population=%s'.[$OverrideLoopKey,$OverrideRepairEntry.$Population]"/>
+            <remove_value name="md.CE_PopulationOverrides.State.$Player.{$OverrideLoopKey}"/>
+          </do_elseif>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="Ensure">
+      <actions>
+        <do_if value="not md.CE_PopulationOverrides.State.$Player?"><set_value name="md.CE_PopulationOverrides.State.$Player" exact="table[]"/></do_if>
+        <do_if value="not md.CE_PopulationOverrides.State.$PresetBaselines?"><set_value name="md.CE_PopulationOverrides.State.$PresetBaselines" exact="table[]"/></do_if>
+        <do_if value="not md.CE_PopulationOverrides.State.$Native?"><set_value name="md.CE_PopulationOverrides.State.$Native" exact="table[]"/></do_if>
+        <do_if value="not md.CE_PopulationOverrides.State.$Sectors?"><set_value name="md.CE_PopulationOverrides.State.$Sectors" exact="table[]"/></do_if>
+        <do_if value="not md.CE_PopulationOverrides.State.$Presets?"><include_actions ref="md.CE_PopulationOverrides.LoadPresets"/></do_if>
+      </actions>
+    </library>
+    <!-- Extension point for shipped presets: '$' + sector macro ID -> population. Rebuilt, never player state. -->
+    <library name="LoadPresets">
+      <actions><set_value name="md.CE_PopulationOverrides.State.$Presets" exact="table[]"/></actions>
+    </library>
+    <!-- Input $Sector; output $OverrideKey. -->
+    <library name="Key">
+      <actions><set_value name="$OverrideKey" exact="'$' + $Sector.macro.id"/></actions>
+    </library>
+    <!-- Called for every galaxy sector by Reconcile before its population request. -->
+    <library name="RememberSector">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <include_actions ref="md.CE_PopulationOverrides.Key"/>
+        <set_value name="md.CE_PopulationOverrides.State.$Sectors.{$OverrideKey}" exact="$Sector"/>
+      </actions>
+    </library>
+    <!-- Input $Sector and a valid native $Population from the Lua bridge. -->
+    <library name="RememberNative">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <include_actions ref="md.CE_PopulationOverrides.Key"/>
+        <set_value name="md.CE_PopulationOverrides.State.$Native.{$OverrideKey}" exact="$Population"/>
+      </actions>
+    </library>
+    <!--
+      Input $Sector and native $Population (null when unknown). Outputs the effective
+      $Population and $PopulationSource ('native', 'preset' or 'player'). Existence is
+      tested with '?' because a zero override is valid. A missing baseline is filled
+      from the first known native reading.
+    -->
+    <library name="Effective">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <include_actions ref="md.CE_PopulationOverrides.Key"/>
+        <set_value name="$PopulationSource" exact="'native'"/>
+        <set_value name="$OverrideNative" exact="$Population"/>
+        <!-- MD null equals 0, so a real zero reading is told apart from "unknown" by type. -->
+        <set_value name="$OverrideNativeType" exact="typeof $OverrideNative"/>
+        <set_value name="$OverrideNativeKnown" exact="$OverrideNativeType.isnumeric"/>
+        <set_value name="$OverrideBaseline" exact="null"/>
+        <set_value name="$OverrideHasBaseline" exact="false"/>
+        <do_if value="md.CE_PopulationOverrides.State.$Player.{$OverrideKey}?">
+          <set_value name="$OverrideEntry" exact="md.CE_PopulationOverrides.State.$Player.{$OverrideKey}"/>
+          <do_if value="not $OverrideEntry.$Baseline? and $OverrideNativeKnown">
+            <set_value name="$OverrideEntry.$Baseline" exact="$OverrideNative"/>
+          </do_if>
+          <set_value name="$PopulationSource" exact="'player'"/>
+          <set_value name="$Population" exact="$OverrideEntry.$Population"/>
+          <do_if value="$OverrideEntry.$Baseline?">
+            <set_value name="$OverrideBaseline" exact="$OverrideEntry.$Baseline"/>
+            <set_value name="$OverrideHasBaseline" exact="true"/>
+          </do_if>
+        </do_if>
+        <do_elseif value="md.CE_PopulationOverrides.State.$Presets.{$OverrideKey}? and md.CE_PopulationOverrides.State.$Sectors.{$OverrideKey}?">
+          <do_if value="not md.CE_PopulationOverrides.State.$PresetBaselines.{$OverrideKey}? and $OverrideNativeKnown">
+            <set_value name="md.CE_PopulationOverrides.State.$PresetBaselines.{$OverrideKey}" exact="$OverrideNative"/>
+          </do_if>
+          <set_value name="$PopulationSource" exact="'preset'"/>
+          <set_value name="$Population" exact="md.CE_PopulationOverrides.State.$Presets.{$OverrideKey}"/>
+          <do_if value="md.CE_PopulationOverrides.State.$PresetBaselines.{$OverrideKey}?">
+            <set_value name="$OverrideBaseline" exact="md.CE_PopulationOverrides.State.$PresetBaselines.{$OverrideKey}"/>
+            <set_value name="$OverrideHasBaseline" exact="true"/>
+          </do_if>
+        </do_elseif>
+        <do_if value="$PopulationSource != 'native' and $OverrideHasBaseline and $OverrideNativeKnown">
+          <set_value name="$Population" exact="$Population + [0, $OverrideNative - $OverrideBaseline].max"/>
+        </do_if>
+      </actions>
+    </library>
+    <!--
+      Options entry point. Inputs: $OverrideSector, $OverrideAction ('add', 'set' or
+      'reset') and $OverrideMillions (slider value in millions). Outputs $OverrideValid.
+      Populations exceed 32 bits: integer 'i' arithmetic wraps, so use largeint 'L'.
+      'add' rejects sectors that already have a player entry or a preset.
+    -->
+    <library name="Change">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <set_value name="$OverrideValid" exact="false"/>
+        <do_if value="$OverrideSector.exists and $OverrideSector.isclass.sector">
+          <set_value name="$OverrideKey" exact="'$' + $OverrideSector.macro.id"/>
+          <set_value name="$OverrideListed" exact="md.CE_PopulationOverrides.State.$Player.{$OverrideKey}? or md.CE_PopulationOverrides.State.$Presets.{$OverrideKey}?"/>
+          <do_if value="$OverrideAction == 'reset'">
+            <do_if value="md.CE_PopulationOverrides.State.$Player.{$OverrideKey}?">
+              <remove_value name="md.CE_PopulationOverrides.State.$Player.{$OverrideKey}"/>
+              <set_value name="$OverrideValid" exact="true"/>
+            </do_if>
+          </do_if>
+          <do_elseif value="($OverrideAction == 'add' and not $OverrideListed) or ($OverrideAction == 'set' and $OverrideListed)">
+            <set_value name="$OverrideType" exact="typeof $OverrideMillions"/>
+            <do_if value="$OverrideType.isnumeric">
+              <do_if value="$OverrideMillions ge 0 and $OverrideMillions le 100000">
+                <set_value name="md.CE_PopulationOverrides.State.$Player.{$OverrideKey}" exact="table[$Population=(($OverrideMillions + 0.5f)L) * 1000000L]"/>
+                <do_if value="md.CE_PopulationOverrides.State.$Native.{$OverrideKey}?">
+                  <set_value name="md.CE_PopulationOverrides.State.$Player.{$OverrideKey}.$Baseline" exact="md.CE_PopulationOverrides.State.$Native.{$OverrideKey}"/>
+                </do_if>
+                <set_value name="$OverrideValid" exact="true"/>
+              </do_if>
+            </do_if>
+          </do_elseif>
+        </do_if>
+        <do_if value="$OverrideValid">
+          <debug_text text="'[CE] Population override: sector=%s action=%s millions=%s'.[$OverrideSector.knownname,$OverrideAction,$OverrideMillions]"/>
+          <signal_cue_instantly cue="md.CE_CivilianHub.PopulationOverrideChanged" param="$OverrideSector"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Controller namespace: reapply overrides without waiting for (or after failed) native reads. -->
+    <library name="ReconcileOverrides">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <do_for_each name="$OverrideLoopKey" in="md.CE_PopulationOverrides.State.$Player.keys.list">
+          <include_actions ref="md.CE_PopulationOverrides.ReconcileKey"/>
+        </do_for_each>
+        <do_for_each name="$OverrideLoopKey" in="md.CE_PopulationOverrides.State.$Presets.keys.list">
+          <do_if value="not md.CE_PopulationOverrides.State.$Player.{$OverrideLoopKey}?">
+            <include_actions ref="md.CE_PopulationOverrides.ReconcileKey"/>
+          </do_if>
+        </do_for_each>
+      </actions>
+    </library>
+    <library name="ReconcileKey">
+      <actions>
+        <set_value name="$Sector" exact="if md.CE_PopulationOverrides.State.$Sectors.{$OverrideLoopKey}? then md.CE_PopulationOverrides.State.$Sectors.{$OverrideLoopKey} else null"/>
+        <!-- Debug fixed populations are reconciled by CE_DebugCreate. -->
+        <do_if value="$Sector.exists and not @$Registry.{$Sector}.$PopulationOverride">
+          <include_actions ref="md.CE_PopulationOverrides.Native"/>
+          <include_actions ref="md.CE_CivilianHub.ReconcileSector"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Input $Sector; output the cached native $Population, or null before the first reading.
+         Test the result with typeof, not "!= null": MD treats null and 0 as equal. -->
+    <library name="Native">
+      <actions>
+        <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <include_actions ref="md.CE_PopulationOverrides.Key"/>
+        <set_value name="$Population" exact="if md.CE_PopulationOverrides.State.$Native.{$OverrideKey}? then md.CE_PopulationOverrides.State.$Native.{$OverrideKey} else null"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

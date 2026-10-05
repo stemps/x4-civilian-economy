@@ -35,7 +35,7 @@ def definitions(run):
         types[n.get('ware')] for n in recipes.xpath('/wares/ware[@id="workunit_busy"]/production[@method=$method]/primary/ware',method='default' if name == 'argon' else name)
     ]))) for name in ('argon','paranid','teladi')])
     run.env.update(ware=types, lookup=Table(ware=Table(list=List(list(types.values()))),race=Table(list=races)),
-                   waretransport=Table(container='container'), Sector=Component(owner=Table(primaryrace=races[1])))
+                   waretransport=Table(container='container'), Sector=Component(owner=Table(primaryrace=races[1]),macro=Table(id='support_sector_macro')))
     run.env.update(SectorProfiles=Table(),RaceProfiles=Table())
     def resolve():
         run.env['Construction']=Table(Valid=True,Plan='ce_hub_argon',Levels=List(List(['m']*n) for n in (3,4,5,7,8,10,12,13,14,17)))

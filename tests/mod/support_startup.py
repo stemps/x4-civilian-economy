@@ -13,7 +13,7 @@ class StartupHarness(unittest.TestCase):
         self.fail_build = False; self.result_override = None; self.native_requests = []
         self.safe_plot = True; self.plot_calls = []; self.moves = []; self.logs = []
         self.owner = Component(primaryrace=r.env['lookup'].race.list[1])
-        self.sector = Component(exists=True, isclass=Table(sector=True), owner=self.owner,
+        self.sector = Component(exists=True, isclass=Table(sector=True), owner=self.owner, macro=Table(id='test_sector_macro'),
                                 coreposition=Table(x=0,z=0), knownname='Test sector')
         self.components = {'storage':module('storage'), 'dockarea':module('dockarea'),
                            'pier':module('pier'), 'connection':module('connectionmodule')}

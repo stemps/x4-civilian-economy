@@ -279,5 +279,21 @@
     <t id="431">Bonus</t>
     <t id="432">Etki</t>
     <t id="433">Kapalı</t>
+    <t id="434">Nüfusu özelleştir</t>
+    <t id="435">Özel nüfus ekle</t>
+    <t id="436">Civilian Economy'nin orada kullandığı nüfusu değiştirmek için bir sektör seçin.</t>
+    <t id="437">Onayla</t>
+    <t id="438">İptal</t>
+    <t id="439">Kaldır</t>
+    <t id="440">Sıfırla</t>
+    <t id="441"> Mn</t>
+    <t id="442">Civilian Economy'nin bir sektör için kullandığı nüfusu milyon cinsinden değiştirir. Merkezler en az 100 milyon gerektirir; 0 bir merkezi duraklatır. Terraforming büyümesi üstüne eklenir.</t>
+    <t id="443">%1 \(ön ayar\)</t>
+    <t id="444">Orijinal nüfus: %1 milyon.</t>
+    <t id="445">Orijinal nüfus: henüz ölçülmedi.</t>
+    <t id="446">Orijinal nüfus: %1 milyon. Ön ayar: %2 milyon.</t>
+    <t id="447">Bu değeri kaldır ve yeniden orijinal nüfusu kullan.</t>
+    <t id="448">Değişikliğini at ve yeniden ön ayar nüfusunu kullan.</t>
+    <t id="449">Orijinal nüfus: henüz ölçülmedi. Ön ayar: %1 milyon.</t>
   </page>
 </language>

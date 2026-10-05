@@ -35,7 +35,7 @@ def compile_expression(expression):
     s = re.sub(r'typeof (\w+(?:\.[\w]+|\[[^\]]+\])*)', r'datatype_of(\1)', s)
     s = re.sub(r'(\w+(?:\.[\w]+|\[[^\]]+\])*)\?', r'defined(\1)', s)
     s = re.sub(r'\(([^()]*)\)(LF|f|L|i)\b',
-               lambda m: ('float' if m[2] in ('LF', 'f') else 'int') + '(' + m[1] + ')', s)
+               lambda m: {'LF': 'float', 'f': 'float', 'L': 'int', 'i': 'Int32'}[m[2]] + '(' + m[1] + ')', s)
     s = re.sub(r'(\d+(?:\.\d+)?)(?:LF|f|L)\b', r'\1', s)
     s = re.sub(r'(\d+(?:\.\d+)?)deg\b', r'Angle(\1)', s)
     for unit, scale in [('min', 60), ('km', 1000), ('m', 1), ('Cr', 100), ('h', 3600), ('s', 1)]:
