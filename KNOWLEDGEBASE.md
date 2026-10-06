@@ -1,3 +1,53 @@
+## 2026-10-06 - external-hubs-api
+
+- IMPLEMENTED: `CE_ExternalHubs` lets another mod designate a civilian-owned station
+  (god entry id or station object) as its sector's hub. See ARCHITECTURE.md "External
+  hubs API" for the contract. Levels commit without construction; the station is never
+  built on, renamed, funded for builds, given builders or replaced.
+- READ (feasibility sweep): before this change every hub path assumed a CE-built
+  `ce_hub_<race>` station. Readiness required CE plan entry IDs (`CheckReady`),
+  `Queue` grafted `ce_hub_<race>` onto any civilian hub without a completed sequence,
+  `AssignBuilder`/build funding reacted to any build in the station's build storage,
+  the builder AI patch excluded every `$ce_hubs` member from native recruitment, and
+  debug reset destroyed every civilian-owned registered hub. All are now guarded by
+  `$R.$External`.
+- READ: vanilla identifies god stations from MD with `find_station
+  godstationentry=[...] multiple="1" space="player.galaxy"` (`md/setup.xml:1166`).
+  `libraries.xsd` also offers god `<category tags>` / `godentrytags`, but nothing in
+  vanilla or DLC uses it and custom tag names are unverified, so the API uses ids.
+- READ: vanilla passes callback cues as values and signals them with
+  `signal_cue_instantly cue="$Var"` (`md/cinematiccamera.xml:989`); the cue datatype
+  has `exists` (`scriptproperties.xml:2195`). Cross-extension calls use `check="false"`
+  (`ego_dlc_mini_02/md/setup_dlc_mini_02.xml:102`). Vanilla god.xml places
+  civilian-owned stations from construction plans (`god.xml:2726`).
+- MOCKED (19 tests in `tests/mod/test_external_hubs.py` + reset and Lua cases):
+  adoption before Init, idempotent re-registration, rejections, max level, damage
+  status, dormant loss and re-adoption, debug paths, raid berth fitting. Mutation
+  checks: removing the `Queue`, `AssignBuilder`, build-funding, rename/reconcile and
+  dormant guards each fails a test.
+- MEASURED: `just sample-validate --update` on `samples/client-mod` reports no issues
+  (god.xml selector, plan/macro references, MD and merged god.xml schemas).
+- MEASURED (debug.txt, 2026-10-06, sample added to an existing 9.00 save at game time
+  238523): registration -> `ExternalHubsChanged` -> `find_station godstationentry` ->
+  `rejected`/`not_found` event -> client listener all ran within the same second, and
+  the sample's plan/god diffs loaded without errors. The god entry was NOT placed in
+  the existing save by then (nothing named `ce_sample_client_hub`). Whether god places
+  it later is unmeasured (CE retries every reconcile); test placement on a new game.
+- MEASURED (debug.txt, 2026-10-06, new game `custom_creative`): god placed the sample
+  station; at game time 1.03 it was registered, adopted (`modules=1`), funded
+  (7,232,600 Cr) and operational (`status active`) before CE's first population reply
+  created the 36 ordinary hubs at 2.03. Debug advance at 37.32 committed level 1 -> 3
+  without construction and emitted `level`; destroying the station at 64.34 emitted
+  `lost` (level 3 retained). So the one-entry god plan, its `constructionsequence`
+  entry IDs and `planmodule` readiness all work in-game. Log ended at 66 s: the
+  no-rebuild check needs a reconcile after about 5 minutes of game time.
+- MEASURED (same game, log to 434 s): the reconcile at 301.32 created no station in the
+  dormant sector (all 36 construction sites date from 2.03). The minute tick at 121.05
+  sent a redundant `status hub_unavailable, station=null` after `lost`; NotifyStatus now
+  stays silent for dormant records (regression test added), not yet re-run in game.
+- UNVERIFIED IN GAME (remaining): re-adoption of a respawned station; traders delivering to a single M
+  dock; the level-up notification text (450-452); `remove_trade_offer` on debug reset.
+
 ## 2026-09-30 - sector-rewards-reintegration
 
 - The 2026-09-23 sector rewards work (commit `97ab3ac` on the deleted branch
@@ -2657,3 +2707,28 @@ Historical single-event model; superseded by concurrent-sector-events below.
   uncolonized for millennia") or stray words, so read each matched sentence. 31 values are Essential Atlas c. 25 ABY figures, the
   only ones published. Sectors with SWI god.xml stations but <=10k people (22) are
   bases on empty worlds and agree with SWI's text.
+
+## 2026-10-06 - x4-8.0-compatibility-diff
+
+- MEASURED against an 8.00 text unpack (`$X4_TOOLKIT/reference-other/x4-v8.0`,
+  Steam build 21408220) vs the 9.00 `reference/`. Recheck after any change.
+- Blocker: native construction stages are 9.00-only. 8.00 `common.xsd` gives
+  `add_build_to_expand_station` no `<stage>` child and an optional
+  `constructionplan`. 8.00 `scriptproperties.xml` lacks
+  `constructionsequence.hasstages/finalsequence/stage.*`. Vanilla 8.00 plans
+  use no `bookmark` attribute (9.00: 165). `CE_ConstructionStages` and the
+  bookmarked `ce_hub_<race>` master plans depend on all of these. Vanilla 8.00
+  grows stations by passing a script-built sequence as `constructionplan`
+  (`finalisestations.xml:333`).
+- x4validate reports those `<stage>` lines on 8.00 only as INFO `xsd-strict`
+  ("content type is empty"). On an older reference that is a missing feature,
+  not schema over-strictness.
+- Unchanged in 8.00: all `sel=` in the 11 patch files resolve, and all 7 merged
+  AI/diplomacy patches are schema-clean. The 20 diplomacy
+  `ActionN_SuccessCalculation[_v2]` names are identical. All 15 Lua FFI
+  signatures, the 4 borrowed structs (TransactionLogEntry, WorkforceInfluence*)
+  and the 6 wrapped menu functions are identical.
+- Script versions in 8.00/9.00: move.generic 23/23, order.plunder 6/6,
+  order.fight.attack.object 25/27. CE sets 28. A save made on 8.00 with CE
+  would skip vanilla 9.00's sinceversion 26/27 patches when the game updates.
+  v27 sets `$readmadscore`/`$incrementmadscore` on running attack orders.

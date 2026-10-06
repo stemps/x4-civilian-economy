@@ -20,8 +20,15 @@
             <set_value name="$NewGoodsAvailable" exact="true"/>
           </do_if>
         </do_for_each>
-        <show_notification text="if $R.$PauseOffers then {974201,132}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,130}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,131}.[$R.$Hub.sector.knownname,$R.$Level]"/>
-        <write_to_logbook category="general" title="{974201,133}" text="if $R.$PauseOffers then {974201,132}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,130}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,131}.[$R.$Hub.sector.knownname,$R.$Level]" object="$R.$Hub" interaction="showonmap"/>
+        <!-- Designated hubs level up without construction. -->
+        <do_if value="@$R.$External">
+          <show_notification text="if $R.$PauseOffers then {974201,452}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,450}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,451}.[$R.$Hub.sector.knownname,$R.$Level]"/>
+          <write_to_logbook category="general" title="{974201,133}" text="if $R.$PauseOffers then {974201,452}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,450}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,451}.[$R.$Hub.sector.knownname,$R.$Level]" object="$R.$Hub" interaction="showonmap"/>
+        </do_if>
+        <do_else>
+          <show_notification text="if $R.$PauseOffers then {974201,132}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,130}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,131}.[$R.$Hub.sector.knownname,$R.$Level]"/>
+          <write_to_logbook category="general" title="{974201,133}" text="if $R.$PauseOffers then {974201,132}.[$R.$Hub.sector.knownname,$R.$Level] else if $NewGoodsAvailable then {974201,130}.[$R.$Hub.sector.knownname,$R.$Level] else {974201,131}.[$R.$Hub.sector.knownname,$R.$Level]" object="$R.$Hub" interaction="showonmap"/>
+        </do_else>
       </actions>
     </library>
   </cues>

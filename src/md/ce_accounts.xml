@@ -16,7 +16,8 @@
             <debug_text text="'[CE] Civilian funding=%s balance=%s'.[$Funded,$Hub.money]"/>
           </do_if>
         </do_if>
-        <do_if value="$Hub.buildstorage.exists">
+        <!-- A designated station's own construction is funded by its own mod. -->
+        <do_if value="$Hub.buildstorage.exists and not @$R.$External">
           <set_value name="$ManagedObject" exact="$Hub.buildstorage"/>
           <include_actions ref="md.CE_CivilianHub.EnsureManager"/>
           <set_object_account object="$Hub.buildstorage"/>

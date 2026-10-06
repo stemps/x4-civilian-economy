@@ -295,5 +295,8 @@
     <t id="447">Supprimer ce remplacement et utiliser à nouveau la population d'origine.</t>
     <t id="448">Annuler votre modification et utiliser à nouveau la population du préréglage.</t>
     <t id="449">Population d'origine : pas encore mesurée. Préréglage : %1 millions.</t>
+    <t id="450">%s : le centre civil a atteint le niveau %s. Il accepte les marchandises nouvellement débloquées.</t>
+    <t id="451">%s : le centre civil a atteint le niveau %s. Il accepte davantage de marchandises existantes.</t>
+    <t id="452">%s : le centre civil a atteint le niveau %s. Les nouvelles offres d'achat sont suspendues.</t>
   </page>
 </language>

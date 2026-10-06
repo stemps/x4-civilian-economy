@@ -104,7 +104,7 @@
               <do_if value="event.param3 == $R.$Hub and $R.$Hub.exists">
                 <do_if value="event.param2 == 'queue_upgrade'">
                   <include_actions ref="UpdateHub"/>
-                  <do_if value="$R.$Operational and $R.$Level lt 10 and $R.$Target == 0">
+                  <do_if value="$R.$Operational and $R.$Level lt 10 and $R.$Target == 0 and not @$R.$External">
                     <set_value name="$R.$Target" exact="$R.$Level + 1"/>
                     <set_value name="$R.$TestUpgrade" exact="true"/>
                     <debug_text text="'[CE] TEST: qualification bypass for level %s'.[$R.$Target]"/>
@@ -189,6 +189,15 @@
           <conditions><event_cue_signalled/></conditions>
           <actions><do_if value="@md.CE_DebugReset.State.$Busy and md.CE_DebugReset.State.$Phase == 'initializing'"><set_value name="$InitialPopulationPass" exact="true"/><include_actions ref="Reconcile"/></do_if></actions>
         </cue>
+        <cue name="ExternalHubsChanged" instantiate="true">
+          <conditions><event_cue_signalled/></conditions>
+          <actions>
+            <do_if value="not @md.CE_DebugReset.State.$Busy">
+              <include_actions ref="md.CE_ExternalHubs.Adopt"/>
+              <include_actions ref="PublishAllDiagnostics"/>
+            </do_if>
+          </actions>
+        </cue>
         <cue name="PopulationOverrideChanged" instantiate="true">
           <conditions><event_cue_signalled/></conditions>
           <actions>
@@ -255,6 +264,8 @@
           <include_actions ref="md.CE_PopulationOverrides.RememberSector"/>
           <include_actions ref="CaptureSectorProfile"/>
         </do_for_each>
+        <!-- Designated stations claim their sectors before population replies can create hubs. -->
+        <include_actions ref="md.CE_ExternalHubs.Adopt"/>
         <include_actions ref="md.CE_PopulationOverrides.ReconcileOverrides"/>
         <set_value name="$PopulationRequest" exact="if $PopulationRequest? then $PopulationRequest + 1 else 1"/>
         <set_value name="player.entity.$ce_population_request" exact="[$PopulationRequest,$PopulationSectors]"/>
@@ -265,6 +276,9 @@
     </library>
     <library name="ForgetHub">
       <actions>
+        <do_if value="@$R.$External and $R.$Hub">
+          <include_actions ref="md.CE_ExternalHubs.NotifyLost"/>
+        </do_if>
         <set_value name="$R.$InitialHub" exact="null"/>
         <set_value name="$R.$InitialEligible" exact="false"/>
         <include_actions ref="md.CE_Placement.Forget"/>
@@ -340,7 +354,10 @@
             <include_actions ref="md.CE_CivilianHub.RebaseAccrual"/>
             <set_value name="$R.$Operational" exact="true"/>
             <do_if value="$R.$InitializedHub != $Hub">
-              <signal_objects object="player.galaxy" param="'init station'" param2="$Hub" param3="false"/>
+              <!-- Designated stations keep the initialization their own mod gave them. -->
+              <do_if value="not @$R.$External">
+                <signal_objects object="player.galaxy" param="'init station'" param2="$Hub" param3="false"/>
+              </do_if>
               <set_value name="$R.$InitializedHub" exact="$Hub"/>
             </do_if>
             <debug_text text="'[CE] Completed-level modules operational: level=%s'.[$R.$Level]"/>
@@ -364,12 +381,15 @@
           <include_actions ref="md.CE_CivilianHub.EnsureManager"/>
           <include_actions ref="md.CE_CivilianHub.FundAccounts"/>
           <include_actions ref="md.CE_CivilianHub.EvaluateQualification"/>
-          <do_if value="$R.$Qualified">
+          <do_if value="$R.$Qualified and @$R.$External">
+            <include_actions ref="md.CE_ExternalHubs.CommitLevel"/>
+          </do_if>
+          <do_elseif value="$R.$Qualified">
             <set_value name="$R.$Target" exact="$R.$Level + 1"/>
             <set_value name="$R.$TestUpgrade" exact="false"/>
             <debug_text text="'[CE] Naturally qualified for level %s'.[$R.$Target]"/>
             <include_actions ref="md.CE_CivilianHub.QueueExpansion"/>
-          </do_if>
+          </do_elseif>
         </do_if>
         <do_else>
           <do_if value="$R.$Operational">
@@ -386,6 +406,9 @@
           <include_actions ref="md.CE_Notifications.UpgradeCompleted"/>
         </do_if>
         <include_actions ref="md.CE_Rewards.Notify"/>
+        <do_if value="@$R.$External">
+          <include_actions ref="md.CE_ExternalHubs.NotifyStatus"/>
+        </do_if>
       </actions>
     </library>
     <library name="QueueExpansion">
@@ -404,7 +427,7 @@
     </library>
     <library name="RenameHub">
       <actions>
-        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck">
+        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and not @$R.$External">
           <set_object_name object="$R.$Hub" name="{974201,31}.[$Sector.knownname,$R.$Level]"/>
         </do_if>
       </actions>
@@ -415,7 +438,7 @@
     <library xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="AssignBuilder">
       <actions>
         <!-- Seed/reset builds complete through InitialTick, including delayed completion and task recovery. -->
-        <do_if value="not (@$R.$InitialHub == $Hub and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0) and $Hub.buildstorage.exists and $Hub.buildstorage.buildmodule.exists and ($Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count) gt 0 and not $Hub.buildstorage.buildmodule.constructionvessel.exists">
+        <do_if value="not @$R.$External and not (@$R.$InitialHub == $Hub and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0) and $Hub.buildstorage.exists and $Hub.buildstorage.buildmodule.exists and ($Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count) gt 0 and not $Hub.buildstorage.buildmodule.constructionvessel.exists">
           <find_ship name="$Builders" space="player.galaxy" primarypurpose="purpose.build" class="class.ship_xl" multiple="true" checkoperational="true"/>
           <set_value name="$Candidates" exact="[]"/>
           <set_value name="$Nearest" exact="100000"/>
@@ -472,11 +495,13 @@
           <include_actions ref="EnsureRecord"/>
           <include_actions ref="UpdatePopulation"/>
           <include_actions ref="RefreshProfile"/>
-          <do_if value="(not $R.$Hub.exists or $R.$Hub.iswreck) and $Population ge 100000000">
+          <do_if value="(not $R.$Hub.exists or $R.$Hub.iswreck) and (@$R.$External or $Population ge 100000000)">
             <do_if value="$R.$Hub != null">
               <include_actions ref="ForgetHub"/>
             </do_if>
-            <do_if value="$R.$Definitions? and $R.$Construction.$Valid and (not $Sector.owner or not $Sector.owner.hasrelation.enemy.{faction.civilian})">
+            <!-- A designated sector stays dormant until CE_ExternalHubs adopts its station again. -->
+            <do_if value="@$R.$External"/>
+            <do_elseif value="$R.$Definitions? and $R.$Construction.$Valid and (not $Sector.owner or not $Sector.owner.hasrelation.enemy.{faction.civilian})">
               <create_station name="$NewHub" macro="macro.ce_civilian_hub_macro" owner="faction.civilian" sector="$Sector" state="componentstate.operational" rawname="'{974201,1}'" rawdescription="'{974201,2}'" method="default">
                 <safepos x="$Sector.coreposition.x + 50km" y="0m" z="$Sector.coreposition.z" radius="20km" includeplotbox="true" allowyaxis="false"/>
               </create_station>
@@ -490,14 +515,19 @@
                 <include_actions ref="RebaseAccrual"/>
                 <debug_text text="'[CE] Construction site created: %s earned_level=%s generation=%s'.[$NewHub,$R.$Level,$R.$Generation]"/>
               </do_if>
-            </do_if>
+            </do_elseif>
             <do_elseif value="not $R.$Definitions? or not $R.$Construction.$Valid">
               <set_value name="$ConstructionFailure" exact="'invalid_components'"/>
               <include_actions ref="md.CE_Construction.ReportFailure"/>
             </do_elseif>
           </do_if>
           <set_value name="$Hub" exact="$R.$Hub"/>
-          <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian">
+          <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and @$R.$External">
+            <!-- Designated stations are never renamed, expanded or given builders by CE. -->
+            <add_to_group groupname="$Hubs" object="$Hub"/>
+            <include_actions ref="FundAccounts"/>
+          </do_if>
+          <do_elseif value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian">
             <add_to_group groupname="$Hubs" object="$Hub"/>
             <include_actions ref="RenameHub"/>
             <include_actions ref="FundAccounts"/>
@@ -507,7 +537,7 @@
             </do_if>
             <include_actions ref="AssignBuilder"/>
             <debug_text text="'[CE] Reconcile: level=%s target=%s queued=%s inprogress=%s builder=%s'.[$R.$Level,$R.$Target,@$Hub.buildstorage.builds.queued.count,@$Hub.buildstorage.builds.inprogress.count,@$Hub.buildstorage.buildmodule.constructionvessel]"/>
-          </do_if>
+          </do_elseif>
         </do_if>
       </actions>
     </library>
@@ -539,16 +569,22 @@
           <do_if value="not $ProfileRace">
             <include_actions ref="md.CE_CivilianHub.NearestOwnedRace"/>
           </do_if>
-          <set_value name="$ProfileKey" exact="if $ProfileRace then '$' + $ProfileRace.id else '$unknown'"/>
-          <do_if value="not $RaceProfiles.{$ProfileKey}?">
-            <set_value name="$CandidateComplete" exact="false"/>
-            <set_value name="$CandidateValid" exact="false"/>
-            <set_value name="$CandidateDefinitions" exact="[]"/>
-            <include_actions ref="md.CE_PopulationProfiles.Build"/>
-            <include_actions ref="md.CE_Construction.Resolve"/>
-            <set_value name="$RaceProfiles.{$ProfileKey}" exact="table[$Race=if $ProfileRace then $ProfileRace.id else '',$Definitions=$CandidateDefinitions,$Valid=$CandidateComplete and $CandidateValid,$Construction=$Construction,$Categories=@$CandidateCategories]"/>
-          </do_if>
+          <include_actions ref="md.CE_CivilianHub.CaptureRaceProfile"/>
           <set_value name="$SectorProfiles.{$Sector}" exact="$RaceProfiles.{$ProfileKey}"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Input $ProfileRace (a race or null). Output $ProfileKey of the cached race snapshot. -->
+    <library name="CaptureRaceProfile">
+      <actions>
+        <set_value name="$ProfileKey" exact="if $ProfileRace then '$' + $ProfileRace.id else '$unknown'"/>
+        <do_if value="not $RaceProfiles.{$ProfileKey}?">
+          <set_value name="$CandidateComplete" exact="false"/>
+          <set_value name="$CandidateValid" exact="false"/>
+          <set_value name="$CandidateDefinitions" exact="[]"/>
+          <include_actions ref="md.CE_PopulationProfiles.Build"/>
+          <include_actions ref="md.CE_Construction.Resolve"/>
+          <set_value name="$RaceProfiles.{$ProfileKey}" exact="table[$Race=if $ProfileRace then $ProfileRace.id else '',$Definitions=$CandidateDefinitions,$Valid=$CandidateComplete and $CandidateValid,$Construction=$Construction,$Categories=@$CandidateCategories]"/>
         </do_if>
       </actions>
     </library>

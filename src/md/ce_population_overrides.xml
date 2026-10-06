@@ -2,7 +2,8 @@
 <mdscript name="CE_PopulationOverrides" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
   <cues>
     <!--
-      Per-save population layers: native < preset < player < debug fixed population.
+      Per-save population layers: native < preset < designated hub registration
+      (CE_ExternalHubs) < player < debug fixed population.
       Keys are '$' + sector macro ID so shipped presets can name sectors.
       Overrides are anchored: effective = value + max(0, native - baseline), so
       native growth (terraforming) still adds to an overridden sector.
@@ -75,6 +76,7 @@
     <library name="Effective">
       <actions>
         <include_actions ref="md.CE_PopulationOverrides.Ensure"/>
+        <include_actions ref="md.CE_ExternalHubs.Ensure"/>
         <include_actions ref="md.CE_PopulationOverrides.Key"/>
         <set_value name="$PopulationSource" exact="'native'"/>
         <set_value name="$OverrideNative" exact="$Population"/>
@@ -95,6 +97,11 @@
             <set_value name="$OverrideHasBaseline" exact="true"/>
           </do_if>
         </do_if>
+        <do_elseif value="md.CE_ExternalHubs.State.$Populations.{$OverrideKey}?">
+          <!-- Fixed value from the registering mod; no native-growth anchoring. -->
+          <set_value name="$PopulationSource" exact="'external'"/>
+          <set_value name="$Population" exact="md.CE_ExternalHubs.State.$Populations.{$OverrideKey}"/>
+        </do_elseif>
         <do_elseif value="md.CE_PopulationOverrides.State.$Presets.{$OverrideKey}? and md.CE_PopulationOverrides.State.$Sectors.{$OverrideKey}?">
           <do_if value="not md.CE_PopulationOverrides.State.$PresetBaselines.{$OverrideKey}? and $OverrideNativeKnown">
             <set_value name="md.CE_PopulationOverrides.State.$PresetBaselines.{$OverrideKey}" exact="$OverrideNative"/>
@@ -158,6 +165,12 @@
         </do_for_each>
         <do_for_each name="$OverrideLoopKey" in="md.CE_PopulationOverrides.State.$Presets.keys.list">
           <do_if value="not md.CE_PopulationOverrides.State.$Player.{$OverrideLoopKey}?">
+            <include_actions ref="md.CE_PopulationOverrides.ReconcileKey"/>
+          </do_if>
+        </do_for_each>
+        <include_actions ref="md.CE_ExternalHubs.Ensure"/>
+        <do_for_each name="$OverrideLoopKey" in="md.CE_ExternalHubs.State.$Populations.keys.list">
+          <do_if value="not md.CE_PopulationOverrides.State.$Player.{$OverrideLoopKey}? and not md.CE_PopulationOverrides.State.$Presets.{$OverrideLoopKey}?">
             <include_actions ref="md.CE_PopulationOverrides.ReconcileKey"/>
           </do_if>
         </do_for_each>

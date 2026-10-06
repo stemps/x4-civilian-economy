@@ -295,5 +295,8 @@
     <t id="447">Diesen Wert entfernen und wieder die Vanilla-Bevölkerung verwenden.</t>
     <t id="448">Deine Änderung verwerfen und wieder die voreingestellte Bevölkerung verwenden.</t>
     <t id="449">Vanilla-Bevölkerung: noch nicht gemessen. Voreinstellung: %1 Millionen.</t>
+    <t id="450">%s: Das zivile Zentrum hat Stufe %s erreicht. Es nimmt jetzt neu freigeschaltete Waren an.</t>
+    <t id="451">%s: Das zivile Zentrum hat Stufe %s erreicht. Es nimmt jetzt größere Mengen bestehender Waren an.</t>
+    <t id="452">%s: Das zivile Zentrum hat Stufe %s erreicht. Neue Kaufangebote sind derzeit pausiert.</t>
   </page>
 </language>

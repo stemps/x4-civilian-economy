@@ -282,6 +282,25 @@ local before=calls;old.script();assert(calls==before)
 resetState[3]='initializing';open();assert(action(367))
 debugEnabled=false;open();assert(#entries==0)
 resetState=nil;debugEnabled=true
+
+-- Designated (external) hubs: never force another mod's builds or queue CE plans;
+-- level shortcuts stop at the registered maximum.
+local function advance(level)
+ local label=CEHubStatus.text(124, level)
+ for _,e in ipairs(entries) do if e.text==label then return e end end
+ error('missing advance '..level)
+end
+menu.componentSlot.component=42;status[1]=42;status[2]=3;status[3]=0;status[4]=true;status[8]=true;status[15]=false
+progress=0;waiting=false
+open();assert(action(11).active and action(40).active and advance(10).active)
+status[24]={1,5};open()
+assert(not action(11).active and not action(40).active)
+assert(advance(4).active and advance(5).active and not advance(6).active and not advance(10).active)
+local before=calls;action(11).script();assert(calls==before)
+events.CEAdvanceBuildReady(nil,42);assert(calls==before)
+status[2]=5;open();assert(not advance(6).active)
+local s5=CEHubStatus.getFresh(42);assert(s5.external and s5.maxLevel==5 and CEHubStatus.classify(s5).maximum)
+status[24]=nil;status[2]=1
 ''')
 print('LuaJIT diagnostics, reset controls, debug events, nested actions, stale-token guards and build completion passed')
 lua.execute('''

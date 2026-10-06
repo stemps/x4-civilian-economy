@@ -8,14 +8,24 @@
         <set_value name="$RequestedLevel" exact="$AdvanceCommands.indexof.{event.param2} + 1"/>
         <set_value name="$Hub" exact="$R.$Hub"/>
         <include_actions ref="md.CE_Construction.Readiness"/>
-        <do_if value="$Ready and $Hub.owner == faction.civilian and $RequestedLevel gt $R.$Level and $RequestedLevel le 10 and $R.$Target == 0 and not $R.$Build.exists and not @$R.$LayoutPending and not @$R.$TargetSequence">
+        <!-- Designated hubs commit the requested level directly; there is nothing to build. -->
+        <do_if value="@$R.$External and $Ready and $RequestedLevel gt $R.$Level and $RequestedLevel le $R.$MaxLevel and $R.$Target == 0">
+          <debug_text text="'[CE] TEST advance requested: hub=%s sector=%s from=%s to=%s (designated hub, no construction)'.[$Hub,$Hub.sector,$R.$Level,$RequestedLevel]"/>
+          <include_actions ref="md.CE_Reserves.Accrue"/>
+          <set_value name="$ExternalNewLevel" exact="$RequestedLevel"/>
+          <include_actions ref="md.CE_ExternalHubs.SetLevel"/>
+          <include_actions ref="md.CE_CivilianHub.UpdateOffers"/>
+          <include_actions ref="md.CE_Notifications.UpgradeCompleted"/>
+          <include_actions ref="md.CE_Rewards.Notify"/>
+        </do_if>
+        <do_elseif value="not @$R.$External and $Ready and $Hub.owner == faction.civilian and $RequestedLevel gt $R.$Level and $RequestedLevel le 10 and $R.$Target == 0 and not $R.$Build.exists and not @$R.$LayoutPending and not @$R.$TargetSequence">
           <do_if value="not md.CE_DebugAdvance.State.$Targets?"><set_value name="md.CE_DebugAdvance.State.$Targets" exact="table[]"/></do_if>
           <set_value name="md.CE_DebugAdvance.State.$Targets.{$Hub}" exact="$RequestedLevel"/>
           <set_value name="$R.$Target" exact="$RequestedLevel"/>
           <set_value name="$R.$TestUpgrade" exact="true"/>
           <debug_text text="'[CE] TEST advance requested: hub=%s sector=%s from=%s to=%s'.[$Hub,$Hub.sector,$R.$Level,$RequestedLevel]"/>
           <include_actions ref="md.CE_CivilianHub.QueueExpansion"/>
-        </do_if>
+        </do_elseif>
       </actions>
     </library>
     <library name="Tick">
@@ -51,7 +61,7 @@
             <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and event.param3 == $R.$Hub">
               <include_actions ref="md.CE_Unrest.Ensure"/>
               <set_value name="$ExpectedCommand" exact="'hour:%1'.[$U.$Token]"/>
-              <do_if value="$R.$Operational and $R.$Level lt 10 and $R.$Target == 0 and event.param2 == $ExpectedCommand">
+              <do_if value="$R.$Operational and $R.$Level lt 10 and (not @$R.$MaxLevel or $R.$Level lt $R.$MaxLevel) and $R.$Target == 0 and event.param2 == $ExpectedCommand">
                 <set_value name="$U.$Token" operation="add"/>
                 <include_actions ref="md.CE_Reserves.Accrue"/>
                 <set_value name="$R.$GrowthSeconds" exact="[$R.$GrowthSeconds,[$RequiredGrowthSeconds,$R.$GrowthSeconds + 3600.0f].min].max"/>

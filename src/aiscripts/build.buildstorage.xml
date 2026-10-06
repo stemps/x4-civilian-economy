@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <diff>
-  <!-- Only CE sites use our builder policy. Keep every other native build behavior. -->
-  <replace sel="/aiscript/attention/actions/do_if[@value='not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel']/@value">not @player.entity.$ce_hubs.indexof.{this.object.base} and not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel</replace>
+  <!-- Only CE-built sites use our builder policy. Designated (external) hubs and every other station keep native behavior. -->
+  <replace sel="/aiscript/attention/actions/do_if[@value='not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel']/@value">not @player.entity.$ce_builder_hubs.indexof.{this.object.base} and not $buildmodule.isplayerowned and $buildmodule.iswaitingforconstructionvessel and not $buildmodule.constructionvessel</replace>
   <!-- Keep an existing CE manager when another construction stage completes. -->
-  <replace sel="/aiscript/interrupts/handler[conditions/event_object_built_station]/actions/do_if/@value">$baseowner and $baseowner != faction.ownerless and $baseowner != faction.player and not (@player.entity.$ce_hubs.indexof.{this.object.base} and this.object.base.tradenpc)</replace>
+  <replace sel="/aiscript/interrupts/handler[conditions/event_object_built_station]/actions/do_if/@value">$baseowner and $baseowner != faction.ownerless and $baseowner != faction.player and not (@player.entity.$ce_builder_hubs.indexof.{this.object.base} and this.object.base.tradenpc)</replace>
 </diff>

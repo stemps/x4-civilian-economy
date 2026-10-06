@@ -119,7 +119,12 @@ class ContentTests(unittest.TestCase):
         self.assertEqual(set(listener.attrib),{'buyer','seller'})
         self.assertFalse(t.xpath('//cue[@name="Start" or @name="WatchLevelHub"]'))
         self.assertTrue(Runner().construction.xpath('//library[@name="Queue"]//do_if[contains(@value,"builds.queued.count")]'))
-        self.assertFalse(any(tree.xpath('//set_faction_relation|//remove_trade_offer') for tree in Runner().scripts.values()))
+        self.assertFalse(any(tree.xpath('//set_faction_relation') for tree in Runner().scripts.values()))
+        # Offers are never removed, except a surviving designated station's offers on debug reset.
+        removals=[(name,n) for name,tree in Runner().scripts.items() for n in tree.xpath('//remove_trade_offer')]
+        self.assertEqual([name for name,_ in removals],['CE_DebugReset'])
+        self.assertEqual(removals[0][1].xpath('ancestor::library/@name'),['Begin'])
+        self.assertIn('@$R.$External',removals[0][1].getparent().get('value'))
         # Destruction is confined to explicit sabotage, tracked raid cleanup,
         # and the exact temporary shell created by the opt-in layout test.
         for name, tree in Runner().scripts.items():
@@ -140,7 +145,7 @@ class ContentTests(unittest.TestCase):
         patch=E.parse(str(MOD/'aiscripts/build.buildstorage.xml')).find('replace')
         base=E.parse(str(REF/'aiscripts/build.buildstorage.xml'))
         self.assertEqual(len(base.xpath(patch.get('sel'))),1)
-        self.assertTrue(patch.text.startswith('not @player.entity.$ce_hubs.indexof.{this.object.base} and '))
+        self.assertTrue(patch.text.startswith('not @player.entity.$ce_builder_hubs.indexof.{this.object.base} and '))
 
 class LifecycleTests(unittest.TestCase):
     def setUp(self):

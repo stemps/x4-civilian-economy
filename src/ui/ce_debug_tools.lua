@@ -18,16 +18,19 @@ end
 local function canCreate(id)
     return id and C.IsValidComponent(id) and C.IsComponentClass(id, 'sector') and M.canCreateInSector(id)
 end
+-- Designated (external) hubs belong to another mod: never force its builds or queue CE plans.
 local function canFinish(id)
-    return isHub(id) and (C.GetCurrentBuildProgress(id) >= 0 or C.IsBuildWaitingForSecondaryComponentResources(id))
+    if not isHub(id) then return false end
+    local s = statusFor(id)
+    return not (s and s.external) and (C.GetCurrentBuildProgress(id) >= 0 or C.IsBuildWaitingForSecondaryComponentResources(id))
 end
 local function canQueue(id)
     local s = statusFor(id)
-    return s and s.active and s.level < 10 and s.target == 0 and s.plotReady
+    return s and not s.external and s.active and s.level < 10 and s.target == 0 and s.plotReady
 end
 local function canAdvance(id, level)
     local s = statusFor(id)
-    return s and s.active and s.target == 0 and level > s.level and level <= 10
+    return s and s.active and s.target == 0 and level > s.level and level <= s.maxLevel
 end
 local function buildActions()
     local debug = GetNPCBlackboard(ConvertStringToLuaID(tostring(C.GetPlayerID())), '$ce_debug_enabled')
@@ -60,7 +63,7 @@ local function buildActions()
         row(text(s.active and 34 or 35))
         if M.layoutState(s) then row(M.layoutState(s), text(348))
         elseif s.target > 0 then row(text(99, s.target), text(105))
-        elseif s.level == 10 then row(text(100))
+        elseif s.level >= s.maxLevel then row(text(100))
         else row(text(113, s.growth/60, s.required/60)) end
         if s.population then row(text(44), text(45, s.population)) end
         if s.populationOverride then row(text(140)) end
@@ -96,7 +99,7 @@ local function buildActions()
     action(text(308), function()
         local fresh = statusFor(id)
         return fresh and not fresh.stale and fresh.active and fresh.level < 10 and fresh.target == 0
-            and fresh.growth < fresh.required and progressToken and fresh.unrest and fresh.unrest.token == progressToken
+            and fresh.level < fresh.maxLevel and fresh.growth < fresh.required and progressToken and fresh.unrest and fresh.unrest.token == progressToken
     end, function()
         AddUITriggeredEvent('CEProgressTesting', 'hour:' .. string.format('%d', progressToken), ConvertStringToLuaID(tostring(id)))
     end, text(309))

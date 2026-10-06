@@ -139,7 +139,7 @@ local function drawSummary(panel, s)
     progress[2]:setColSpan(4)
     local function percent()
         local now=current()
-        return now and now.available and now.level<10 and math.min(100,100*now.growth/now.required) or 0
+        return now and now.available and now.level<(now.maxLevel or 10) and math.min(100,100*now.growth/now.required) or 0
     end
     local function growthHint()
         return M.progressHint(current())

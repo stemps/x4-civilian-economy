@@ -103,6 +103,9 @@ local function decode(id, s)
     result.populationOverride, result.debugFallback = number(s[17]), yes(s[18])
     result.debugInitial = yes(s[19]) and not yes(s[15])
     result.layoutPhase = s[22]
+    -- Designated (external) hubs: [1, maximum level]. CE never builds on them.
+    result.external = type(s[24]) == 'table' and number(s[24][1]) == 1
+    result.maxLevel = result.external and number(s[24][2]) or 10
     if type(s[21]) == 'table' and s[21][1] == 2 and type(s[21][2]) == 'table' then
         local payload, events, seen = s[21], {}, {}
         local rows = payload[2]
@@ -222,7 +225,7 @@ end
 function M.classify(s)
     local facts = {available=not not (s and s.available), missing={}, required=false}
     if not facts.available then return facts end
-    facts.pending, facts.maximum = s.target > 0, s.level == 10
+    facts.pending, facts.maximum = s.target > 0, s.level >= (s.maxLevel or 10)
     facts.ready = s.growth >= s.required
     facts.warning = s.stale and 'stale' or s.profileError and 'profile_error' or nil
     for _, w in ipairs(s.wares) do
@@ -325,7 +328,7 @@ function M.levelLabel(s)
     return M.text(121,s.level,M.text(state))
 end
 function M.nextLevel(s)
-    if not s or not s.available or s.level==10 then return '' end
+    if not s or not s.available or s.level >= (s.maxLevel or 10) then return '' end
     return #s.unlocks>0 and M.text(109,table.concat(s.unlocks,', ')) or M.text(110)
 end
 function M.wareHint(s,w)

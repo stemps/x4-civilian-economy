@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_ExternalHubs" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!--
+      Public integration API v1: another mod designates an existing civilian-owned
+      station as the civilian hub of its sector. CE runs all hub logic on it but never
+      constructs, renames or replaces it. Levels commit without construction.
+
+      Register (soft dependency, signal once; re-signalling updates the registration):
+        <signal_cue_instantly cue="md.CE_ExternalHubs.Register" check="false"
+          param="table[$version=1, $godentry='my_god_station_id', $population=1000000000,
+                       $race='argon', $maxlevel=10, $listener=md.MyScript.MyEventCue]"/>
+      Identity: $godentry (god.xml station id) or $station (a station object).
+      Optional: $population (accessible population layer: native < preset < this < player
+      override), $race (demand profile race id, applies before the first profile freeze),
+      $maxlevel (1-10), $listener (cue signalled with event tables).
+
+      Events: table[$version=1, $event, $godentry, $station, $sector, ...] where $event is
+        'adopted' ($level), 'rejected' ($reason: 'invalid', 'not_found', 'owner',
+        'sector_has_hub'; only before the first adoption), 'level' ($oldlevel, $newlevel),
+        'status' ($operational, $reason: CE pause reason) and 'lost' (station destroyed;
+        the record stays dormant and is re-adopted when the identity resolves again).
+    -->
+    <cue name="State"><conditions><event_cue_signalled/></conditions></cue>
+    <cue name="Register" instantiate="true" namespace="this">
+      <conditions><event_cue_signalled/></conditions>
+      <actions>
+        <set_value name="$ExternalInput" exact="event.param"/>
+        <include_actions ref="md.CE_ExternalHubs.Store"/>
+        <do_if value="$ExternalValid and md.CE_CivilianHub.Init.$Registry? and not @md.CE_DebugReset.State.$Busy">
+          <signal_cue_instantly cue="md.CE_CivilianHub.ExternalHubsChanged"/>
+        </do_if>
+      </actions>
+    </cue>
+    <library name="Ensure">
+      <actions>
+        <do_if value="not md.CE_ExternalHubs.State.$Registrations?"><set_value name="md.CE_ExternalHubs.State.$Registrations" exact="table[]"/></do_if>
+        <do_if value="not md.CE_ExternalHubs.State.$Populations?"><set_value name="md.CE_ExternalHubs.State.$Populations" exact="table[]"/></do_if>
+      </actions>
+    </library>
+    <!-- Input $ExternalInput (the registration table). Output $ExternalValid. -->
+    <library name="Store">
+      <actions>
+        <include_actions ref="md.CE_ExternalHubs.Ensure"/>
+        <set_value name="$ExternalValid" exact="false"/>
+        <set_value name="$ExternalInputType" exact="typeof $ExternalInput"/>
+        <do_if value="$ExternalInputType == datatype.table">
+          <set_value name="$ExternalGodEntry" exact="@$ExternalInput.$godentry"/>
+          <set_value name="$ExternalGodType" exact="typeof $ExternalGodEntry"/>
+          <set_value name="$ExternalStation" exact="@$ExternalInput.$station"/>
+          <set_value name="$ExternalPopulation" exact="@$ExternalInput.$population"/>
+          <set_value name="$ExternalPopulationType" exact="typeof $ExternalPopulation"/>
+          <set_value name="$ExternalMaxLevel" exact="@$ExternalInput.$maxlevel"/>
+          <set_value name="$ExternalMaxType" exact="typeof $ExternalMaxLevel"/>
+          <set_value name="$ExternalRaceID" exact="@$ExternalInput.$race"/>
+          <set_value name="$ExternalRaceType" exact="typeof $ExternalRaceID"/>
+          <set_value name="$ExternalListener" exact="@$ExternalInput.$listener"/>
+          <set_value name="$ExternalRace" exact="null"/>
+          <do_if value="$ExternalRaceType.isstring">
+            <do_for_each name="$ExternalRaceCandidate" in="lookup.race.list">
+              <do_if value="$ExternalRaceCandidate.id == $ExternalRaceID"><set_value name="$ExternalRace" exact="$ExternalRaceCandidate"/></do_if>
+            </do_for_each>
+          </do_if>
+          <set_value name="$ExternalValid" exact="@$ExternalInput.$version == 1 and ($ExternalGodType.isstring or $ExternalStation.exists) and not ($ExternalGodType.isstring and $ExternalStation.exists)"/>
+          <do_if value="$ExternalPopulation and not ($ExternalPopulationType.isnumeric and $ExternalPopulation ge 0 and $ExternalPopulation le 100000000000L)"><set_value name="$ExternalValid" exact="false"/></do_if>
+          <do_if value="$ExternalMaxLevel and not ($ExternalMaxType.isnumeric and $ExternalMaxLevel ge 1 and $ExternalMaxLevel le 10)"><set_value name="$ExternalValid" exact="false"/></do_if>
+          <do_if value="$ExternalRaceID and not $ExternalRace"><set_value name="$ExternalValid" exact="false"/></do_if>
+          <do_if value="$ExternalValid">
+            <set_value name="$ExternalKey" exact="if $ExternalGodType.isstring then '$god_' + $ExternalGodEntry else $ExternalStation"/>
+            <set_value name="$ExternalReg" exact="if md.CE_ExternalHubs.State.$Registrations.{$ExternalKey}? then md.CE_ExternalHubs.State.$Registrations.{$ExternalKey} else table[$Notified='',$Adopted=false]"/>
+            <set_value name="$ExternalReg.$GodEntry" exact="if $ExternalGodType.isstring then $ExternalGodEntry else null"/>
+            <set_value name="$ExternalReg.$Station" exact="if $ExternalGodType.isstring then null else $ExternalStation"/>
+            <set_value name="$ExternalReg.$Population" exact="if $ExternalPopulationType.isnumeric then $ExternalPopulation else null"/>
+            <set_value name="$ExternalReg.$HasPopulation" exact="$ExternalPopulationType.isnumeric"/>
+            <set_value name="$ExternalReg.$MaxLevel" exact="if $ExternalMaxType.isnumeric then $ExternalMaxLevel else 10"/>
+            <set_value name="$ExternalReg.$Race" exact="$ExternalRace"/>
+            <set_value name="$ExternalReg.$Listener" exact="$ExternalListener"/>
+            <!-- A repeated registration re-reads the station's module layout. -->
+            <set_value name="$ExternalReg.$Refresh" exact="true"/>
+            <set_value name="md.CE_ExternalHubs.State.$Registrations.{$ExternalKey}" exact="$ExternalReg"/>
+            <debug_text text="'[CE] External hub registered: godentry=%s station=%s population=%s race=%s maxlevel=%s'.[$ExternalReg.$GodEntry,$ExternalReg.$Station,$ExternalReg.$Population,@$ExternalRace.id,$ExternalReg.$MaxLevel]"/>
+          </do_if>
+          <do_else>
+            <debug_text text="'[CE] External hub registration rejected: invalid parameters %s'.[$ExternalInput]"/>
+            <set_value name="$ExternalEmitListener" exact="$ExternalListener"/>
+            <set_value name="$ExternalEvent" exact="table[$version=1,$event='rejected',$reason='invalid',$godentry=$ExternalGodEntry,$station=$ExternalStation,$sector=null]"/>
+            <include_actions ref="md.CE_ExternalHubs.Emit"/>
+          </do_else>
+        </do_if>
+        <do_else>
+          <debug_text text="'[CE] External hub registration rejected: parameter is not a table'"/>
+        </do_else>
+      </actions>
+    </library>
+    <!-- Input $ExternalEmitListener and $ExternalEvent. A removed client leaves a dead cue reference. -->
+    <library name="Emit">
+      <actions>
+        <do_if value="@$ExternalEmitListener.exists">
+          <signal_cue_instantly cue="$ExternalEmitListener" param="$ExternalEvent"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Input $R (an external record) and $ExternalEvent. -->
+    <library name="EmitRecord">
+      <actions>
+        <set_value name="$ExternalEmitListener" exact="null"/>
+        <do_if value="@$R.$ExternalKey">
+          <do_if value="md.CE_ExternalHubs.State.$Registrations.{$R.$ExternalKey}?">
+            <set_value name="$ExternalEmitListener" exact="md.CE_ExternalHubs.State.$Registrations.{$R.$ExternalKey}.$Listener"/>
+            <set_value name="$ExternalEvent.$godentry" exact="md.CE_ExternalHubs.State.$Registrations.{$R.$ExternalKey}.$GodEntry"/>
+          </do_if>
+        </do_if>
+        <include_actions ref="md.CE_ExternalHubs.Emit"/>
+      </actions>
+    </library>
+    <!-- Controller namespace ($Registry, $Hubs, $SectorProfiles, $RaceProfiles). Runs at the
+         start of every reconcile and after each registration, before CE could create a hub. -->
+    <library name="Adopt">
+      <actions>
+        <include_actions ref="md.CE_ExternalHubs.Ensure"/>
+        <set_value name="$ExternalChanged" exact="false"/>
+        <do_for_each name="$ExternalKey" in="md.CE_ExternalHubs.State.$Registrations.keys.list">
+          <set_value name="$ExternalReg" exact="md.CE_ExternalHubs.State.$Registrations.{$ExternalKey}"/>
+          <include_actions ref="md.CE_ExternalHubs.AdoptOne"/>
+        </do_for_each>
+        <!-- Publish membership now, so UI and the builder patch never wait for the next tick. -->
+        <do_if value="$ExternalChanged"><include_actions ref="md.CE_CivilianHub.PublishAllDiagnostics"/></do_if>
+      </actions>
+    </library>
+    <library name="AdoptOne">
+      <actions>
+        <set_value name="$ExternalStation" exact="$ExternalReg.$Station"/>
+        <do_if value="$ExternalReg.$GodEntry">
+          <find_station name="$ExternalFound" godstationentry="$ExternalReg.$GodEntry" multiple="true" space="player.galaxy"/>
+          <set_value name="$ExternalStation" exact="$ExternalFound.{1}"/>
+        </do_if>
+        <set_value name="$ExternalReason" exact="''"/>
+        <set_value name="$ExternalRecord" exact="null"/>
+        <do_if value="not $ExternalStation.exists or $ExternalStation.iswreck">
+          <set_value name="$ExternalReason" exact="'not_found'"/>
+        </do_if>
+        <do_elseif value="$ExternalStation.owner != faction.civilian">
+          <set_value name="$ExternalReason" exact="'owner'"/>
+        </do_elseif>
+        <do_else>
+          <set_value name="$Sector" exact="$ExternalStation.sector"/>
+          <do_if value="$Registry.{$Sector}?"><set_value name="$ExternalRecord" exact="$Registry.{$Sector}"/></do_if>
+          <do_if value="$ExternalRecord and $ExternalRecord.$Hub.exists and not $ExternalRecord.$Hub.iswreck and $ExternalRecord.$Hub != $ExternalStation">
+            <set_value name="$ExternalReason" exact="'sector_has_hub'"/>
+          </do_if>
+        </do_else>
+        <do_if value="$ExternalReason != ''">
+          <do_if value="not $ExternalReg.$Adopted and $ExternalReg.$Notified != $ExternalReason">
+            <set_value name="$ExternalReg.$Notified" exact="$ExternalReason"/>
+            <debug_text text="'[CE] External hub not adopted: godentry=%s station=%s reason=%s'.[$ExternalReg.$GodEntry,$ExternalStation,$ExternalReason]"/>
+            <set_value name="$ExternalEmitListener" exact="$ExternalReg.$Listener"/>
+            <set_value name="$ExternalEvent" exact="table[$version=1,$event='rejected',$reason=$ExternalReason,$godentry=$ExternalReg.$GodEntry,$station=$ExternalStation,$sector=@$ExternalStation.sector]"/>
+            <include_actions ref="md.CE_ExternalHubs.Emit"/>
+          </do_if>
+        </do_if>
+        <do_elseif value="$ExternalRecord and $ExternalRecord.$Hub == $ExternalStation and @$ExternalRecord.$External">
+          <!-- Already adopted: apply a repeated registration. -->
+          <do_if value="$ExternalReg.$Refresh">
+            <set_value name="$R" exact="$ExternalRecord"/>
+            <include_actions ref="md.CE_ExternalHubs.Configure"/>
+            <debug_text text="'[CE] External hub registration refreshed: hub=%s sector=%s'.[$ExternalStation,$Sector.knownname]"/>
+            <include_actions ref="md.CE_ExternalHubs.Reconcile"/>
+          </do_if>
+        </do_elseif>
+        <do_else>
+          <include_actions ref="md.CE_PopulationOverrides.Native"/>
+          <set_value name="$ExternalNative" exact="$Population"/>
+          <include_actions ref="md.CE_ExternalHubs.SyncPopulation"/>
+          <include_actions ref="md.CE_PopulationOverrides.Effective"/>
+          <set_value name="$ExternalPopulationType" exact="typeof $Population"/>
+          <do_if value="not $ExternalPopulationType.isnumeric"><set_value name="$Population" exact="0"/></do_if>
+          <include_actions ref="md.CE_CivilianHub.EnsureRecord"/>
+          <!-- A dead previous hub (CE-built or external) loses its reserves first. -->
+          <do_if value="$R.$Hub != null"><include_actions ref="md.CE_CivilianHub.ForgetHub"/></do_if>
+          <set_value name="$R.$External" exact="true"/>
+          <set_value name="$R.$ExternalKey" exact="$ExternalKey"/>
+          <set_value name="$R.$ExternalStatus" exact="''"/>
+          <set_value name="$R.$InitialHub" exact="null"/>
+          <set_value name="$R.$InitialEligible" exact="false"/>
+          <set_value name="$R.$PlotReady" exact="true"/>
+          <set_value name="$R.$Hub" exact="$ExternalStation"/>
+          <set_value name="$R.$Generation" operation="add"/>
+          <include_actions ref="md.CE_ExternalHubs.Configure"/>
+          <add_to_group groupname="$Hubs" object="$ExternalStation"/>
+          <set_value name="$ExternalReg.$Adopted" exact="true"/>
+          <set_value name="$ExternalReg.$Notified" exact="'adopted'"/>
+          <debug_text text="'[CE] External hub adopted: hub=%s sector=%s level=%s modules=%s'.[$ExternalStation,$Sector.knownname,$R.$Level,@$R.$CompletedSequence.count]"/>
+          <set_value name="$ExternalEvent" exact="table[$version=1,$event='adopted',$station=$ExternalStation,$sector=$Sector,$level=$R.$Level]"/>
+          <include_actions ref="md.CE_ExternalHubs.EmitRecord"/>
+          <include_actions ref="md.CE_ExternalHubs.Reconcile"/>
+          <set_value name="$ExternalChanged" exact="true"/>
+        </do_else>
+        <set_value name="$ExternalReg.$Refresh" exact="false"/>
+      </actions>
+    </library>
+    <!-- Input $R, $Sector and $ExternalReg. Applies registration options to the record. -->
+    <library name="Configure">
+      <actions>
+        <!-- Readiness checks the station's own modules as they were at adoption. -->
+        <set_value name="$R.$CompletedSequence" exact="if @$R.$Hub.constructionsequence.count gt 0 then $R.$Hub.constructionsequence else null"/>
+        <set_value name="$R.$MaxLevel" exact="$ExternalReg.$MaxLevel"/>
+        <include_actions ref="md.CE_ExternalHubs.SyncPopulation"/>
+        <!-- A pinned race applies until the record freezes its demand basket. -->
+        <do_if value="$ExternalReg.$Race and not $R.$Definitions?">
+          <set_value name="$ProfileRace" exact="$ExternalReg.$Race"/>
+          <include_actions ref="md.CE_CivilianHub.CaptureRaceProfile"/>
+          <set_value name="$SectorProfiles.{$Sector}" exact="$RaceProfiles.{$ProfileKey}"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Input $Sector and $ExternalReg: the registration's population layer for this sector. -->
+    <library name="SyncPopulation">
+      <actions>
+        <set_value name="$ExternalPopulationKey" exact="'$' + $Sector.macro.id"/>
+        <do_if value="$ExternalReg.$HasPopulation">
+          <set_value name="md.CE_ExternalHubs.State.$Populations.{$ExternalPopulationKey}" exact="$ExternalReg.$Population"/>
+        </do_if>
+        <do_elseif value="md.CE_ExternalHubs.State.$Populations.{$ExternalPopulationKey}?">
+          <remove_value name="md.CE_ExternalHubs.State.$Populations.{$ExternalPopulationKey}"/>
+        </do_elseif>
+      </actions>
+    </library>
+    <!-- Input $R and $Sector: profile, population and state for an adopted record. -->
+    <library name="Reconcile">
+      <actions>
+        <include_actions ref="md.CE_CivilianHub.RefreshProfile"/>
+        <include_actions ref="md.CE_PopulationOverrides.Native"/>
+        <set_value name="$ExternalNative" exact="$Population"/>
+        <include_actions ref="md.CE_PopulationOverrides.Effective"/>
+        <set_value name="$ExternalPopulationType" exact="typeof $Population"/>
+        <do_if value="$ExternalPopulationType.isnumeric">
+          <!-- ReconcileSector resolves the population layers itself from the native input. -->
+          <set_value name="$Population" exact="$ExternalNative"/>
+          <include_actions ref="md.CE_CivilianHub.ReconcileSector"/>
+        </do_if>
+        <include_actions ref="md.CE_CivilianHub.UpdateHub"/>
+        <include_actions ref="md.CE_CivilianHub.PublishDiagnostics"/>
+      </actions>
+    </library>
+    <!-- Input $R and $Hub after CE_Construction.Readiness preconditions (exists, civilian).
+         Outputs $Ready, $TargetReady and $R.$PauseReason like the CE-built branch. -->
+    <library name="Readiness">
+      <actions>
+        <do_if value="@$R.$CompletedSequence">
+          <set_value name="$CheckSequence" exact="$R.$CompletedSequence"/>
+          <set_value name="$CheckLevel" exact="$R.$Level"/>
+          <include_actions ref="md.CE_Construction.CheckReady"/>
+        </do_if>
+        <do_else>
+          <!-- Stations without a construction sequence: whole-station operational state. -->
+          <set_value name="$SequenceReady" exact="$Hub.isoperational"/>
+          <set_value name="$Damaged" exact="false"/>
+          <set_value name="$Constructing" exact="false"/>
+        </do_else>
+        <set_value name="$Ready" exact="$SequenceReady and (not $R.$Population? or $R.$Population gt 0)"/>
+        <set_value name="$R.$PauseReason" exact="if $Ready then 'active' else if $Damaged then 'damaged_modules' else if $Constructing then 'constructing' else if $R.$Population? and $R.$Population == 0 then 'no_population' else 'modules_unavailable'"/>
+      </actions>
+    </library>
+    <!-- Input $R qualified for its next level. Commits without construction. -->
+    <library name="CommitLevel">
+      <actions>
+        <set_value name="$ExternalNewLevel" exact="$R.$Level + 1"/>
+        <include_actions ref="md.CE_ExternalHubs.SetLevel"/>
+      </actions>
+    </library>
+    <!-- Input $R, $Sector and $ExternalNewLevel. Caller runs UpdateOffers before the
+         CE_Notifications.UpgradeCompleted announcement ($UpgradeCompleted). -->
+    <library name="SetLevel">
+      <actions>
+        <set_value name="$PreviousLevel" exact="$R.$Level"/>
+        <set_value name="$UpgradeCompleted" exact="true"/>
+        <set_value name="$R.$Level" exact="$ExternalNewLevel"/>
+        <set_value name="$R.$GrowthSeconds" exact="0.0f"/>
+        <set_value name="$R.$Target" exact="0"/>
+        <set_value name="$R.$TestUpgrade" exact="false"/>
+        <debug_text text="'[CE] External hub level committed without construction: hub=%s level=%s previous=%s'.[$R.$Hub,$R.$Level,$PreviousLevel]"/>
+        <include_actions ref="md.CE_CivilianHub.ApplyLevel"/>
+        <set_value name="$ExternalEvent" exact="table[$version=1,$event='level',$station=$R.$Hub,$sector=$Sector,$oldlevel=$PreviousLevel,$newlevel=$R.$Level]"/>
+        <include_actions ref="md.CE_ExternalHubs.EmitRecord"/>
+      </actions>
+    </library>
+    <!-- Input $R: announce operational/pause-reason changes once. A dormant record (station
+         lost) stays silent: 'lost' already said so, and re-adoption announces afresh. -->
+    <library name="NotifyStatus">
+      <actions>
+        <set_value name="$ExternalStatusKey" exact="'%1:%2'.[$R.$Operational,$R.$PauseReason]"/>
+        <do_if value="$R.$Hub and @$R.$ExternalStatus != $ExternalStatusKey">
+          <set_value name="$R.$ExternalStatus" exact="$ExternalStatusKey"/>
+          <set_value name="$ExternalEvent" exact="table[$version=1,$event='status',$station=$R.$Hub,$sector=$Sector,$operational=$R.$Operational,$reason=$R.$PauseReason]"/>
+          <include_actions ref="md.CE_ExternalHubs.EmitRecord"/>
+        </do_if>
+      </actions>
+    </library>
+    <!-- Input $R (external) before ForgetHub clears its station. -->
+    <library name="NotifyLost">
+      <actions>
+        <debug_text text="'[CE] External hub lost: hub=%s; record dormant until the registration resolves again'.[$R.$Hub]"/>
+        <set_value name="$ExternalEvent" exact="table[$version=1,$event='lost',$station=$R.$Hub,$sector=$Sector,$level=$R.$Level]"/>
+        <include_actions ref="md.CE_ExternalHubs.EmitRecord"/>
+        <set_value name="$R.$ExternalStatus" exact="''"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

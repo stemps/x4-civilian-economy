@@ -12,8 +12,8 @@ default:
 # Mod checks
 # ---------------------------------------------------------------------------
 
-# Everyday gate: translations, generated plans, controller tests, x4validate and Lua UI.
-check: translations plans-verify validate lua
+# Everyday gate: translations, generated plans, controller tests, x4validate, Lua UI and the sample.
+check: translations plans-verify validate lua sample-validate
 
 # Comprehensive gate; controller tests execute once, schemas in a fresh process.
 check-full: check-release schema-only
@@ -81,6 +81,26 @@ raider-logo:
 # Render and fully decode the approved runtime broadcast videos.
 news-videos:
     uv run --with imageio-ffmpeg python tools/build_news_videos.py
+
+# ---------------------------------------------------------------------------
+# Samples (development only, never shipped)
+# ---------------------------------------------------------------------------
+
+# Junction the external hub API sample (samples/client-mod) into the game's extensions folder.
+sample-link:
+    & ./scripts/game_link.ps1 link -Source samples/client-mod -Name ce_sample_client
+
+# Remove the sample's extensions junction; never deletes a regular folder or the dev files.
+sample-unlink:
+    & ./scripts/game_link.ps1 unlink -Source samples/client-mod -Name ce_sample_client
+
+# Show whether the sample's extensions folder holds a junction, a copied folder or nothing.
+sample-link-status:
+    & ./scripts/game_link.ps1 status -Source samples/client-mod -Name ce_sample_client
+
+# Toolkit x4validate on the sample (god.xml selectors, plan and macro references).
+sample-validate *args:
+    uv run --project "{{toolkit}}/tools/x4validate" x4validate samples/client-mod --reference "{{reference}}" {{args}}
 
 # ---------------------------------------------------------------------------
 # Shared tasks: keep this block identical in every mod repository.

@@ -9,7 +9,8 @@
         <set_value name="$DebugFailure" exact="134"/>
         <do_if value="$Sector.exists and $Sector.isclass.sector">
           <set_value name="$R" exact="@$Registry.{$Sector}"/>
-          <do_if value="$R and $R.$Hub.exists and not $R.$Hub.iswreck">
+          <!-- A designated sector is reserved for its external station, even while dormant. -->
+          <do_if value="$R and (@$R.$External or ($R.$Hub.exists and not $R.$Hub.iswreck))">
             <set_value name="$DebugFailure" exact="135"/>
           </do_if>
           <do_else>

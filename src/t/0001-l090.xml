@@ -295,5 +295,8 @@
     <t id="447">Bu değeri kaldır ve yeniden orijinal nüfusu kullan.</t>
     <t id="448">Değişikliğini at ve yeniden ön ayar nüfusunu kullan.</t>
     <t id="449">Orijinal nüfus: henüz ölçülmedi. Ön ayar: %1 milyon.</t>
+    <t id="450">%s: sivil merkez seviye %s oldu. Yeni açılan malları kabul ediyor.</t>
+    <t id="451">%s: sivil merkez seviye %s oldu. Mevcut mallardan daha fazla kabul ediyor.</t>
+    <t id="452">%s: sivil merkez seviye %s oldu. Yeni alım teklifleri duraklatıldı.</t>
   </page>
 </language>

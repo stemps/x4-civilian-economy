@@ -34,7 +34,8 @@
 </actions></library>
 <library name="Queue"><actions>
   <set_value name="$Hub" exact="$R.$Hub"/>
-  <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and not @$R.$LayoutPending and not $R.$Build.exists">
+  <!-- Designated (external) hubs are never constructed by CE. -->
+  <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and not @$R.$External and not @$R.$LayoutPending and not $R.$Build.exists">
     <set_value name="$BuildLevel" exact="if $R.$Target gt 0 then $R.$Target else $R.$Level"/>
     <set_value name="$CheckSequence" exact="@$R.$TargetSequence"/>
     <set_value name="$CheckLevel" exact="$BuildLevel"/>
@@ -134,7 +135,10 @@
         <set_value name="$TargetReady" exact="false"/>
         <set_value name="$R.$PauseReason" exact="'hub_unavailable'"/>
         <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner != faction.civilian"><set_value name="$R.$PauseReason" exact="'owner_changed'"/></do_if>
-        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian">
+        <do_if value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian and @$R.$External">
+          <include_actions ref="md.CE_ExternalHubs.Readiness"/>
+        </do_if>
+        <do_elseif value="$Hub.exists and not $Hub.iswreck and $Hub.owner == faction.civilian">
           <set_value name="$CheckSequence" exact="@$R.$CompletedSequence"/>
           <set_value name="$CheckLevel" exact="$R.$Level"/><include_actions ref="md.CE_Construction.CheckReady"/>
           <set_value name="$Ready" exact="$SequenceReady and (not $R.$Population? or $R.$Population gt 0)"/>
@@ -156,12 +160,12 @@
             </do_if>
             <do_elseif value="$Ready and $R.$Target gt 0"><set_value name="$TargetReady" exact="true"/></do_elseif>
           </do_if>
-        </do_if>
+        </do_elseif>
       </actions>
     </library>
     <library name="CheckReady">
       <actions>
-        <set_value name="$ExpectedCount" exact="if $CheckSequence then @$R.$Construction.$Levels.{$CheckLevel}.count else 0"/><set_value name="$SequenceReady" exact="$CheckSequence != null and $ExpectedCount gt 0 and $Hub.constructionsequence.count ge $ExpectedCount"/>
+        <set_value name="$ExpectedCount" exact="if not $CheckSequence then 0 else if @$R.$External then $CheckSequence.count else @$R.$Construction.$Levels.{$CheckLevel}.count"/><set_value name="$SequenceReady" exact="$CheckSequence != null and $ExpectedCount gt 0 and $Hub.constructionsequence.count ge $ExpectedCount"/>
         <set_value name="$Constructing" exact="not $SequenceReady"/>
         <set_value name="$Damaged" exact="false"/>
         <do_if value="$CheckSequence">

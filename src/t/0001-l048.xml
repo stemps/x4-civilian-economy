@@ -295,5 +295,8 @@
     <t id="447">Usuń tę wartość i ponownie używaj populacji oryginalnej.</t>
     <t id="448">Odrzuć zmianę i ponownie używaj populacji predefiniowanej.</t>
     <t id="449">Populacja oryginalna: jeszcze niezmierzona. Predefiniowane: %1 mln.</t>
+    <t id="450">%s: centrum cywilne osiągnęło poziom %s. Przyjmuje teraz nowo odblokowane towary.</t>
+    <t id="451">%s: centrum cywilne osiągnęło poziom %s. Przyjmuje teraz większe ilości dotychczasowych towarów.</t>
+    <t id="452">%s: centrum cywilne osiągnęło poziom %s. Nowe oferty zakupu wstrzymane.</t>
   </page>
 </language>

@@ -295,5 +295,8 @@
     <t id="447">Odebrat tuto hodnotu a znovu použít původní populaci.</t>
     <t id="448">Zahodit změnu a znovu použít populaci z předvolby.</t>
     <t id="449">Původní populace: zatím nezměřena. Předvolba: %1 milionů.</t>
+    <t id="450">%s: civilní centrum dosáhlo úrovně %s. Nyní přijímá nově odemčené zboží.</t>
+    <t id="451">%s: civilní centrum dosáhlo úrovně %s. Nyní přijímá větší množství stávajícího zboží.</t>
+    <t id="452">%s: civilní centrum dosáhlo úrovně %s. Nové nákupní nabídky pozastaveny.</t>
   </page>
 </language>

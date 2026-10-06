@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/plans">
+    <!-- The smallest station plan: one Teladi M dock. The control room comes from the
+         station macro god selects for race and type. -->
+    <plan id="ce_sample_dock" name="CE Sample Hub">
+      <entry index="1" macro="dockarea_tel_m_station_01_macro"/>
+    </plan>
+  </add>
+</diff>

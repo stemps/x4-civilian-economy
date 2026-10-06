@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<content id="ce_sample_client"
+  name="CE Sample Client"
+  description="Development sample for the Civilian Economy external hub API. Places a single-dock civilian station in Grand Exchange I and registers it as that sector's civilian hub."
+  author="stemps"
+  version="100"
+  date="2026-10-06"
+  save="false"
+  enabled="true">
+  <dependency version="900" name="X4: Foundations" />
+  <!-- Optional: the sample still loads without Civilian Economy; its registration is then a no-op. -->
+  <dependency id="civilian_economy" optional="true" name="Civilian Economy" />
+</content>

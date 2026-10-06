@@ -282,5 +282,8 @@
     <t id="447">Remove this override and use the vanilla population again.</t>
     <t id="448">Discard your change and use the preset population again.</t>
     <t id="449">Vanilla population: not measured yet. Preset: %1 million.</t>
+    <t id="450">%s: civilian hub reached level %s. It is now accepting newly unlocked goods.</t>
+    <t id="451">%s: civilian hub reached level %s. It is now accepting increased quantities of existing goods.</t>
+    <t id="452">%s: civilian hub reached level %s. New purchase offers are currently paused.</t>
   </page>
 </language>

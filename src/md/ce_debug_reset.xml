@@ -64,10 +64,16 @@
           <set_value name="$R.$PauseOffers" exact="true"/>
           <clear_table table="$R.$Transfers"/>
           <do_for_each name="$ResetWare" in="$R.$Wares.keys.list">
-            <do_if value="$R.$Wares.{$ResetWare}.$Offer.exists"><update_trade trade="$R.$Wares.{$ResetWare}.$Offer" amount="0" desiredamount="0"/></do_if>
+            <do_if value="$R.$Wares.{$ResetWare}.$Offer.exists">
+              <!-- A surviving designated station must not keep the old record's offers. -->
+              <do_if value="@$R.$External and $R.$Hub.exists"><remove_trade_offer object="$R.$Hub" tradeoffer="$R.$Wares.{$ResetWare}.$Offer"/></do_if>
+              <do_else><update_trade trade="$R.$Wares.{$ResetWare}.$Offer" amount="0" desiredamount="0"/></do_else>
+            </do_if>
           </do_for_each>
           <set_value name="$ResetHub" exact="$R.$Hub"/>
-          <do_if value="$ResetHub.exists and $ResetHub.owner == faction.civilian and (not $ResetHub.buildstorage.exists or $ResetHub.buildstorage.owner == faction.civilian)">
+          <!-- Designated (external) stations belong to their own mod: detach, never destroy.
+               CE_ExternalHubs re-adopts them when the reset reinitializes. -->
+          <do_if value="$ResetHub.exists and not @$R.$External and $ResetHub.owner == faction.civilian and (not $ResetHub.buildstorage.exists or $ResetHub.buildstorage.owner == faction.civilian)">
             <do_if value="$ResetHub.buildstorage.exists and ($ResetHub.buildstorage.owner == faction.civilian)">
               <set_value name="$ResetBuilds" exact="$ResetHub.buildstorage.builds.queued.clone"/>
               <append_list_elements name="$ResetBuilds" other="$ResetHub.buildstorage.builds.inprogress"/>

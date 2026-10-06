@@ -295,5 +295,8 @@
     <t id="447">Remover esta substituição e usar novamente a população original.</t>
     <t id="448">Descartar sua alteração e usar novamente a população predefinida.</t>
     <t id="449">População original: ainda não medida. Predefinição: %1 milhões.</t>
+    <t id="450">%s: o centro civil atingiu o nível %s. Agora aceita as mercadorias recém-desbloqueadas.</t>
+    <t id="451">%s: o centro civil atingiu o nível %s. Agora aceita quantidades maiores das mercadorias existentes.</t>
+    <t id="452">%s: o centro civil atingiu o nível %s. Novas ofertas de compra pausadas.</t>
   </page>
 </language>

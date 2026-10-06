@@ -333,6 +333,7 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_population_overrides.xml` | Per-save population override layers (native, preset, player), anchored resolution, validation, cached native readings and the sector macro map. |
 | `md/ce_population_options.xml` | Customize Population section of the options page: override rows, add dropdown, unconfirmed draft and callbacks. |
 | `md/ce_civilian_hub.xml` | Persistent sector registry, reconciliation, lifecycle orchestration and captured native delivery listeners; stable forwarding entry points for extracted libraries. |
+| `md/ce_external_hubs.xml` | Public external hub API: registration, adoption of designated stations, their readiness, level commits without construction and client events. |
 | `md/ce_demand.xml` | Frozen-profile initialization, validated rate preparation and identity-preserving rate commits. |
 | `md/ce_trade.xml` | Delivery accounting, sector-owner sales tax, guarded native offers and pricing. Retains payment watcher cues; provisioning belongs to CE_Accounts. |
 | `md/ce_accounts.xml` | Synchronous station/build-storage funding and manager provisioning, behind the existing trade/controller entry points. |
@@ -573,6 +574,65 @@ For example, an adapter can append:
 <set_value name="$ProfileMedicines.{'$customrace'}" exact="['custommedicine']"/>
 ```
 
+## External hubs API (designated stations)
+
+`md/ce_external_hubs.xml` (`CE_ExternalHubs`) lets another mod designate an existing
+civilian-owned station as its sector's civilian hub. CE runs demand, reserves, offers,
+growth, levels, events, unrest and rewards on it, but never constructs, renames, funds
+builds for, assigns builders to or replaces it. The contract (v1) is documented at the
+top of that file. Summary:
+
+- Registration is a soft dependency: the client signals `md.CE_ExternalHubs.Register`
+  with `check="false"` and `table[$version=1, $godentry | $station, $population?,
+  $race?, $maxlevel?, $listener?]`. `Store` validates and saves it in
+  `CE_ExternalHubs.State.$Registrations`, keyed by `'$god_' + entry` or the station.
+  Repeating a registration updates it and re-reads the station's module layout.
+  Registrations can arrive before `CE_CivilianHub.Init`; afterwards they signal
+  `CE_CivilianHub.ExternalHubsChanged` for immediate adoption.
+- `Adopt` runs inside `Reconcile` after sector profiles are captured and before the
+  population pass, so a designated sector is claimed before CE could create a hub.
+  God entries resolve with `find_station godstationentry=... space="player.galaxy"`.
+  Rejections (`not_found`, `owner`, `sector_has_hub`, `invalid`) are retried every
+  reconcile and announced once, only before the first adoption. A sector with a live
+  hub, CE-built or designated, refuses the registration; nothing is destroyed.
+- Records carry `$External`, `$ExternalKey`, `$MaxLevel` and `$ExternalStatus`.
+  Readiness checks the station's own `constructionsequence` entry IDs captured at
+  adoption (`$CompletedSequence`, count from the sequence itself), so modules the
+  client adds later do not matter and wrecked ones pause the hub. Without a sequence
+  it falls back to `$Hub.isoperational`. `$PlotReady` is true; there is no target stage.
+- Qualification commits the next level directly (`CommitLevel`/`SetLevel`): level,
+  growth reset, `ApplyLevel`, the level-up notification (texts 450-452 instead of the
+  construction texts 130-132) and a `level` event. `$MaxLevel` caps growth and
+  qualification in `CE_Reserves`, debug progress and debug advance. Debug advance
+  commits the requested level directly; queue-upgrade and force completion are disabled
+  (MD guard plus Lua `external` snapshot flag).
+- Guarded paths: `ReconcileSector` (no creation, rename, queue, process_build or
+  builder assignment; a lost designated station leaves a dormant record), `Queue`,
+  `AssignBuilder`, build-storage funding, `RenameHub`, native `'init station'`,
+  diagnostics layout phase, debug create (refuses a dormant designated sector) and
+  debug reset (detaches instead of destroying, removes the old record's offers with
+  `remove_trade_offer`; the station is re-adopted at level 1 like every reset hub).
+- `$population` is a per-sector population layer: native < preset < registration <
+  player override < debug fixed population (`CE_PopulationOverrides.Effective`,
+  source `'external'`, no native-growth anchoring). `$race` replaces the sector's race
+  snapshot until the record freezes its basket (`CaptureRaceProfile`).
+- Raids at designated hubs fit their tier to the station's free external berths
+  (`CE_Raids.FitDocks`); without a free M berth the raid is skipped.
+- `player.entity.$ce_builder_hubs` lists CE-built hubs only; the builder AI patch
+  uses it, so designated stations keep native builder recruitment and initialization.
+  `$ce_hubs` still lists every hub for the UI. Snapshot position 24 is `[1, maxLevel]`
+  for designated hubs and empty otherwise.
+- Events go to `$listener` after an `.exists` check: `adopted`, `rejected`, `level`,
+  `status` (operational/pause-reason changes) and `lost`. Payloads are
+  `table[$version=1, $event, $godentry, $station, $sector, ...]`.
+
+`samples/client-mod/` is a development-only client: a god.xml station with a
+single Teladi M dock in Grand Exchange I (no accessible population, so CE never builds
+there), registered with 1B population, logging every event as `[CE Sample]`.
+`just sample-link`/`sample-unlink`/`sample-link-status` manage its junction through
+`scripts/game_link.ps1 -Source -Name`; `just sample-validate` runs toolkit x4validate
+on it and is part of `just check`. It is outside `src/` and never shipped.
+
 Save loads reuse saved definitions. `RefreshProfile` initializes a hub record from
 its sector snapshot only if definitions are absent. `ApplyLevel` changes rates and
 unlocks against that saved basket; population changes scale rates without rebuilding
@@ -713,7 +773,8 @@ Header positions: 1 hub, 2 completed level, 3 pending target, 4 operational,
 14 profile-refresh error, 15 stale, 16 next-level localized unlock names.
 Optional trailing positions: 17 fixed debug population, 18 Argon fallback flag,
 19 initial-build completion permission, 20 unrest payload, 21 demand-event payload,
-22 layout phase, 23 sector reward payload (see Sector rewards). Old version-3
+22 layout phase, 23 sector reward payload (see Sector rewards), 24 designated hub
+payload `[1, maxLevel]` or empty (see External hubs API). Old version-3
 snapshots omit these fields.
 Stale snapshots always disable initial-build completion permission.
 Ware rows: 1 name, 2 reserves, 3 replenishment target, 4 native advertised buying,

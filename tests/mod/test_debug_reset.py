@@ -88,6 +88,19 @@ class ResetTests(unittest.TestCase):
         self.assertEqual(self.r.env['md'].CE_Raids.State.Groups.count,0)
         self.assertEqual(self.signals,[])
 
+    def test_designated_station_is_detached_not_destroyed_and_loses_old_offers(self):
+        removed=[]
+        self.r.native['remove_trade_offer']=lambda n:removed.append((self.r.expr(n.get('object')),self.r.expr(n.get('tradeoffer'))))
+        self.record.External=True
+        self.start()
+        self.assertEqual(removed,[(self.hub,self.offer)])
+        self.assertEqual(set(self.sent),{self.raid})
+        self.assertEqual(self.removed_builds,[])
+        self.assertEqual(self.detached,[])
+        self.assertTrue(self.hub.exists)
+        self.assertIs(self.record.Hub,NIL)
+        self.assertEqual(self.controller.Registry.count,0)
+
     def test_removal_must_be_confirmed_before_reinitializing_and_finishing(self):
         self.start();self.pump();self.assertEqual(len(self.sent),3)
         self.r.env['player'].age=131;self.pump()

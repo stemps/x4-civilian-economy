@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <add sel="/god/stations">
+    <!-- Grand Exchange I has no accessible population, so Civilian Economy never builds a hub
+         there on its own. The station must be civilian-owned to be adopted. -->
+    <station id="ce_sample_client_hub" race="teladi" owner="civilian" type="factory">
+      <quotas>
+        <quota galaxy="1" zone="1" />
+      </quotas>
+      <location class="sector" macro="cluster_01_sector001_macro" />
+      <position x="-60000" y="0" z="-120000" pitch="0" roll="0" yaw="0" />
+      <station constructionplan="ce_sample_dock">
+      </station>
+    </station>
+  </add>
+</diff>

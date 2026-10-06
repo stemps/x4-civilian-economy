@@ -127,5 +127,5 @@ changed back to vanilla in the settings.
 ## Declaration of AI usage
 
 Development of this mod makes use of AI for coding and in-game assets. I know
-not everybody likes AI usage. That's totally fine. If that is that case, you
-probably want to give this a pass.
+not everybody likes AI usage. I understand that. That's totally fine. If that is
+that case, you probably want to give this a pass.

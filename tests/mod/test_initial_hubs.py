@@ -34,13 +34,15 @@ class InitialHubTests(StartupHarness):
         r=self.run
         r.env['faction'].update(player='player',ownerless='ownerless')
         for registered in (False,True):
-            for tracked in (False,True):
+            for external in (False,True):
                 for manager in (NIL,Component(exists=True)):
                     for owner in ('civilian','argon','player','ownerless',NIL):
                         hub=Component(tradenpc=manager)
                         r.env.update(baseowner=owner,this=Table(object=Table(base=hub)))
+                        # Designated (external) hubs are CE hubs but keep native build handling.
                         r.env['player'].entity.ce_hubs=List([hub]) if registered else List()
-                        protected=registered
+                        r.env['player'].entity.ce_builder_hubs=List([hub]) if registered and not external else List()
+                        protected=registered and not external
                         expected=bool(r.expr(str(original[0]))) and not (protected and bool(manager))
                         self.assertEqual(bool(r.expr(patch.text)),expected)
 

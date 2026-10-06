@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_SampleClient" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!--
+      Registers the god.xml station 'ce_sample_client_hub' as the civilian hub of its sector.
+      A top-level cue without conditions runs once when the extension first becomes active in
+      a game (new game or first load); CE keeps the registration in the save afterwards.
+      check="false" keeps the call harmless when Civilian Economy is not installed.
+    -->
+    <cue name="Register">
+      <delay exact="1s"/>
+      <actions>
+        <signal_cue_instantly cue="md.CE_ExternalHubs.Register" check="false"
+          param="table[$version=1, $godentry='ce_sample_client_hub', $population=1000000000, $listener=md.CE_SampleClient.CEEvents]"/>
+        <debug_text text="'[CE Sample] registration sent'"/>
+      </actions>
+    </cue>
+    <!-- CE signals this cue with table[$version, $event, $godentry, $station, $sector, ...]. -->
+    <cue name="CEEvents" instantiate="true">
+      <conditions>
+        <event_cue_signalled/>
+      </conditions>
+      <actions>
+        <set_value name="$CEEvent" exact="event.param"/>
+        <debug_text text="'[CE Sample] event=%s station=%s sector=%s details=%s'.[@$CEEvent.$event,@$CEEvent.$station,@$CEEvent.$sector.knownname,$CEEvent]"/>
+      </actions>
+    </cue>
+  </cues>
+</mdscript>

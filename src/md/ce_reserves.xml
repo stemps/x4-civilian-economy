@@ -72,7 +72,7 @@
             <set_value name="$R.$Rewards.$Immigrants" exact="table[]"/>
             <set_value name="$R.$Rewards.$Workplaces" exact="0"/>
           </do_if>
-          <do_if value="$RequiredWares gt 0 and $R.$Target == 0 and $R.$Level lt 10">
+          <do_if value="$RequiredWares gt 0 and $R.$Target == 0 and $R.$Level lt 10 and (not @$R.$MaxLevel or $R.$Level lt $R.$MaxLevel)">
             <set_value name="$R.$GrowthSeconds" exact="[$R.$GrowthSeconds,[$RequiredGrowthSeconds,$R.$GrowthSeconds + $SuppliedSeconds].min].max"/>
           </do_if>
         </do_if>
@@ -86,7 +86,7 @@
         <do_for_each name="$ReserveWare" in="$R.$Wares.keys.list">
           <do_if value="@$R.$Wares.{$ReserveWare}.$Active and $R.$Wares.{$ReserveWare}.$Rate gt 0"><set_value name="$RequiredWares" operation="add"/></do_if>
         </do_for_each>
-        <set_value name="$R.$Qualified" exact="$R.$Operational and $RequiredWares gt 0 and $R.$Target == 0 and $R.$Level lt 10 and $R.$GrowthSeconds ge $RequiredGrowthSeconds"/>
+        <set_value name="$R.$Qualified" exact="$R.$Operational and $RequiredWares gt 0 and $R.$Target == 0 and $R.$Level lt 10 and (not @$R.$MaxLevel or $R.$Level lt $R.$MaxLevel) and $R.$GrowthSeconds ge $RequiredGrowthSeconds"/>
       </actions>
     </library>
   </cues>

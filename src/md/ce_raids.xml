@@ -14,13 +14,15 @@
         <set_value name="$IncidentSuccess" exact="false"/>
         <set_value name="$IncidentFailure" exact="{974201,231}"/>
         <set_value name="$RaidTier" exact="$IncidentTier"/>
+        <!-- Designated stations have whatever docks their mod gave them. -->
+        <do_if value="@$R.$External"><include_actions ref="md.CE_Raids.FitDocks"/></do_if>
         <set_value name="$IncidentKind" exact="'raid_%1'.[$RaidTier]"/>
         <set_value name="$RaidHubActive" exact="0"/>
         <do_for_each name="$RaidKey" in="md.CE_Raids.State.$Groups.keys.list">
           <do_if value="md.CE_Raids.State.$Groups.{$RaidKey}.$Hub == $R.$Hub"><set_value name="$RaidHubActive" operation="add"/></do_if>
         </do_for_each>
         <do_if value="not $IncidentDebug and $RaidTier == 3 and player.age / 1s lt $U.$NextCapital"><set_value name="$RaidTier" exact="2"/></do_if>
-        <do_if value="$RaidHubActive lt 5">
+        <do_if value="$RaidHubActive lt 5 and $RaidTier gt 0">
           <set_value name="$RaidDefinitions" exact="[macro.ship_arg_m_bomber_01_a_macro]"/>
           <set_value name="$RaidSizes" exact="[tag.dock_m]"/>
           <do_if value="$RaidTier ge 2">
@@ -102,6 +104,22 @@
           </do_if>
         </do_if>
         <do_if value="not $IncidentSuccess"><include_actions ref="md.CE_UnrestNotifications.Failure"/></do_if>
+      </actions>
+    </library>
+    <!-- Input $R and $RaidTier: lower the tier to what the hub's free external berths can
+         launch (tier 1: 1 M; tier 2: 2 M + 2 S; tier 3: also 1 L and 4 S). 0 = none. -->
+    <library name="FitDocks">
+      <actions>
+        <find_dockingbay name="$RaidFitS" object="$R.$Hub" checkoperational="true" multiple="true"><match_dock size="tag.dock_s" free="true" storage="false"/></find_dockingbay>
+        <find_dockingbay name="$RaidFitM" object="$R.$Hub" checkoperational="true" multiple="true"><match_dock size="tag.dock_m" free="true" storage="false"/></find_dockingbay>
+        <find_dockingbay name="$RaidFitL" object="$R.$Hub" checkoperational="true" multiple="true"><match_dock size="tag.dock_l" free="true" storage="false"/></find_dockingbay>
+        <do_if value="$RaidTier == 3 and not ($RaidFitL.count ge 1 and $RaidFitM.count ge 2 and $RaidFitS.count ge 4)"><set_value name="$RaidTier" exact="2"/></do_if>
+        <do_if value="$RaidTier == 2 and not ($RaidFitM.count ge 2 and $RaidFitS.count ge 2)"><set_value name="$RaidTier" exact="1"/></do_if>
+        <do_if value="$RaidTier == 1 and $RaidFitM.count lt 1">
+          <set_value name="$RaidTier" exact="0"/>
+          <set_value name="$IncidentFailure" exact="{974201,232}"/>
+          <debug_text text="'[CE] raid skipped: designated hub %s has no free M berth'.[$R.$Hub]"/>
+        </do_if>
       </actions>
     </library>
     <!-- Partial launches remain tracked until safe cleanup. -->
