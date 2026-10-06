@@ -2632,3 +2632,28 @@ Historical single-event model; superseded by concurrent-sector-events below.
   numbers.
 - Not yet tested in game: the population section's rendering after that fix,
   typed input up to 100000 in a slider, and hub creation from an override.
+
+## 2026-10-06 - swi-lore-population-estimates
+
+- `swi-sector-populations.md` now carries an ESTIMATED population per SWI sector
+  (engine value stays 0): 36 Wookieepedia canon, 96 Legends, 82 tiers read from
+  SWI's own sector descriptions, 1 placeholder (Andalia, no data, 1M), 5 SWI lore
+  overrides; 101 of 220 reach CE's 100M hub threshold. Rule:
+  canon infobox if numeric, else Legends; value nearest 4 ABY (SWI faction texts
+  say "as of 4 ABY"); ranges by geometric mean. Judgement-based, not measured.
+- READ: SWI economy is NOT a population signal. Economy 0 is set on populous
+  worlds (Kuat, Baros, Rothana, Renatasia) as well as empty ones; SWI's 283
+  `god.xml` economy filters (min 0.2/0.22/0.23) gate generic station placement.
+- Wookieepedia gotchas (MEASURED over 220 names): a plain title can be a Legends
+  article, marked `{{Top|leg}}` or `{{Top|canon=X}}` (11 of 220); names hit
+  characters, stars, species or system pages without population, and planets
+  often live under numbered titles (Telos IV, Garos IV, Rorak 4, Brentaal IV).
+  Use the MediaWiki API (`starwars.fandom.com/api.php`, `prop=revisions`) with a
+  User-Agent; infobox field is `|population=`, sub-bullets `**` are species splits.
+- Plausibility check (2026-10-06, all 220): SWI's own 4 ABY text overrides
+  Wookieepedia in 5 sectors (Kamino 1B, Anoat 100M, Quellor 10M, Jedha 100k,
+  Gerrenthum 10k), since SWI's galaxy is the one played. A keyword scan of the
+  descriptions is mostly noise: most hits were historical sentences ("remained
+  uncolonized for millennia") or stray words, so read each matched sentence. 31 values are Essential Atlas c. 25 ABY figures, the
+  only ones published. Sectors with SWI god.xml stations but <=10k people (22) are
+  bases on empty worlds and agree with SWI's text.
