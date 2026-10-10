@@ -466,8 +466,9 @@ are selected by exact hub identity.
 
 ## Player settings
 
-`CE_Settings.State` stores six values per save: Debug=false, NewsVideos=true,
-DemandMultiplier=1.0, TimeMultiplier=1.0, TaxNotifications=true and TaxPercent=15.
+`CE_Settings.State` stores seven values per save: Debug=false, NewsVideos=true,
+DemandMultiplier=1.0, TimeMultiplier=1.0, TaxNotifications=true, TaxPercent=15
+and Unrest=true.
 Ensure fills only absent fields; Read provides defaults even before initialization.
 No UI userdata is written and loading another save restores that save's settings.
 `CE_Options` registers its four-section page whenever `Simple_Menu_API.Reloaded`
@@ -496,6 +497,15 @@ Broadcast reads the setting each time; disabling it retains the ticker and one
 logbook entry without a replacement popup. Enabled playback still falls back to
 the interactive popup if the engine returns no cutscene handle. Critical warnings
 are independent. The Display checkbox affects future broadcasts only.
+Unrest (Gameplay section) switches the civil unrest system. Changing it first
+settles every record under the old value. Switching off calls `CE_Unrest.Clear` per
+record (zero scores and stage, not eligible, no ware deadlines, raid groups
+withdraw), releases all CE production pauses and sends the existing tax-restored
+ticker. While off, `AccrueInterval` keeps clearing instead of accruing, `Tick`
+starts no incidents, deliveries pay full tax, raid groups (debug ones too) withdraw
+and `CE_DebugUnrest` ignores commands. Diagnostics publish an empty slot 20, which
+the UI treats as "no unrest". Turning it back on starts the normal hub and
+per-ware grace periods.
 Sections are ordered Debug, Gameplay, Display, Customize Population, with an
 unselectable 8-pixel text spacer before each section after the first; native UI
 scaling applies. The page has three columns (55% / rest / 15%); existing controls

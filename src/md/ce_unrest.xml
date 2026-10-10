@@ -24,6 +24,41 @@
         <set_value name="$U" exact="$R.$Unrest"/>
       </actions>
     </library>
+    <!-- Zero the record's unrest and end its effects. Cooldowns are kept. A cleared record is
+         no longer eligible, so re-enabling grants fresh hub and per-ware grace periods. -->
+    <library name="Clear">
+      <actions>
+        <set_value name="$U.$Scores" exact="[0.0f,0.0f,0.0f]"/>
+        <set_value name="$U.$Score" exact="0.0f"/>
+        <set_value name="$U.$Stage" exact="0"/>
+        <set_value name="$U.$CriticalSince" exact="0.0f"/>
+        <set_value name="$U.$Direction" exact="0"/>
+        <set_value name="$U.$Causes" exact="[]"/>
+        <set_value name="$U.$Eligible" exact="false"/>
+        <set_value name="$U.$Wares" exact="table[]"/>
+        <include_actions ref="md.CE_Unrest.WithdrawRaids"/>
+      </actions>
+    </library>
+    <library name="WithdrawRaids">
+      <actions>
+        <include_actions ref="md.CE_Raids.Ensure"/>
+        <do_for_each name="$UnrestRaidKey" in="md.CE_Raids.State.$Groups.keys.list">
+          <do_if value="md.CE_Raids.State.$Groups.{$UnrestRaidKey}.$Hub == $R.$Hub">
+            <set_value name="md.CE_Raids.State.$Groups.{$UnrestRaidKey}.$Withdraw" exact="true"/>
+          </do_if>
+        </do_for_each>
+      </actions>
+    </library>
+    <!-- Unrest disabled: lift every CE production pause on the next RestorePauses check.
+         Native hacks and an already started module destruction run out on their own. -->
+    <library name="ReleasePauses">
+      <actions>
+        <include_actions ref="md.CE_Sabotage.Ensure"/>
+        <do_for_each name="$UnrestPausedModule" in="md.CE_Sabotage.State.$Pauses.keys.list">
+          <set_value name="md.CE_Sabotage.State.$Pauses.{$UnrestPausedModule}" exact="player.age"/>
+        </do_for_each>
+      </actions>
+    </library>
     <!-- Called BEFORE reserve consumption, at every consumption boundary. Times are seconds. -->
     <library name="Accrue">
       <actions>
@@ -34,9 +69,14 @@
     <library name="AccrueInterval">
       <actions>
         <include_actions ref="md.CE_Unrest.Ensure"/>
+        <include_actions ref="md.CE_Settings.Read"/>
         <set_value name="$UHasDemand" exact="false"/>
         <do_for_each name="$UCheck" in="$R.$Wares.keys.list"><do_if value="@$R.$Wares.{$UCheck}.$Active and $R.$Wares.{$UCheck}.$Rate gt 0"><set_value name="$UHasDemand" exact="true"/></do_if></do_for_each>
-        <do_if value="$R.$Level ge 5 and $R.$Operational and not $R.$PauseOffers and $UHasDemand">
+        <do_if value="not $CEUnrest">
+          <do_if value="$U.$Score gt 0 or $U.$Eligible or $U.$Causes.count gt 0"><include_actions ref="md.CE_Unrest.Clear"/></do_if>
+          <set_value name="$U.$Direction" exact="0"/>
+        </do_if>
+        <do_elseif value="$R.$Level ge 5 and $R.$Operational and not $R.$PauseOffers and $UHasDemand">
           <include_actions ref="md.CE_Unrest.Classify"/>
           <do_if value="not $U.$Eligible">
             <set_value name="$U.$Eligible" exact="true"/>
@@ -69,7 +109,7 @@
           </do_all>
           <include_actions ref="md.CE_Unrest.EvaluateInterval"/>
           <set_value name="$U.$Direction" exact="if $U.$Score gt $UOld then 1 else if $U.$Score lt $UOld then -1 else 0"/>
-        </do_if>
+        </do_elseif>
         <do_else><set_value name="$U.$Direction" exact="0"/></do_else>
       </actions>
     </library>
@@ -132,7 +172,8 @@
       <actions>
         <include_actions ref="md.CE_Unrest.Ensure"/>
         <include_actions ref="md.CE_UnrestNotifications.Tax"/>
-        <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Operational and $R.$Level ge 5 and not $R.$PauseOffers and $U.$Stage ge 2 and player.age / 1s ge $U.$Grace">
+        <include_actions ref="md.CE_Settings.Read"/>
+        <do_if value="$CEUnrest and $R.$Hub.exists and not $R.$Hub.iswreck and $R.$Operational and $R.$Level ge 5 and not $R.$PauseOffers and $U.$Stage ge 2 and player.age / 1s ge $U.$Grace">
           <set_value name="$IncidentDebug" exact="false"/>
           <set_value name="$IncidentTier" exact="if $U.$Score ge 95 and $U.$CriticalSince gt 0 and player.age / 1s ge $U.$CriticalSince + 3600 then 3 else if $U.$Stage ge 3 then 2 else 1"/>
           <do_if value="player.age / 1s ge $U.$NextRaid"><include_actions ref="md.CE_Raids.Request"/></do_if>

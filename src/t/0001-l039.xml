@@ -298,5 +298,7 @@
     <t id="450">%s: il centro civile ha raggiunto il livello %s. Ora accetta le nuove merci sbloccate.</t>
     <t id="451">%s: il centro civile ha raggiunto il livello %s. Ora accetta quantità maggiori delle merci esistenti.</t>
     <t id="452">%s: il centro civile ha raggiunto il livello %s. Nuove offerte d'acquisto sospese.</t>
+    <t id="453">Disordini civili</t>
+    <t id="454">Se attivato, la domanda civile insoddisfatta fa aumentare i disordini nei settori con centri di livello 5 o superiore, causando perdita di tasse, pirati e sabotaggi.</t>
   </page>
 </language>

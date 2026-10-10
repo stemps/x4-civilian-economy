@@ -298,5 +298,7 @@
     <t id="450">%s: centrum cywilne osiągnęło poziom %s. Przyjmuje teraz nowo odblokowane towary.</t>
     <t id="451">%s: centrum cywilne osiągnęło poziom %s. Przyjmuje teraz większe ilości dotychczasowych towarów.</t>
     <t id="452">%s: centrum cywilne osiągnęło poziom %s. Nowe oferty zakupu wstrzymane.</t>
+    <t id="453">Niepokoje społeczne</t>
+    <t id="454">Gdy włączone, niezaspokojony popyt cywilny zwiększa niepokoje w sektorach z centrami na poziomie 5 lub wyższym, co prowadzi do utraty podatków, piratów i sabotaży.</t>
   </page>
 </language>

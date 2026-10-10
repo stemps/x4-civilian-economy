@@ -1,3 +1,22 @@
+## 2026-10-10 - unrest-off-setting
+
+- DESIGN: `CE_Settings.State.$Unrest` (default true; absent in older saves, so
+  `Ensure`/`Read` treat it as on). Off keeps every record at 0 through one
+  invariant: `CE_Unrest.AccrueInterval` calls `Clear` instead of accruing, and
+  every accrual boundary (minute tick, deliveries, events, save load) passes there.
+  The tax penalty, `Tick` incidents, raid lifecycle and debug unrest commands also
+  check the setting directly, so a stale stage cannot act.
+- `Clear` resets `$Eligible` and the per-ware deadlines. Re-enabling therefore
+  starts the normal 2 h hub grace and 1 h per-ware grace instead of charging
+  deprivation from while unrest was off. Cooldowns are kept.
+- Switching off withdraws all raid groups of every hub, debug groups included,
+  and expires all CE production pauses (`RestorePauses` lifts them within 1 s).
+  Native `set_object_hacked` effects (max 10 min) and a module destruction already
+  in progress cannot be cancelled and finish on their own.
+- Snapshot slot 20 is `[]` while off. The Lua decoder ignores an empty payload, which
+  hides the map row, tooltip line and debug unrest subgroup without separate checks.
+- In-game acceptance (withdrawal, map row, tax restore message) is still open.
+
 ## 2026-10-06 - external-hubs-api
 
 - IMPLEMENTED: `CE_ExternalHubs` lets another mod designate a civilian-owned station

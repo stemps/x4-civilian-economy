@@ -52,7 +52,7 @@
     <library name="Tax">
       <actions>
         <include_actions ref="md.CE_Settings.Read"/>
-        <set_value name="$UTaxPenalty" exact="if $U.$Stage ge 3 then 75 else if $U.$Stage == 2 then 50 else if $U.$Stage == 1 then 25 else 0"/>
+        <set_value name="$UTaxPenalty" exact="if not $CEUnrest then 0 else if $U.$Stage ge 3 then 75 else if $U.$Stage == 2 then 50 else if $U.$Stage == 1 then 25 else 0"/>
         <do_if value="$R.$Hub.exists and $R.$Hub.sector.isplayerowned and $CETaxPercent gt 0">
           <do_if value="$UTaxPenalty != $U.$TaxSeen and ($UTaxPenalty gt 0 or $U.$TaxSeen gt 0)">
             <set_value name="$UTaxText" exact="if $UTaxPenalty gt 0 then {974201,201}.[$R.$Hub.sector.knownname,$UTaxPenalty,$CETaxPercent * (100 - $UTaxPenalty) / 100.0f] else {974201,202}.[$R.$Hub.sector.knownname,$CETaxPercent]"/>

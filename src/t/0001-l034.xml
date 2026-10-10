@@ -298,5 +298,7 @@
     <t id="450">%s: el centro civil alcanzó el nivel %s. Ahora acepta mercancías recién desbloqueadas.</t>
     <t id="451">%s: el centro civil alcanzó el nivel %s. Ahora acepta mayores cantidades de las mercancías existentes.</t>
     <t id="452">%s: el centro civil alcanzó el nivel %s. Nuevas ofertas de compra pausadas.</t>
+    <t id="453">Disturbios civiles</t>
+    <t id="454">Si está activado, la demanda civil insatisfecha aumenta los disturbios en los sectores con centros de nivel 5 o superior, lo que provoca pérdida de impuestos, piratas y sabotajes.</t>
   </page>
 </language>

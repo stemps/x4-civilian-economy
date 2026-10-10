@@ -1,6 +1,6 @@
 """Execute shipped delivery accounting; native rewards mutate the mocked account."""
 import unittest
-from support import Table, Component, Ware, NIL
+from support import Table, List, Component, Ware, NIL
 from support_sales_tax import SalesTaxFixture
 
 
@@ -14,6 +14,13 @@ class SalesTaxTests(SalesTaxFixture, unittest.TestCase):
                 self.assertEqual(payments, [15000 * remaining / 100])
                 self.assertEqual(record.Wares[Ware('food')].Paid, 100000)
                 self.assertEqual(deal.seller.money, 777)
+
+    def test_switched_off_unrest_pays_full_tax(self):
+        run, record, deal, payments = self.fixture(amount=100, price=1000)
+        run.env['md'].CE_Settings.State.Unrest = False
+        record.Unrest = Table(Stage=3, Score=80.0, Eligible=True, Causes=List())
+        run.library('RecordDelivery')
+        self.assertEqual(payments, [15000])
 
     def test_completed_sales_pay_current_sector_owner_regardless_of_seller(self):
         for seller in ('player', 'argon', 'teladi'):

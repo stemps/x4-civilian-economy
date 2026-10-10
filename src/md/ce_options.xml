@@ -40,6 +40,9 @@
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,148},$wordwrap=true,$mouseOverText={974201,153}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$colSpan=2,$id='ce_tax_notifications',$echo='$TaxNotifications',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$TaxNotifications,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,153}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,453},$wordwrap=true,$mouseOverText={974201,454}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$colSpan=2,$id='ce_unrest',$echo='$Unrest',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$Unrest,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,454}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$colSpan=3,$text=' ',$fontsize=1,$height=8]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=false]"/>

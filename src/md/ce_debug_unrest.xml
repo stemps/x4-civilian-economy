@@ -5,7 +5,8 @@
       <conditions><event_ui_triggered screen="'CEUnrestTesting'"/></conditions>
       <actions>
         <include_actions ref="md.CE_Settings.Ensure"/>
-        <do_if value="not @md.CE_DebugReset.State.$Busy and md.CE_Settings.State.$Debug and md.CE_CivilianHub.Init.$Registry?">
+        <!-- Unrest commands are inert while the unrest system is switched off. -->
+        <do_if value="not @md.CE_DebugReset.State.$Busy and md.CE_Settings.State.$Debug and md.CE_Settings.State.$Unrest and md.CE_CivilianHub.Init.$Registry?">
           <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
           <do_for_each name="$Sector" in="$Registry.keys.list">
             <set_value name="$R" exact="$Registry.{$Sector}"/>
@@ -43,14 +44,7 @@
           <set_value name="$U.$Direction" exact="0"/>
           <set_value name="$U.$Causes" exact="[]"/>
           <include_actions ref="md.CE_Unrest.Evaluate"/>
-          <do_if value="$DebugCommand == 'clear'">
-            <include_actions ref="md.CE_Raids.Ensure"/>
-            <do_for_each name="$DebugRaidKey" in="md.CE_Raids.State.$Groups.keys.list">
-              <do_if value="md.CE_Raids.State.$Groups.{$DebugRaidKey}.$Hub == $R.$Hub">
-                <set_value name="md.CE_Raids.State.$Groups.{$DebugRaidKey}.$Withdraw" exact="true"/>
-              </do_if>
-            </do_for_each>
-          </do_if>
+          <do_if value="$DebugCommand == 'clear'"><include_actions ref="md.CE_Unrest.WithdrawRaids"/></do_if>
         </do_if>
         <do_elseif value="$DebugCommand == 'cooldowns'">
           <set_value name="$U.$NextRaid" exact="0.0f"/><set_value name="$U.$NextCapital" exact="0.0f"/>

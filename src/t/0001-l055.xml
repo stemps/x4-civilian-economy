@@ -298,5 +298,7 @@
     <t id="450">%s: o centro civil atingiu o nível %s. Agora aceita as mercadorias recém-desbloqueadas.</t>
     <t id="451">%s: o centro civil atingiu o nível %s. Agora aceita quantidades maiores das mercadorias existentes.</t>
     <t id="452">%s: o centro civil atingiu o nível %s. Novas ofertas de compra pausadas.</t>
+    <t id="453">Agitação civil</t>
+    <t id="454">Quando ativado, a demanda civil não atendida aumenta a agitação em setores com centros de nível 5 ou superior, levando à perda de impostos, piratas e sabotagens.</t>
   </page>
 </language>

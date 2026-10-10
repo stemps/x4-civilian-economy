@@ -298,5 +298,7 @@
     <t id="450">%s: civilní centrum dosáhlo úrovně %s. Nyní přijímá nově odemčené zboží.</t>
     <t id="451">%s: civilní centrum dosáhlo úrovně %s. Nyní přijímá větší množství stávajícího zboží.</t>
     <t id="452">%s: civilní centrum dosáhlo úrovně %s. Nové nákupní nabídky pozastaveny.</t>
+    <t id="453">Civilní nepokoje</t>
+    <t id="454">Je-li zapnuto, neuspokojená civilní poptávka zvyšuje nepokoje v sektorech s centry úrovně 5 a vyšší, což vede ke ztrátě daní, pirátům a sabotážím.</t>
   </page>
 </language>

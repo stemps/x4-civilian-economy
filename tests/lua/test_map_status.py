@@ -487,6 +487,11 @@ assert(text:find('Critical',1,true) and text:find('Food, Water',1,true) and text
 local t=draw();assert(value(t.rows[5][1]):find('Critical',1,true))
 status[20][3]=-1;now=now+1
 assert(CEHubStatus.unrest(CEHubStatus.getFresh(42)):find('recovering',1,true))
+-- Unrest switched off in the settings: an empty payload hides every unrest surface.
+local unrestPayload=status[20];status[20]={};now=now+1
+local off=CEHubStatus.getFresh(42)
+assert(off.unrest==nil and CEHubStatus.unrest(off)=='' and not CEHubStatus.tooltip(off):find('Critical',1,true))
+status[20]=unrestPayload;now=now+1
 ''')
 
 deferred.execute('''

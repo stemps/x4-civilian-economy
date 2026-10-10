@@ -19,6 +19,7 @@
         <do_if value="not md.CE_Settings.State.$TimeMultiplier?"><set_value name="md.CE_Settings.State.$TimeMultiplier" exact="1.0f"/></do_if>
         <do_if value="not md.CE_Settings.State.$TaxNotifications?"><set_value name="md.CE_Settings.State.$TaxNotifications" exact="true"/></do_if>
         <do_if value="not md.CE_Settings.State.$TaxPercent?"><set_value name="md.CE_Settings.State.$TaxPercent" exact="15"/></do_if>
+        <do_if value="not md.CE_Settings.State.$Unrest?"><set_value name="md.CE_Settings.State.$Unrest" exact="true"/></do_if>
       </actions>
     </library>
     <library name="Read">
@@ -28,6 +29,7 @@
         <set_value name="$CETimeMultiplier" exact="if md.CE_Settings.State.$TimeMultiplier? then md.CE_Settings.State.$TimeMultiplier else 1.0f"/>
         <set_value name="$CETaxPercent" exact="if md.CE_Settings.State.$TaxPercent? then md.CE_Settings.State.$TaxPercent else 15"/>
         <set_value name="$CETaxNotifications" exact="if md.CE_Settings.State.$TaxNotifications? then md.CE_Settings.State.$TaxNotifications else true"/>
+        <set_value name="$CEUnrest" exact="if md.CE_Settings.State.$Unrest? then md.CE_Settings.State.$Unrest else true"/>
       </actions>
     </library>
     <library name="Publish">
@@ -51,8 +53,9 @@
         <do_elseif value="$SettingKey == '$TimeMultiplier'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$TimeMultiplier"/></do_elseif>
         <do_elseif value="$SettingKey == '$TaxNotifications'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$TaxNotifications"/></do_elseif>
         <do_elseif value="$SettingKey == '$TaxPercent'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$TaxPercent"/></do_elseif>
+        <do_elseif value="$SettingKey == '$Unrest'"><set_value name="$SettingCurrent" exact="md.CE_Settings.State.$Unrest"/></do_elseif>
         <set_value name="$SettingType" exact="typeof $SettingValue"/>
-        <do_if value="$SettingKey == '$Debug' or $SettingKey == '$TaxNotifications' or $SettingKey == '$NewsVideos'">
+        <do_if value="$SettingKey == '$Debug' or $SettingKey == '$TaxNotifications' or $SettingKey == '$NewsVideos' or $SettingKey == '$Unrest'">
           <!-- Typed: MD null equals 0/false and would otherwise be accepted as false. -->
           <do_if value="$SettingType.isnumeric and ($SettingValue == 0 or $SettingValue == 1)">
             <set_value name="$SettingValue" exact="$SettingValue == 1 or $SettingValue == true"/>
@@ -74,8 +77,9 @@
         <do_if value="$SettingValid">
           <do_if value="$SettingCurrent != $SettingValue">
             <set_value name="$EconomicChange" exact="$SettingKey == '$DemandMultiplier' or $SettingKey == '$TimeMultiplier'"/>
-            <!-- Settle elapsed consumption using OLD rates and timing before the setting changes. -->
-            <do_if value="not @md.CE_DebugReset.State.$Busy and $EconomicChange and md.CE_CivilianHub.Init.$Registry?">
+            <set_value name="$UnrestChange" exact="$SettingKey == '$Unrest'"/>
+            <!-- Settle elapsed consumption and unrest using OLD rates, timing and unrest state before the setting changes. -->
+            <do_if value="not @md.CE_DebugReset.State.$Busy and ($EconomicChange or $UnrestChange) and md.CE_CivilianHub.Init.$Registry?">
               <do_for_each name="$SettingsSector" in="md.CE_CivilianHub.Init.$Registry.keys.list">
                 <set_value name="$R" exact="md.CE_CivilianHub.Init.$Registry.{$SettingsSector}"/>
                 <include_actions ref="md.CE_Reserves.Accrue"/>
@@ -87,6 +91,7 @@
             <do_elseif value="$SettingKey == '$TimeMultiplier'"><set_value name="md.CE_Settings.State.$TimeMultiplier" exact="$SettingValue"/></do_elseif>
             <do_elseif value="$SettingKey == '$TaxNotifications'"><set_value name="md.CE_Settings.State.$TaxNotifications" exact="$SettingValue"/></do_elseif>
             <do_elseif value="$SettingKey == '$TaxPercent'"><set_value name="md.CE_Settings.State.$TaxPercent" exact="$SettingValue"/></do_elseif>
+            <do_elseif value="$SettingKey == '$Unrest'"><set_value name="md.CE_Settings.State.$Unrest" exact="$SettingValue"/></do_elseif>
             <do_if value="not @md.CE_DebugReset.State.$Busy and $EconomicChange and md.CE_CivilianHub.Init.$Registry?">
               <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
               <do_for_each name="$SettingsSector" in="$Registry.keys.list">
@@ -102,6 +107,21 @@
               </do_for_each>
               <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
             </do_if>
+            <!-- Disabling clears every record at once: no score, raids withdraw, CE pauses lift. -->
+            <do_if value="not @md.CE_DebugReset.State.$Busy and $UnrestChange and md.CE_CivilianHub.Init.$Registry?">
+              <set_value name="$Registry" exact="md.CE_CivilianHub.Init.$Registry"/>
+              <do_for_each name="$SettingsSector" in="$Registry.keys.list">
+                <set_value name="$R" exact="$Registry.{$SettingsSector}"/>
+                <include_actions ref="md.CE_Unrest.Ensure"/>
+                <do_if value="not $SettingValue"><include_actions ref="md.CE_Unrest.Clear"/></do_if>
+                <include_actions ref="md.CE_UnrestNotifications.Tax"/>
+                <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck">
+                  <include_actions ref="md.CE_Diagnostics.PublishDiagnostics"/>
+                </do_if>
+              </do_for_each>
+              <include_actions ref="md.CE_Diagnostics.PublishAllDiagnostics"/>
+            </do_if>
+            <do_if value="$UnrestChange and not $SettingValue"><include_actions ref="md.CE_Unrest.ReleasePauses"/></do_if>
           </do_if>
           <include_actions ref="md.CE_Settings.Publish"/>
         </do_if>

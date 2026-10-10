@@ -81,7 +81,9 @@
             <debug_text text="'[CE] Details recovered: %s'.[$R.$Hub]"/>
           </do_if>
           <set_value name="$UCriticalRemaining" exact="if $U.$CriticalSince gt 0 then [0.0f,$U.$CriticalSince + 3600 - player.age / 1s].max else -1.0f"/>
-          <append_to_list name="$R.$Snapshot" exact="[$U.$Score,$U.$Stage,$U.$Direction,$UCriticalRemaining,$U.$Causes,$U.$Token]"/>
+          <!-- Slot 20 stays positional; an empty payload tells the UI unrest is switched off. -->
+          <include_actions ref="md.CE_Settings.Read"/>
+          <append_to_list name="$R.$Snapshot" exact="if $CEUnrest then [$U.$Score,$U.$Stage,$U.$Direction,$UCriticalRemaining,$U.$Causes,$U.$Token] else []"/>
           <include_actions ref="md.CE_DemandEvents.Snapshot"/>
           <append_to_list name="$R.$Snapshot" exact="$DEPayload"/>
           <set_value name="$LayoutPhase" exact="''"/>

@@ -135,6 +135,8 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.run.actions(actions);self.assertEqual(len(calls),1)
         self.run.env['event'].param3=self.hub;self.run.env['md'].CE_Settings.State.Debug=False
         self.run.actions(actions);self.assertEqual(len(calls),1)
+        self.run.env['md'].CE_Settings.State.update(Debug=True,Unrest=False)
+        self.run.actions(actions);self.assertEqual(len(calls),1);self.assertEqual(self.u.Token,1)
 
     def setup_raids(self, tier, failure_at=0):
         self.run.env.update(IncidentTier=tier,IncidentDebug=True,
@@ -328,13 +330,14 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.assertEqual(sum(m[0]=='popup' for m in self.messages),1)
 
     def test_full_hold_or_lost_drones_withdraw_and_preserve_boarding(self):
-        for cause in ('hold','drones','lifetime','relief'):
+        for cause in ('hold','drones','lifetime','relief','switched_off'):
             self.setUp();self.setup_raids(3);self.run.library('md.CE_Raids.Request');self.depart()
             group=self.run.env['md'].CE_Raids.State.Groups[1]
             if cause=='hold':group.Leader.cargo.free.all=0
             elif cause=='drones':group.Leader.units.transport.count=0
             elif cause=='lifetime':self.run.env['player'].age=2701
-            else:group.Debug=False;self.u.Stage=1
+            elif cause=='relief':group.Debug=False;self.u.Stage=1
+            else:self.run.env['md'].CE_Settings.State.Unrest=False  # debug groups withdraw too
             group.Leader.boardingoperations=List([Component()])
             self.tick();self.assertEqual(group.Phase,'withdrawing')
             self.assertFalse(group.Leader.pilot.ce_unrest_withdraw)
@@ -490,6 +493,29 @@ class IncidentTests(UnrestFixture, unittest.TestCase):
         self.assertTrue(all(group.Withdraw for group in state.Groups.values() if group is not other))
         self.assertFalse(other.Withdraw)
         self.assertIs(state.Groups[1],first)
+
+    def test_switching_off_clears_records_withdraws_raids_and_lifts_pauses(self):
+        self.setup_raids(1);self.run.library('md.CE_Raids.Request')
+        group=self.run.env['md'].CE_Raids.State.Groups[1]
+        self.sabotage('production');self.run.library('md.CE_Sabotage.Request')
+        pauses=self.run.env['md'].CE_Sabotage.State.Pauses
+        self.assertTrue(self.module.ispausedmanually)
+        self.run.env['md'].CE_CivilianHub.Init.Registry=Table({self.sector:self.r})
+        self.run.stubs.update({'md.CE_Reserves.Accrue':lambda:None,
+                              'md.CE_Diagnostics.PublishDiagnostics':lambda:None,
+                              'md.CE_Diagnostics.PublishAllDiagnostics':lambda:None})
+        self.run.env['md'].CE_Settings.State.TaxPercent=15
+        self.score(80);self.run.library('md.CE_UnrestNotifications.Tax');self.messages.clear()
+        self.run.env['player']['age']=60
+        self.run.env.update(SettingKey='$Unrest',SettingValue=0)
+        self.run.library('md.CE_Settings.Change')
+        self.assertFalse(self.run.env['md'].CE_Settings.State.Unrest)
+        self.assertEqual((self.u.Score,self.u.Stage),(0,0))
+        self.assertTrue(group.Withdraw)
+        self.assertEqual(pauses[self.module],60)
+        self.assertEqual([m for m in self.messages if m[0]=='ticker'],[('ticker',(974201,202,('Sector',15)))])
+        self.run.actions(self.run.scripts['CE_Sabotage'].xpath('//cue[@name="RestorePauses"]/actions')[0])
+        self.assertFalse(self.module.ispausedmanually);self.assertNotIn(self.module,pauses)
 
     def test_normal_capital_cooldown_still_falls_back_to_strong(self):
         self.setup_raids(3);self.run.env['IncidentDebug']=False

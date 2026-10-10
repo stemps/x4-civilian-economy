@@ -70,6 +70,39 @@ class UnrestTests(UnrestFixture, unittest.TestCase):
         self.advance(3600)
         self.assertEqual(self.u.Score,25)
 
+    def test_switched_off_stays_zero_without_incidents_and_reenables_with_fresh_grace(self):
+        seen=[]
+        self.run.stubs['md.CE_Raids.Request']=lambda:seen.append('raid')
+        self.run.stubs['md.CE_Sabotage.Request']=lambda:seen.append('sabotage')
+        self.add('food');self.ready();self.run.env['player']['age']=100
+        self.score(96);self.messages.clear()
+        settings=self.run.env['md'].CE_Settings.State
+        settings.Unrest=False
+        self.advance(36000)
+        self.assertEqual((self.u.Score,self.u.Stage,self.u.CriticalSince,self.u.Direction),(0,0,0,0))
+        self.assertEqual(list(self.u.Scores),[0,0,0]);self.assertEqual(list(self.u.Causes),[])
+        self.assertFalse(self.u.Eligible)
+        self.u.Stage=4  # even a stale stage cannot launch incidents
+        self.run.library('md.CE_Unrest.Tick')
+        self.assertEqual(seen,[])
+        self.assertEqual(self.messages,[])
+        settings.Unrest=True
+        self.advance(60)
+        self.assertEqual(self.u.Grace,self.run.env['player']['age']+7200-0)
+        self.advance(7200)
+        self.assertEqual(self.u.Score,0)
+        self.advance(3600)
+        self.assertEqual(self.u.Score,25)
+
+    def test_switched_off_announces_restored_tax(self):
+        self.run.env['md'].CE_Settings.State.update(TaxPercent=15)
+        tax=lambda:self.run.library('md.CE_UnrestNotifications.Tax')
+        self.score(80);tax()
+        self.run.env['md'].CE_Settings.State.Unrest=False
+        tax();tax()
+        self.assertEqual([m for m in self.messages if m[0]=='ticker'][-1],('ticker',(974201,202,('Sector',15))))
+        self.assertEqual(sum(m[0]=='ticker' for m in self.messages),2)
+
     def test_hysteresis_and_critical_warning_once(self):
         self.run.env['player']['age']=100
         for score,stage in [(60,2),(56,2),(54,1),(95,4),(95,4),(94,4),(89,3)]:

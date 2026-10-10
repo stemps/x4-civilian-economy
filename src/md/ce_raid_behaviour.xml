@@ -133,7 +133,7 @@
             <do_if value="@$RaidShip.pilot.$ce_unrest_retire"><set_value name="$RaidGroup.$Withdraw" exact="true"/></do_if>
           </do_else>
         </do_for_each>
-        <do_if value="not $RaidGroup.$Hub.exists or $RaidGroup.$Hub.iswreck or not $RaidGroup.$Leader.exists or $RaidGroup.$Leader.iswreck or $RaidGroup.$Leader.trueowner != faction.ce_unrest or (not $RaidGroup.$Debug and $RaidGroup.$Record.$Unrest.$Stage lt 2)"><set_value name="$RaidGroup.$Withdraw" exact="true"/></do_if>
+        <do_if value="not $RaidGroup.$Hub.exists or $RaidGroup.$Hub.iswreck or not $RaidGroup.$Leader.exists or $RaidGroup.$Leader.iswreck or $RaidGroup.$Leader.trueowner != faction.ce_unrest or (not $RaidGroup.$Debug and $RaidGroup.$Record.$Unrest.$Stage lt 2) or (md.CE_Settings.State.$Unrest? and not md.CE_Settings.State.$Unrest)"><set_value name="$RaidGroup.$Withdraw" exact="true"/></do_if>
         <do_if value="$RaidGroup.$Phase == 'raiding' and (player.age ge $RaidGroup.$End or $RaidGroup.$Leader.cargo.free.all == 0)"><set_value name="$RaidGroup.$Withdraw" exact="true"/></do_if>
         <do_if value="$RaidGroup.$Leader.exists and $RaidGroup.$Tier == 3 and $RaidGroup.$Leader.units.{unitcategory.transport}.count == 0"><set_value name="$RaidGroup.$Withdraw" exact="true"/></do_if>
         <do_if value="$RaidGroup.$Phase == 'departing' and player.age ge $RaidGroup.$Deadline">

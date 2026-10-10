@@ -298,5 +298,7 @@
     <t id="450">%s : le centre civil a atteint le niveau %s. Il accepte les marchandises nouvellement débloquées.</t>
     <t id="451">%s : le centre civil a atteint le niveau %s. Il accepte davantage de marchandises existantes.</t>
     <t id="452">%s : le centre civil a atteint le niveau %s. Les nouvelles offres d'achat sont suspendues.</t>
+    <t id="453">Troubles civils</t>
+    <t id="454">Si activé, une demande civile insatisfaite fait monter les troubles dans les secteurs dotés de centres de niveau 5 ou plus, entraînant une perte de taxes, des pirates et des sabotages.</t>
   </page>
 </language>

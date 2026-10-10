@@ -285,5 +285,7 @@
     <t id="450">%s: civilian hub reached level %s. It is now accepting newly unlocked goods.</t>
     <t id="451">%s: civilian hub reached level %s. It is now accepting increased quantities of existing goods.</t>
     <t id="452">%s: civilian hub reached level %s. New purchase offers are currently paused.</t>
+    <t id="453">Civil unrest</t>
+    <t id="454">When enabled, unmet civil demand raises unrest in sectors with hubs of level 5 and above, leading to loss of tax, pirates and sabotage.</t>
   </page>
 </language>

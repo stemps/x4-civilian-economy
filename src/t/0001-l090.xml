@@ -298,5 +298,7 @@
     <t id="450">%s: sivil merkez seviye %s oldu. Yeni açılan malları kabul ediyor.</t>
     <t id="451">%s: sivil merkez seviye %s oldu. Mevcut mallardan daha fazla kabul ediyor.</t>
     <t id="452">%s: sivil merkez seviye %s oldu. Yeni alım teklifleri duraklatıldı.</t>
+    <t id="453">Sivil huzursuzluk</t>
+    <t id="454">Etkinleştirildiğinde, seviye 5 ve üzeri merkezlere sahip sektörlerde karşılanmayan sivil talep huzursuzluğu artırır; bu da vergi kaybına, korsanlara ve sabotajlara yol açar.</t>
   </page>
 </language>

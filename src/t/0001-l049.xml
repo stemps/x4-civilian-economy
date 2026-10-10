@@ -298,5 +298,7 @@
     <t id="450">%s: Das zivile Zentrum hat Stufe %s erreicht. Es nimmt jetzt neu freigeschaltete Waren an.</t>
     <t id="451">%s: Das zivile Zentrum hat Stufe %s erreicht. Es nimmt jetzt größere Mengen bestehender Waren an.</t>
     <t id="452">%s: Das zivile Zentrum hat Stufe %s erreicht. Neue Kaufangebote sind derzeit pausiert.</t>
+    <t id="453">Zivile Unruhen</t>
+    <t id="454">Wenn aktiviert, lässt unerfüllte zivile Nachfrage die Unruhen in Sektoren mit Zentren ab Stufe 5 steigen. Das führt zu Steuerverlusten, Piraten und Sabotage.</t>
   </page>
 </language>

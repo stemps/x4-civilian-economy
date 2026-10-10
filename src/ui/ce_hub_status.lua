@@ -125,7 +125,8 @@ local function decode(id, s)
             result.demandEvents = {events=events, eligible=eligible, token=token, version=2}
         end
     end
-    if type(s[20]) == 'table' then
+    -- An empty payload means the unrest system is switched off in the settings.
+    if type(s[20]) == 'table' and s[20][1] ~= nil then
         local u = s[20]
         result.unrest = {score=number(u[1]) or 0, stage=number(u[2]) or 0,
             direction=(tonumber(u[3]) == -1 and -1 or (tonumber(u[3]) == 1 and 1 or 0)), critical=number(u[4]) or -1,
