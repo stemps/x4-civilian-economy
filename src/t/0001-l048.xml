@@ -300,5 +300,19 @@
     <t id="452">%s: centrum cywilne osiągnęło poziom %s. Nowe oferty zakupu wstrzymane.</t>
     <t id="453">Niepokoje społeczne</t>
     <t id="454">Gdy włączone, niezaspokojony popyt cywilny zwiększa niepokoje w sektorach z centrami na poziomie 5 lub wyższym, co prowadzi do utraty podatków, piratów i sabotaży.</t>
+    <t id="460">Civilian Economy</t>
+    <t id="461">Wszystkie znane centra cywilne wraz z zapasami i postępem. Rozwiń centrum, aby zobaczyć jego towary i premie sektora.</t>
+    <t id="462">Centra: %d | Zaopatrzone: %d | Niedobór: %d</t>
+    <t id="463">%s, pozostało %s</t>
+    <t id="464">Niedobór: towary %d</t>
+    <t id="465">Brak znanych centrów cywilnych.</t>
+    <t id="467">Do poziomu %d: %d%%</t>
+    <t id="468">Przegląd</t>
+    <t id="469">Zdarzenia popytu</t>
+    <t id="470">Następny poziom</t>
+    <t id="471">+25%% popytu, odblokowuje %s</t>
+    <t id="472">+25% popytu</t>
+    <t id="473">%.1f/100 - %s, %s</t>
+    <t id="475">Poziom %d</t>
   </page>
 </language>

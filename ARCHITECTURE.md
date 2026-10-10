@@ -49,7 +49,8 @@ are the English source; the mod name stays `Civilian Economy` in every locale.
 
 The manifest requires X4 9.00 and Mod Support APIs (`ws_2042901274`) for
 `CE_Options`. Named optional dependencies declare kuertee UI Extensions and HUD
-(`kuerteeUIExtensionsAndHUD`) for debug context actions and receipt details, and
+(`kuerteeUIExtensionsAndHUD`) for debug context actions, receipt details and the
+map sidebar hub list, and
 Mycu: Verbose Transaction Log (`VerboseTransactionLog`) for transaction labels.
 Both integrations retain their runtime guards when the optional mod is absent.
 
@@ -753,7 +754,71 @@ provides shared hub facts for state, progress, action and level-label formatting
 Each formatter preserves its existing message precedence; these facts do not
 decide economic state or authorize commands.
 
-Population, debug-menu and map integration have mocked Lua tests under `tools/`,
+### Map sidebar hub list
+
+`ce_hub_list.lua` adds a "Civilian Economy" left-sidebar entry (icon
+`stationbuildst_habitation`, mode `ce_hubs`) listing every known hub. It exists
+only with UI Extensions: vanilla `menu_map.lua` keeps `config.leftBar` local and
+`createInfoFrame` has no custom mode. UIX `createSideBar_on_start(config)` inserts
+spacing plus the entry after Info, checking for an existing `ce_hubs` entry rather
+than a flag; `createInfoFrame_on_menu_infoTableMode(frame)` draws only while
+`infoTableMode == 'ce_hubs'` outside the multiverse. Vanilla
+`buttonToggleObjectList` switches to any mode listed in `config.leftBar`.
+
+The panel builds exactly one seven-column table with `reserveScrollBar=true`
+(the item icon spans the last column; see KNOWLEDGEBASE) (`viewCreated` binds the first
+info-frame table as `menu.infoTable`): `[1px bar anchor] [+/-] [label 28%] [flex]
+[14%] [16%] [14%]`. Fixed title and hub-count rows precede one two-line
+list item per hub, built like vanilla's double property rows: a single
+selectable row (so the selection highlight wraps both lines) on
+`row_background_blue` (vanilla station rows) with the default border below, a
+two-line button, the growth bar anchored in the 1px column 1 and shifted past the
+button (`x`, `barOffset`) to the second line (`y`), and one transparent icon over
+columns 3-7, directly after the button.
+Its `setText` is the station map icon (`GetComponentData(id, "icon")`) and the
+`TruncateText`-shortened name, then `progressShort` in `text_lowlight`; its
+`setText2` is right-aligned `supplyCompact` (hourglass + time, `lso_warning` when
+low, `lso_error` + missing count, `lso_pause` when inactive), colored with an
+inline `convertColorToText` escape. The full name, `supplyText` and
+`progressHint` are the tooltip. Items are separated only by the row border, as in
+vanilla lists.
+A double-click (or keyboard/gamepad select) on a hub row is handled by a wrapped
+`menu.onSelectElement` (Helper resolves it by name per event; the original always
+runs): `addSelectedComponent` (clears the old selection, so an NPC hub replaces
+selected player ships), `setSelectedMapComponents`, then
+`SetFocusMapComponent(holomap, hub, true)`, as vanilla's property list does.
+Expanded hubs add titled sections: Overview (population, next level, unrest
+plus detail lines or a warning), Demand events (one line: name, signed change,
+time), Supplies (bar with name and `wareTime` icon plus time, then buying; the
+state label is in the tooltip) and Bonuses (title carries `R.state`; an unlocked
+bonus shows its benefit indented on a second line, a locked one is a single grey
+line with `menu_locked` and the unlock level). There is no vertical accent bar or
+spacer column: ware bars also anchor in column 1, shifted past the button.
+Backgrounds are
+row-level `bgColor` (vanilla `addRow` copies it into every cell): all four
+section headings use `row_title_background`, all content rows
+`rowgroup_background_default`, and gaps stay transparent so sections
+read as separate cards. Columns 1-2 are reset to `row_background`; no
+`setBackgroundColSpan` is used. Spacer rows mirror vanilla
+`addEmptyRow` but stay selectable. Value-only formatters (`nextLevelValue`,
+`unrestValue`/`unrestDetails`, `eventValue`, `eventRemaining`, `supplyCompact`,
+`wareTime`, `R.state`, `R.rows().locked`) sit beside the combined ones the
+bottom panel uses. Cells
+are function-valued and decode each snapshot at most once per frame. Order is
+shortage, low, supplied, inactive, then earliest exhaustion and name; it is
+frozen while the mode is open, appending new hubs. Leaving the mode forgets the
+order; cleanup also forgets expansion.
+
+Once per second the wrapped `onUpdate` compares a signature of the hub set plus
+`M.signature` of expanded hubs and calls `menu.refreshInfoFrame()` on change;
+collapsed hubs never force a rebuild. It also requests `CEHubStatus/refresh` for
+one expanded hub per second, rotating, so several expanded hubs cost one
+republish per second. The draw consumes `menu.settoprow` like vanilla lists and
+reselects the toggled row. `M.supply` derives the hub supply code (shortage, low
+under 900 s, supplied, inactive) and the earliest positive-rate exhaustion;
+inactive hubs show `M.state`.
+
+Population, debug-menu, map and sidebar integration have mocked Lua tests under `tests/lua/`,
 run by `just lua`. Native rendering and UI Extensions interaction still require
 in-game acceptance.
 

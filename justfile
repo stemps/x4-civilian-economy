@@ -37,6 +37,7 @@ lua:
     uv run --with lupa python tests/lua/test_population_bridge.py
     uv run --with lupa python tests/lua/test_workforce_bridge.py
     uv run --with lupa python tests/lua/test_map_status.py
+    uv run --with lupa python tests/lua/test_hub_list.py
 
 # Exercise the optional installed VTL source without redistributing it.
 vtl moddir:

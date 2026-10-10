@@ -287,5 +287,19 @@
     <t id="452">%s: civilian hub reached level %s. New purchase offers are currently paused.</t>
     <t id="453">Civil unrest</t>
     <t id="454">When enabled, unmet civil demand raises unrest in sectors with hubs of level 5 and above, leading to loss of tax, pirates and sabotage.</t>
+    <t id="460">Civilian Economy</t>
+    <t id="461">All known civilian hubs with their supplies and progress. Expand a hub to see its goods and sector bonuses.</t>
+    <t id="462">Hubs: %d | Supplied: %d | Shortage: %d</t>
+    <t id="463">%s, %s left</t>
+    <t id="464">Shortage: %d goods</t>
+    <t id="465">No known civilian hubs.</t>
+    <t id="467">To level %d: %d%%</t>
+    <t id="468">Overview</t>
+    <t id="469">Demand events</t>
+    <t id="470">Next level</t>
+    <t id="471">+25%% demand, unlocks %s</t>
+    <t id="472">+25% demand</t>
+    <t id="473">%.1f/100 - %s, %s</t>
+    <t id="475">Level %d</t>
   </page>
 </language>

@@ -155,6 +155,20 @@ function M.get(raw)
     if not hubs[tostring(id)] then return end
     return decode(id, snapshots[tostring(id)])
 end
+-- Every registered hub the player knows, in no particular order.
+function M.hubs()
+    refresh()
+    local result = {}
+    for key in pairs(hubs) do
+        local s = M.get(key)
+        if s then result[#result + 1] = s end
+    end
+    return result
+end
+-- Asks MD to republish one hub's diagnostics. Callers own their throttling.
+function M.requestRefresh(raw)
+    AddUITriggeredEvent('CEHubStatus', 'refresh', ConvertStringToLuaID(tostring(raw)))
+end
 -- Fresh reads deliberately neither consume nor update retained display snapshots.
 -- Knowledge filtering remains a map concern; command membership matches the native menu.
 function M.getFresh(raw)
@@ -191,6 +205,16 @@ function M.wareColor(w)
 end
 function M.wareState(w)
     return M.text(wareStates[M.wareCode(w)].label)
+end
+local wareIcons = {low='lso_warning', needed='lso_error', paused='lso_pause'}
+function M.wareIcon(w)
+    local icon = wareIcons[M.wareCode(w)]
+    return icon and '\27[' .. icon .. ']' or ''
+end
+-- Remaining time with the ware's status icon, for layouts without a status column.
+function M.wareTime(w)
+    local icon = M.wareIcon(w)
+    return (icon ~= '' and icon .. ' ' or '') .. M.remaining(w)
 end
 function M.remaining(w)
     if w.rate == 0 then return M.text(69) end
@@ -238,6 +262,57 @@ function M.classify(s)
         and #facts.missing == 0 and facts.required
     return facts
 end
+-- Hub-wide supply state: the worst ware decides; time is the earliest exhaustion.
+local supplyStates = {
+    shortage = {rank=0, color='text_negative'},
+    low = {rank=1, color='text_warning'},
+    supplied = {rank=2, color='text_normal'},
+    inactive = {rank=3, color='text_inactive'},
+}
+function M.supply(s)
+    local facts = M.classify(s)
+    if not facts.available or facts.warning or not s.active or not facts.required then
+        return {code='inactive', rank=supplyStates.inactive.rank}
+    end
+    if #facts.missing > 0 then
+        return {code='shortage', rank=supplyStates.shortage.rank, missing=#facts.missing}
+    end
+    local seconds
+    for _, w in ipairs(s.wares) do
+        if w.rate > 0 then seconds = math.min(seconds or w.remaining, w.remaining) end
+    end
+    local code = seconds < 900 and 'low' or 'supplied'
+    return {code=code, rank=supplyStates[code].rank, seconds=seconds}
+end
+function M.supplyColor(s)
+    return supplyStates[M.supply(s).code].color
+end
+function M.supplyText(s)
+    local supply = M.supply(s)
+    if supply.code == 'inactive' then return M.state(s) end
+    if supply.code == 'shortage' then return M.text(464, supply.missing) end
+    return M.text(463, M.text(supply.code == 'low' and 95 or 96), M.time(supply.seconds, true))
+end
+-- Narrow-layout status: an icon plus the earliest exhaustion or missing count.
+local supplyIcons = {supplied='menu_hourglass', low='lso_warning', shortage='lso_error', inactive='lso_pause'}
+function M.supplyCompact(s)
+    local supply = M.supply(s)
+    local icon = '\27[' .. supplyIcons[supply.code] .. ']'
+    if supply.code == 'inactive' then return icon end
+    if supply.code == 'shortage' then return icon .. ' ' .. supply.missing end
+    return icon .. ' ' .. M.time(supply.seconds, true)
+end
+-- Short progress label for a growth bar; the full explanation stays in progressHint.
+function M.progressShort(s)
+    local facts = M.classify(s)
+    if not facts.available then return M.text(68) end
+    if facts.maximum then return M.text(100) end
+    if facts.pending or M.layoutState(s) then return M.text(99, facts.pending and s.target or s.level) end
+    return M.text(467, s.level + 1, math.floor(M.progressPercent(s)))
+end
+function M.progressPercent(s)
+    return s and s.available and s.level < (s.maxLevel or 10) and math.min(100, 100 * s.growth / s.required) or 0
+end
 function M.population(value)
     if not value then return M.text(69) end
     if value >= 1e12 then return M.text(75, value / 1e12) end
@@ -253,6 +328,20 @@ function M.unrest(s)
     if #u.causes > 0 then value = value .. '\n' .. M.text(252, table.concat(u.causes, ', ')) end
     if u.critical >= 0 then value = value .. '\n' .. M.text(253, math.ceil(u.critical / 60)) end
     return value
+end
+-- Value-only parts of M.unrest for label/value layouts.
+function M.unrestValue(s)
+    local u = s and s.unrest
+    if not u then return '' end
+    local direction = u.direction > 0 and 254 or (u.direction < 0 and 255 or 256)
+    return M.text(473, u.score, M.text(260 + u.stage), M.text(direction))
+end
+function M.unrestDetails(s)
+    local u, lines = s and s.unrest, {}
+    if not u then return lines end
+    if #u.causes > 0 then lines[#lines + 1] = M.text(252, table.concat(u.causes, ', ')) end
+    if u.critical >= 0 then lines[#lines + 1] = M.text(253, math.ceil(u.critical / 60)) end
+    return lines
 end
 function M.layoutState(s)
     local labels = {planning=345, layout_retry=346, build_retry=347}
@@ -332,6 +421,10 @@ function M.nextLevel(s)
     if not s or not s.available or s.level >= (s.maxLevel or 10) then return '' end
     return #s.unlocks>0 and M.text(109,table.concat(s.unlocks,', ')) or M.text(110)
 end
+function M.nextLevelValue(s)
+    if not s or not s.available or s.level >= (s.maxLevel or 10) then return '' end
+    return #s.unlocks>0 and M.text(471,table.concat(s.unlocks,', ')) or M.text(472)
+end
 function M.wareHint(s,w)
     return M.text(111,w.name,M.amount(w.reserve),M.amount(w.rate),M.amount(w.capacity),w.buying,w.incoming)
 end
@@ -363,4 +456,15 @@ end
 function M.eventHint(s, eventID)
     local e = M.event(s, eventID)
     return e and M.text(337, e.names) or ''
+end
+function M.eventName(eventID)
+    return M.text(320 + eventID)
+end
+function M.eventValue(s, eventID)
+    local e = M.event(s, eventID)
+    return e and string.format('%+d%%', e.percent) or ''
+end
+function M.eventRemaining(s, eventID)
+    local e = M.event(s, eventID)
+    return e and M.time(e.remaining, true) or ''
 end

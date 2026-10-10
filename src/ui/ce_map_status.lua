@@ -18,7 +18,7 @@ local function requestRefresh(s)
     local key, now = tostring(s.id), getElapsedTime()
     if refreshHub ~= key or not refreshAt or now >= refreshAt or now < refreshAt - 1 then
         refreshHub, refreshAt = key, now + 1
-        AddUITriggeredEvent('CEHubStatus', 'refresh', ConvertStringToLuaID(key))
+        M.requestRefresh(key)
     end
 end
 local function clearTooltip()
@@ -137,10 +137,7 @@ local function drawSummary(panel, s)
     end)
     local progress=tableRow(3)
     progress[2]:setColSpan(4)
-    local function percent()
-        local now=current()
-        return now and now.available and now.level<(now.maxLevel or 10) and math.min(100,100*now.growth/now.required) or 0
-    end
+    local function percent() return M.progressPercent(current()) end
     local function growthHint()
         return M.progressHint(current())
     end

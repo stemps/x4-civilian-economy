@@ -11,6 +11,7 @@
     <file name="ui/ce_reward_status.lua" />
     <file name="ui/ce_debug_tools.lua" />
     <file name="ui/ce_map_status.lua" />
+    <file name="ui/ce_hub_list.lua" />
     <file name="ui/ce_transaction_log.lua" />
     <file name="ui/ce_unrest.lua" />
   </environment>

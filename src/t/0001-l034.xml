@@ -300,5 +300,19 @@
     <t id="452">%s: el centro civil alcanzó el nivel %s. Nuevas ofertas de compra pausadas.</t>
     <t id="453">Disturbios civiles</t>
     <t id="454">Si está activado, la demanda civil insatisfecha aumenta los disturbios en los sectores con centros de nivel 5 o superior, lo que provoca pérdida de impuestos, piratas y sabotajes.</t>
+    <t id="460">Civilian Economy</t>
+    <t id="461">Todos los centros civiles conocidos con sus suministros y progreso. Despliega un centro para ver sus mercancías y las bonificaciones del sector.</t>
+    <t id="462">Centros: %d | Abastecidos: %d | Escasez: %d</t>
+    <t id="463">%s, quedan %s</t>
+    <t id="464">Escasez: %d mercancías</t>
+    <t id="465">No hay centros civiles conocidos.</t>
+    <t id="467">Hacia nivel %d: %d%%</t>
+    <t id="468">Resumen</t>
+    <t id="469">Eventos de demanda</t>
+    <t id="470">Siguiente nivel</t>
+    <t id="471">+25%% de demanda, desbloquea %s</t>
+    <t id="472">+25% de demanda</t>
+    <t id="473">%.1f/100 - %s, %s</t>
+    <t id="475">Nivel %d</t>
   </page>
 </language>

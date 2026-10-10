@@ -17,6 +17,12 @@ function R.summary(s)
     if not b then return M.text(401)..': '..M.text(68) end
     return M.text(401)..': '..M.text(active(b) and 404 or 405)
 end
+-- Active/Suspended without the summary prefix; color from summaryColor.
+function R.state(s)
+    local b=valid(s)
+    if not b then return M.text(68) end
+    return M.text(active(b) and 404 or 405)
+end
 function R.summaryColor(s)
     local b=valid(s)
     if not b then return 'text_inactive' end
@@ -48,7 +54,8 @@ function R.rows(s)
             end
             hint=hint..'\n'..R.reason(s)
         end
-        rows[i]={name=M.text(({408,409,410,428,429})[i]),value=value,state=state,hint=hint,color=color}
+        rows[i]={name=M.text(({408,409,410,428,429})[i]),value=value,state=state,hint=hint,color=color,
+            locked=b~=nil and s.level<b[17][i],unlockLevel=b and b[17][i]}
     end
     return rows
 end

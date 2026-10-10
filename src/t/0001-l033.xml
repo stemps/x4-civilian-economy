@@ -300,5 +300,19 @@
     <t id="452">%s : le centre civil a atteint le niveau %s. Les nouvelles offres d'achat sont suspendues.</t>
     <t id="453">Troubles civils</t>
     <t id="454">Si activé, une demande civile insatisfaite fait monter les troubles dans les secteurs dotés de centres de niveau 5 ou plus, entraînant une perte de taxes, des pirates et des sabotages.</t>
+    <t id="460">Civilian Economy</t>
+    <t id="461">Tous les centres civils connus avec leurs réserves et leur progression. Développez un centre pour voir ses marchandises et les bonus du secteur.</t>
+    <t id="462">Centres : %d | Approvisionnés : %d | Pénurie : %d</t>
+    <t id="463">%s, encore %s</t>
+    <t id="464">Pénurie : %d marchandises</t>
+    <t id="465">Aucun centre civil connu.</t>
+    <t id="467">Vers niveau %d : %d%%</t>
+    <t id="468">Aperçu</t>
+    <t id="469">Événements de demande</t>
+    <t id="470">Niveau suivant</t>
+    <t id="471">+25%% de demande, débloque %s</t>
+    <t id="472">+25% de demande</t>
+    <t id="473">%.1f/100 - %s, %s</t>
+    <t id="475">Niveau %d</t>
   </page>
 </language>

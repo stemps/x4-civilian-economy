@@ -300,5 +300,19 @@
     <t id="452">%s: o centro civil atingiu o nível %s. Novas ofertas de compra pausadas.</t>
     <t id="453">Agitação civil</t>
     <t id="454">Quando ativado, a demanda civil não atendida aumenta a agitação em setores com centros de nível 5 ou superior, levando à perda de impostos, piratas e sabotagens.</t>
+    <t id="460">Civilian Economy</t>
+    <t id="461">Todos os centros civis conhecidos com seus suprimentos e progresso. Expanda um centro para ver suas mercadorias e os bônus do setor.</t>
+    <t id="462">Centros: %d | Abastecidos: %d | Escassez: %d</t>
+    <t id="463">%s, restam %s</t>
+    <t id="464">Escassez: %d mercadorias</t>
+    <t id="465">Nenhum centro civil conhecido.</t>
+    <t id="467">Até o nível %d: %d%%</t>
+    <t id="468">Visão geral</t>
+    <t id="469">Eventos de demanda</t>
+    <t id="470">Próximo nível</t>
+    <t id="471">+25%% de demanda, desbloqueia %s</t>
+    <t id="472">+25% de demanda</t>
+    <t id="473">%.1f/100 - %s, %s</t>
+    <t id="475">Nível %d</t>
   </page>
 </language>

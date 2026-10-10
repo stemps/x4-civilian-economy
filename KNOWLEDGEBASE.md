@@ -2766,3 +2766,60 @@ Historical single-event model; superseded by concurrent-sector-events below.
   order.fight.attack.object 25/27. CE sets 28. A save made on 8.00 with CE
   would skip vanilla 9.00's sinceversion 26/27 patches when the game updates.
   v27 sets `$readmadscore`/`$incrementmadscore` on running attack orders.
+
+## 2026-10-10 - map-sidebar-panel-needs-uix
+
+- READ: vanilla `ui/addons/ego_detailmonitor/menu_map.lua` defines the left
+  sidebar in a file-local `config.leftBar`; `createInfoFrame` handles only
+  hardcoded `infoTableMode` values and otherwise draws an empty frame. A mod
+  cannot add a sidebar panel without UI Extensions.
+- READ: installed kuertee UI Extensions `menu_map.xpl` calls
+  `createSideBar_on_start(config)` at the start of `createSideBar` with that local
+  config, and `createInfoFrame_on_menu_infoTableMode(menu.infoFrame)` for unknown
+  modes. galaxy_trader's `gt_info_menu.lua` uses the same two callbacks.
+  `menu.registerCallback(name, fn, id)` ignores a second registration of an id.
+- READ: `menu.viewCreated` binds info-frame tables positionally
+  (`menu.infoTable, menu.infoTable2, menu.infoTable3`); vanilla `menu.onUpdate`
+  calls `menu.infoFrame:update()` every frame, so function-valued cells stay live
+  without rebuilds. `refreshInfoFrame` stores `menu.settoprow`; list builders
+  consume it and reset it to nil.
+- Icon `stationbuildst_habitation` (house in a ring) matches the ring frame of the
+  `mapst_*` sidebar icons; `terraforming_population` and `gamestart_custom_people`
+  have no ring. Textures live in `01.cat`.
+- MEASURED in game (debug.txt): a text cell narrower than twice its x offset
+  (`Helper.standardTextOffsetx` = 5) logs "Invalid fontstring descriptor:
+  Invalid size.width-value", then "Content element is missing (nil)" for that
+  cell, and the engine aborts the WHOLE frame ("Frame content of type 'table'
+  was not created successfully"). Even an empty `createText('')` in a 3px
+  column does this. Use a transparent `createIcon('solid', ...)` with an
+  explicit width there; its `cellBGColor` still fills the full row height.
+- READ (`menu_map.lua` `createPropertyRow`): vanilla's two-line list items are
+  ONE selectable row. A transparent `createIcon('solid', {height=two lines})`
+  spans the columns; `icon:setText("line1\nline2")` is the left text,
+  `icon:setText2(..., {halign='right'})` the right text, names are shortened with
+  `TruncateText(text, font, size, icon:getColSpanWidth() - offsets)` and the full
+  name goes into the tooltip. Status bars accept a `y` offset, so a bar can sit on
+  the second line.
+- READ (`helper.lua` `addRow`, `initTableCell`): a row's `bgColor` is copied into
+  every cell's `cellBGColor`, and `createText`/`createIcon` MERGE their properties
+  onto that, so a row-level background reaches every cell unless one overrides it.
+- MEASURED in game 2026-10-10: `cell:setBackgroundColSpan(n)` with the color on
+  the first cell rendered SOME content cells inside the span black (a right-aligned
+  number cell after a 2-column name, a right-aligned heading cell after a
+  3-column title) while identical-looking rows rendered correctly. Root cause not
+  determined (the engine side is not visible). Row-level `bgColor` is the reliable
+  way to give a multi-column row one background.
+- MEASURED in game 2026-10-10 (8,159 debug.txt lines in one session), cause READ
+  in `helper.lua` (table `createDescriptor`, around line 5043): with
+  `reserveScrollBar=false`, a table that ends up scrolling has its LAST column
+  narrowed by `Helper.scrollbarWidth` at descriptor time, after cell content was
+  sized from the un-narrowed widths. A `solid` icon spanning that column then logs
+  "Widget system error. The given icon width for icon 'solid' exceeds the maximum
+  available width (W) of the parent (W-12)" on every frame. Text cells do not log.
+  Fix: `reserveScrollBar=true` (vanilla default), or keep icons out of the last
+  column. Latent in the selected-hub bottom panel (`ce_map_status.lua`): its level
+  overlay icon spans the last column with `reserveScrollBar=false`; not observed in
+  that log, it needs the panel to scroll.
+- Inline status icons used by vanilla lists: `\27[workshop_error]` (orange "!"
+  alert), `\27[lso_error]`, `\27[lso_warning]`, `\27[lso_pause]`,
+  `\27[menu_hourglass]`, `\27[menu_locked]`; they take the text color.
