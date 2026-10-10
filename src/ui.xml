@@ -9,6 +9,7 @@
     <file name="ui/ce_initial_construction.lua" />
     <file name="ui/ce_workforce.lua" />
     <file name="ui/ce_reward_status.lua" />
+    <file name="ui/ce_hub_sections.lua" />
     <file name="ui/ce_debug_tools.lua" />
     <file name="ui/ce_map_status.lua" />
     <file name="ui/ce_hub_list.lua" />

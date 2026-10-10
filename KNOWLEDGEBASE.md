@@ -2803,12 +2803,18 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - READ (`helper.lua` `addRow`, `initTableCell`): a row's `bgColor` is copied into
   every cell's `cellBGColor`, and `createText`/`createIcon` MERGE their properties
   onto that, so a row-level background reaches every cell unless one overrides it.
-- MEASURED in game 2026-10-10: `cell:setBackgroundColSpan(n)` with the color on
-  the first cell rendered SOME content cells inside the span black (a right-aligned
-  number cell after a 2-column name, a right-aligned heading cell after a
-  3-column title) while identical-looking rows rendered correctly. Root cause not
-  determined (the engine side is not visible). Row-level `bgColor` is the reliable
-  way to give a multi-column row one background.
+- SUPERSEDED (see the next entry): MEASURED in game 2026-10-10:
+  `cell:setBackgroundColSpan(n)` with the color on the first cell only rendered SOME
+  content cells inside the span black. Root cause was then undetermined and
+  row-level `bgColor` was recorded as "the reliable way" - also wrong: it leaves
+  2px column gaps visible (MEASURED in game the same day, bottom panel).
+- READ (`widget_fullscreen.lua`, cell drawing around line 6209 and
+  `setTableRowColor` around line 9446): every cell paints its OWN background color
+  (`GetTableCellColor`), and a background colspan only WIDENS each covered cell's
+  background by `table_borderSize` when the next cell is inside the span. So a
+  gap-free single-color row needs BOTH: the row `bgColor` (every cell gets the same
+  color) AND `setBackgroundColSpan` from the first colored cell to the last column.
+  Span without colors = uncolored (black) cells; colors without span = visible gaps.
 - MEASURED in game 2026-10-10 (8,159 debug.txt lines in one session), cause READ
   in `helper.lua` (table `createDescriptor`, around line 5043): with
   `reserveScrollBar=false`, a table that ends up scrolling has its LAST column
@@ -2818,8 +2824,13 @@ Historical single-event model; superseded by concurrent-sector-events below.
   available width (W) of the parent (W-12)" on every frame. Text cells do not log.
   Fix: `reserveScrollBar=true` (vanilla default), or keep icons out of the last
   column. Latent in the selected-hub bottom panel (`ce_map_status.lua`): its level
-  overlay icon spans the last column with `reserveScrollBar=false`; not observed in
-  that log, it needs the panel to scroll.
+  overlay icon spanned the last column with `reserveScrollBar=false`; not observed in
+  that log, it needs the panel to scroll. Fixed in the redesign: its status is now a
+  text cell in the last columns (`S.drawProgress`), enforced by the Lua mock.
+- Vanilla single-object selection title (`menu_map.lua` `createSelectedShips`, around
+  line 20052): station icon in its own cell, `name (idcode)` centred in
+  `headerRow1Font`/`headerRow1FontSize` with `menu.getObjectColor`, then
+  `createObjectShieldHullBar`; uncolored, fixed row.
 - Inline status icons used by vanilla lists: `\27[workshop_error]` (orange "!"
   alert), `\27[lso_error]`, `\27[lso_warning]`, `\27[lso_pause]`,
   `\27[menu_hourglass]`, `\27[menu_locked]`; they take the text color.

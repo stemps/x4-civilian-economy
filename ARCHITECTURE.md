@@ -692,8 +692,10 @@ The map adapter wraps `MapMenu.createSelectedShips`, `onUpdate` and `cleanup`,
 preserving the previous functions. A single known registered hub gets one
 bottom-positioned table in the native selection-table slot, including during
 construction. Other selections and special map modes retain the previous UI.
-The panel uses label/value summary rows and native reserve bars behind remaining-time labels and one cumulative growth bar, following vanilla storage-bar cell placement.
-Population is formatted in millions, billions or trillions. Ware tooltips show reserve units, hourly rate, target, buying and incoming units. Map hover on a known registered hub shows just level and
+The panel draws the same rows as the sidebar list through `ce_hub_sections.lua`
+(see "Current layout" below). Population is formatted in millions, billions or
+trillions. Ware tooltips show the state label, reserve units, hourly rate,
+target, buying and incoming units. Map hover on a known registered hub shows just level and
 compact population on two lines. The override is cleared before native update
 and on cleanup, preserving special-mode tooltips. Native station popovers are
 untouched. Registration is idempotent, with the same
@@ -741,7 +743,7 @@ Ware rows: 1 name, 2 reserves, 3 replenishment target, 4 native advertised buyin
 
 Initial ordering is empty, low (<900 seconds), then supplied, by remaining time.
 Stable IDs freeze ordering while selected; new requirements append and removed
-requirements disappear. Pagination retains five wares. Level, target, membership,
+requirements disappear. Level, target, membership,
 availability and warning-state changes trigger a native frame rebuild without
 resorting. Status-bar colors cannot be function-valued in native Helper; set
 colors on rebuild and update numeric fill/text with function-valued properties.
@@ -755,6 +757,9 @@ Each formatter preserves its existing message precedence; these facts do not
 decide economic state or authorize commands.
 
 ### Map sidebar hub list
+
+Rows are drawn by the shared `ce_hub_sections.lua` (see "Current layout"); this
+module owns the sidebar entry, ordering, expansion, refresh rotation and selection.
 
 `ce_hub_list.lua` adds a "Civilian Economy" left-sidebar entry (icon
 `stationbuildst_habitation`, mode `ce_hubs`) listing every known hub. It exists
@@ -906,32 +911,40 @@ earned level, and discards the pending expansion before reconstruction.
 Native restart/save-load, unloading, construction and rendering remain runtime
 acceptance gates; the action interpreter and Lua mocks do not emulate X4.
 
-## Current layout: one table, summary above wares
+## Current layout: shared hub sections in one table
 
 `MapMenu.viewCreated` binds widget IDs positionally and expects exactly one table
 from `createSelectedShips`. Adding extra tables shifts `menu.topLevel`/`menu.map`
-and passes a table ID to render-target functions. Multiple tables are valid in
-other native contexts only when their viewCreated callbacks bind them accordingly.
+and passes a table ID to render-target functions. Do not add tables here without
+updating and testing the native callback contract. The Lua mock asserts the
+one-table invariant; native lifecycle remains a runtime gate.
 
-CE therefore adds exactly one five-column table (tabOrder 21). The shared title,
-population, level/progress, unlock summary and optional warnings occupy complete
-rows above the ware heading. Ware rows cannot inherit the summary's wrapped height.
-The three visual ware columns still use a bar anchor plus name/time text cells.
-Do not add tables here without updating and testing the native callback contract.
-The Lua mock asserts the one-table invariant; native lifecycle remains a runtime gate.
-Row order: five hub summary rows, demand events, the Supplies/Bonuses tab row,
-then the active view. Row 5 shows warnings or unrest on the left and the sector
-bonus summary on the right. `eventLayout` places events above the tabs as fixed
-rows while title, summary, events, tabs, heading and three spare rows fit under the
-40% cap (event heights measured with native `GetTextHeight`, falling back to the
-row height); the view heading is then fixed too. Otherwise events scroll below the
-fixed tabs with the view, as before, so many events cannot crowd out the goods or
-make the native table refuse to draw.
+`ce_hub_sections.lua` (`CEHubSections`) owns the rows both hub views share; callers
+own their table, placement and lifecycle. `S.configure` sets the seven columns
+`[1px bar anchor] [button or 1px] [label] [flex] [14%] [16%] [14%]` (label share:
+sidebar 28%, selected-hub panel 18%). `S.drawItem` draws the two-line hub row
+(station icon, truncated name, greyed `progressShort` over the growth bar, compact
+supply status). `S.drawDetails` draws the titled sections: Overview, Demand events
+(only with events), Supplies and Bonuses, separated by transparent gap rows.
+`S.drawProgress` is a one-line growth row (progress label over the bar, status as
+a text cell in the last columns) for panels with their own title. Options cover
+the rest: a button (sidebar), `wareOrder` and `incoming` (an Incoming column in the
+wide panel). `S.hub` decodes each snapshot at most once per frame.
+Colored rows (hub row, headings, content) avoid visible column gaps with both
+parts the engine needs (`widget_fullscreen.lua`): the row `bgColor`, so every cell
+paints the same color, and a background colspan from the first colored cell to
+the last column, so each cell's background widens over the 2px gap. The Lua mocks
+enforce this for every colored row.
+
+The selected-hub panel (`ce_map_status.lua`, tabOrder 21) starts with two fixed
+rows: vanilla's single-object title (station icon and `name (idcode)` centred in
+`headerRow1Font`, `menu.getObjectColor`, no background; vanilla's shield/hull bar
+is omitted) and `S.drawProgress`. All sections follow and scroll. Tabs and fixed
+event rows are gone, and with them the fixed-row budget for events.
 Every scrolling row uses `addRow(true, { interactive=false })`, matching vanilla
 informational capacity rows. Native `calculateMinRowHeight` groups a selectable
 row with subsequent unselectable rows; making the entire list unselectable forces
-the whole list to fit and prevents scrolling. Fixed summary rows remain unselectable;
-the tab row is selectable because native buttons require row data.
+the whole list to fit and prevents scrolling. The fixed rows are unselectable.
 `maxVisibleHeight` caps the single table at 40% of the screen height, rounded down
 to whole pixels. Bottom placement uses `renderedHeight`, not Helper's
 `getVisibleHeight()`: content that fits uses its full height; a scrolling table uses
@@ -941,29 +954,26 @@ up, y rounded down, and two extra pixels are left for native widget rounding.
 `reserveScrollBar=false` keeps measured and rendered column widths identical when
 no scrollbar is shown; with `true`, Helper widens the last column only after the
 height is measured, so wrapped last-column text was over-estimated. With a
-scrollbar, Helper narrows the last column, which only affects capped tables.
-There are no page controls or five-ware limit.
+scrollbar, Helper narrows the last column after content was sized, so no icon may
+reach the last column here (the status is a text cell; the sidebar instead reserves
+the scrollbar). The Lua mock enforces this rule.
 
 Before native updates rebuild the frame, CE records `GetTopRow` for the same hub
 only when the result is numeric, retaining the previous position if the native
 table is unavailable. Drawing defaults a missing position to the first scrollable
-row and restores it through `setTopRow`, clamped when the basket shrinks. Switching
-hubs, native selection modes or cleanup resets the position. The Lua fixture
-checks header/ware row modes, large and empty lists, viewport bounds at several
-screen heights, scroll restoration and the one-table contract. It also executes
-vanilla's fixed/minimum row-height functions against the mock row measurements
-to catch unscrollable groups exceeding the table cap.
-
-The renderer separates selection/order retention, panel geometry and row access,
-summary widgets and ware headings/rows into local helpers. They all populate the
-single table created by `createPanel`; no helper adds another table.
-Live callback closures still resolve the current snapshot by hub and ware identity.
+row (3) and restores it through `setTopRow`, clamped to the last row. Switching
+hubs, a changed event set, native selection modes or cleanup resets the position.
+A structure signature (`M.signature` plus bonus-payload presence) triggers native
+rebuilds; level changes therefore redraw locked/unlocked bonus rows. The Lua
+fixture checks the row structure, large and empty lists, viewport bounds at
+several screen heights, scroll restoration and the one-table contract. It also
+executes vanilla's fixed/minimum row-height functions against the mock row
+measurements to catch unscrollable groups exceeding the table cap.
 
 Reserve bars use native start/current segments: delivered stock is blue and
 reserved incoming stock is green, clamped to the target. Remaining time excludes
-reservations. Plain text ware cells share a baseline; the growth label uses a
-transparent icon. Native cargo backgrounds and explicit anchor widths preserve
-the combined ware-name/time column. Buying uses native `ConvertIntegerString`.
+reservations. Bars anchor in the 1px first column, shifted past the button column,
+and cover the name and time columns. Buying uses native `ConvertIntegerString`.
 
 ## Test support and configured paths
 

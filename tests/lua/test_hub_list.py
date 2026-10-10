@@ -150,6 +150,18 @@ function draw()
   for rowIndex,r in ipairs(t.rows) do
    -- Scrolling needs every non-fixed row selectable, as in the bottom panel.
    assert(r.properties.fixed or r.rowdata, 'Unselectable scrolling row '..rowIndex)
+   -- widget_fullscreen.lua: every cell paints its own color, and its background only
+   -- widens over the 2px gap to the next cell inside a background colspan. A colored
+   -- row therefore needs one span from its first colored cell to the last column,
+   -- with the same color in every covered cell, or the gaps show.
+   if r.properties.bgColor and r.properties.bgColor~=Color.row_background then
+    local first
+    for c=1,t.columns do if r[c].properties.cellBGColor==r.properties.bgColor then first=c;break end end
+    if first then
+     assert(r[first].bgSpan and first+r[first].bgSpan-1==t.columns, 'visible cell gaps: no background span in row '..rowIndex)
+     for c=first,t.columns do assert(r[c].properties.cellBGColor==r.properties.bgColor, 'mixed backgrounds in span: row '..rowIndex..':'..c) end
+    end
+   end
    for colIndex=1,t.columns do
     local cell=r[colIndex]
     if cell.kind=='button' then assert(r.rowdata and r.properties.interactive~=false, 'Button in inert row') end
@@ -177,9 +189,9 @@ end
 '''
 lua.execute(setup)
 addon_files = [e.get('name') for e in E.parse(MOD / 'ui.xml').iter('file')]
-assert addon_files.index('ui/ce_reward_status.lua') < addon_files.index('ui/ce_hub_list.lua')
+assert addon_files.index('ui/ce_reward_status.lua') < addon_files.index('ui/ce_hub_sections.lua') < addon_files.index('ui/ce_hub_list.lua')
 assert addon_files.index('ui/ce_hub_status.lua') < addon_files.index('ui/ce_hub_list.lua')
-for name in ('ce_hub_status.lua', 'ce_reward_status.lua', 'ce_hub_list.lua'):
+for name in ('ce_hub_status.lua', 'ce_reward_status.lua', 'ce_hub_sections.lua', 'ce_hub_list.lua'):
     lua.execute((MOD / 'ui' / name).read_text(encoding='utf-8'))
 
 lua.execute(r'''
@@ -300,8 +312,8 @@ for _,i in ipairs(contentRows) do assert(t.rows[i].properties.bgColor==Color.row
 for _,i in ipairs({5,9,13,20}) do assert(t.rows[i].properties.bgColor==nil, 'gap '..i) end
 for i=5,20 do
  local r=t.rows[i]
- for col=1,7 do assert(r[col].bgSpan==nil, 'no background span') end
  if r.properties.bgColor then
+  assert(r[3].bgSpan==5 and r[1].bgSpan==nil, 'content background spans columns 3-7 '..i)
   assert(r[1].properties.cellBGColor==Color.row_background and r[2].properties.cellBGColor==Color.row_background, 'leading columns '..i)
   for col=3,7 do assert(r[col].properties.cellBGColor==r.properties.bgColor, 'inherited background '..i..':'..col) end
  end
