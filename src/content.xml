@@ -3,8 +3,8 @@
   name="Civilian Economy"
   description="People have desires too. Trade with the civilian population, get bonuses or upset them."
   author="stemps"
-  version="200"
-  date="2026-10-08"
+  version="300"
+  date="2026-10-10"
   save="true"
   enabled="true">
   <text language="44" name="Civilian Economy" description="People have desires too. Trade with the civilian population, get bonuses or upset them." />
