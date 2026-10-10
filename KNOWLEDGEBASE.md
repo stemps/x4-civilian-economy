@@ -1,3 +1,18 @@
+## 2026-10-10 - english-source-0001
+
+- IMPLEMENTED: English moved from `t/0001-l044.xml` to `t/0001.xml` (root
+  `<language>`, no id), the convention for all mods using x4-modkit. Page/text ids
+  are unchanged. Translation checks are `x4mod translations`; CE's own percent
+  escape contract is `tests/mod/test_translation_escapes.py`.
+- MEASURED: of 40 installed mods with a `t/` folder, 38 ship `0001.xml` (26 only
+  that, 12 also `0001-l044.xml`) and 2 rely on `0001-l044.xml` alone; vanilla ships
+  only `0001-l044.xml`. 24 of 26 full `0001.xml` files use `<language>` without id.
+- UNVERIFIED: whether the engine falls back to `0001.xml` per missing entry in
+  another locale. Coverage checks require every entry anyway.
+- RISK: a manual (Nexus) install over an old folder keeps a stale
+  `0001-l044.xml` beside the new `0001.xml`; which one English uses is unverified.
+  Release notes should ask for a clean reinstall.
+
 ## 2026-10-10 - unrest-off-setting
 
 - DESIGN: `CE_Settings.State.$Unrest` (default true; absent in older saves, so
@@ -349,7 +364,7 @@
   language registry enables 13: Turkish/Ukrainian are commented out and Bulgarian
   is absent. Providing text does not enable a game language.
 - IMPLEMENTED: CE keeps `t/0001-l044.xml` as its single English source and ships
-  15 additional locales. This supersedes older English-only notes below. All
+  15 additional locales. SUPERSEDED 2026-10-10: English moved to `t/0001.xml`. This supersedes older English-only notes below. All
   translations were authored within Codex from the gameplay context.
 - TESTED: `just translations` covers 229 entries per locale and 22 regressions,
   including missing files, multiple pages, duplicates, empty text, language IDs,

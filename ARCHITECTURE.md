@@ -4,9 +4,9 @@
 
 `src/` is the mod: exactly the files the game loads and every release ships.
 Everything else is development-only: `tests/mod/` (MD controller tests),
-`tests/lua/` (Lua UI harnesses), `tests/release/` (release tooling),
-`tests/translations/`, `tools/` (check runner, MD test runtime, generators),
-`scripts/` (release and publishing), `docs/`, `images/` and metadata. Tools
+`tests/lua/` (Lua UI harnesses),
+`tools/` (check runner, MD test runtime, generators),
+`docs/`, `images/` and metadata. Tools
 and tests keep repo-relative paths on `ROOT` and mod paths on `MOD = ROOT / 'src'`.
 
 ## Production connector-spine construction
@@ -53,19 +53,19 @@ The manifest requires X4 9.00 and Mod Support APIs (`ws_2042901274`) for
 Mycu: Verbose Transaction Log (`VerboseTransactionLog`) for transaction labels.
 Both integrations retain their runtime guards when the optional mod is absent.
 
-`t/0001-l044.xml` is the canonical English source for page 974201. The other
-15 `0001-lNNN.xml` files carry the same page/text IDs for all locales shipped
-in the game reference, matching Supply Chain View's coverage. This includes
+`t/0001.xml` (root `<language>` without an id) is the single English source for
+page 974201; the engine uses it as English because no `0001-l044.xml` exists. The
+other 15 `0001-lNNN.xml` files carry the same page/text IDs for all locales shipped
+in the game reference, the x4-modkit convention shared with every mod. This includes
 Bulgarian, Turkish and Ukrainian even where the game's language selector does
 not enable them. Entries cover UI labels, tooltips, MD messages and debug actions.
 
-`tests/translations/check_translations.py` mirrors SCV's translation coverage gate, adapted
-to CE's existing English filename instead of adding a second English source.
-It checks every page, required locale files, missing/extra/duplicate/empty entries,
-language IDs and X4 text escapes. CE additionally checks ordered Lua format
-specifiers, numbered MD arguments, text references and literal newline counts.
-`tests/translations/test_translations.py` exercises failure fixtures and the shipped files.
-`just translations` runs both; `just check` runs it before the other checks.
+`just translations` (`x4mod translations`, part of `just check`) checks every page,
+required locale files, missing/extra/duplicate/empty entries, language IDs, X4 text
+escapes, em dashes, ordered Lua format specifiers, numbered MD arguments, text
+references and literal newline counts; see x4-modkit. CE has no format exemptions.
+`tests/mod/test_translation_escapes.py` adds CE's own contract: the MD notification
+texts 201, 202, 333 and 334 escape every literal percent sign.
 These checks validate coverage and formatting, not linguistic quality or UI fit.
 Translation files require a full game restart; `/reloadui` is insufficient.
 
@@ -135,79 +135,14 @@ acceptance. Installing these MD/text changes requires a full game restart.
 
 ## Release tooling
 
-`scripts/`, `tests/release/` and the "Shared tasks" block of the `justfile` are
-identical in every mod repository (Civilian Economy, Supply Chain View); change
-them in one repo and copy them to the other. Mod-specific values come only from
-`src/content.xml` (its `id` names the package folder, its `name` the ZIP prefix),
-`nexus.json` and `steam.json`.
-
-`just release` requires clean `main` tracking and matching `origin/main`. It
-suggests the next minor version (with an editable override), opens commit subjects
-in Git's configured editor, checks Nexus and Steam, updates `VERSION`,
-`CHANGELOG.md` and the manifest version/date, runs `just check-release`, commits
-only that metadata, creates an annotated tag and atomically pushes both. It then
-publishes to Nexus and afterwards to the Steam Workshop. Before the first tag the
-suggestion comes from the manifest version; later releases use the latest tag.
-
-- `scripts/release.py`: preflight, version/notes, metadata, validation and Git
-  orchestration; preserves concurrent edits and rolls back pre-commit failures.
-  Edited notes are saved to `.git/release-notes/v<version>.json` right after the
-  editor closes; a later attempt at the same version reopens them (plus subjects of
-  commits made since) and the file is deleted once the release tag exists.
-- `scripts/release_archive.py`: deterministic ZIPs of `src/` under the manifest
-  id, local working-tree builds and reconstruction from verified remote tags.
-  Every file in `src/` ships and nothing outside it does. The game's junction
-  points at `src/`, so in-game tests see the same files as the ZIP.
-  `src/MIT-LICENSE` is a copy of the root licence (kept for GitHub); a test keeps
-  them identical. Tags from before the `src/` layout cannot be repackaged.
-- `scripts/nexus_publish.py`: Nexus upload/version/changelog publication with
-  resumable receipts in ignored `dist/nexus/`; `X4_NEXUS_KEY` supplies
-  credentials. A `file_id` in `nexus.json` pins the main file; with `null`,
-  exactly one main file must exist. `create_new_file: true` is only for an empty
-  page and is not safe to leave on once a file exists.
-- `scripts/workshop_build.py`: stages `dist/workshop/<tag|local>/<id>/` from the
-  same files as the ZIP. Its `content.xml` gets `id="ws_<published_file_id>"`
-  and `sync="false"`; each dependency mapped in `steam.json` gets its Workshop id,
-  added beside an optional dependency and replacing a required one. Root `.mkv`
-  files stay loose; everything else is packed into `ext_01.cat/.dat` with
-  XRCatTool and verified against the sources. `just workshop-placeholder` builds
-  the folder for the one-time item creation.
-- `scripts/steam_publish.py`: uploads that folder with `WorkshopTool update
-  -batchmode` (Steam client must be online) and keeps resumable receipts in
-  `dist/steam/`. Uncertain outcomes are resolved with `--confirm-uploaded` or
-  `--retry-upload`; `--minor` is for an unchanged version. Releases skip Steam
-  while `steam.json` is absent or has no `published_file_id`.
-  The change note is the release notes as Steam BBCode: WorkshopTool reads a
-  value starting with `-` (a Markdown list) as the next switch and uploads nothing.
-- `scripts/discord_publish.py`: posts the release announcement (title, Nexus/Steam
-  links, tag notes) through the webhook of the channel in `discord.json`. The URL
-  is a secret read from the env var that file names, never written anywhere. Release
-  preflight checks the webhook points at that channel and the text fits 2000
-  characters; the post runs last, only after Nexus (and Steam, if recorded) are done.
-  Receipts in `dist/discord/`; uncertain outcomes are resolved with
-  `--confirm-posted` or `--retry-post`. Releases skip Discord without `discord.json`.
-- `scripts/manual_bbcode.py`: converts the released `docs/MANUAL.md` to Nexus or
-  Steam BBCode (`dist/<nexus|steam>/<tag>/description-<nexus|steam>.bbcode.txt`) and opens
-  Notepad for copy/paste. Unsupported Markdown fails before releasing, and so does
-  Steam output over 8000 characters (Steam preflight). Continued numbered lists
-  use explicit numbers because neither site has a list-start attribute.
-- `scripts/game_link.ps1` (`just link` / `unlink` / `link-status`): manages the
-  `extensions/<repo folder>` junction to `src/`. The extensions dir comes from
-  `X4_EXTENSIONS`, then the toolkit's `.claude/x4-paths.env`, then
-  `X4_GAME\extensions`. It refuses to replace or delete a regular folder, and
-  unlink removes only the reparse point (non-recursive delete).
-- `scripts/game_log.ps1` (`just log`): follows `debug.txt` from `X4_DEBUGLOG`,
-  the toolkit's `X4_DEBUGLOG`/`X4_PROFILE`, or the newest profile.
-- `tests/release/`: isolated release repositories/local remotes and fake HTTP
-  responses around a neutral `example_mod` fixture; run via `just test-release`,
-  also included in `just check-release`.
-
-`just build-zip` packages dirty and untracked `src/` files without changing Git
-or versions. `just publish-nexus vX.Y.Z` and `just publish-steam vX.Y.Z` resume
-one platform; `just nexus-description <ref>` regenerates only the manual handoff
-(`just steam-description <ref>` for Steam)
-for a release tag or any branch/commit. Release tasks use `uv` with pinned
-`markdown-it-py==4.0.0`. Retain `dist/` receipts to resume uncertain uploads safely.
+Release, publication, `just link` and `just log` come from x4-modkit (`x4mod` on
+PATH), shared with every mod repository; see its README and ARCHITECTURE.md. This
+repository holds only the "Shared tasks" block of the `justfile`, which must stay
+identical to `x4mod justfile` (`x4mod doctor`, part of `just test-release`, fails
+otherwise). Mod-specific values come only from `src/content.xml` (its `id` names
+the package folder, its `name` the ZIP prefix), `nexus.json`, `steam.json` and
+`discord.json`. `just test-release` runs the kit's tests with live checks of this
+repository's manifests, manual, licence copies and publication configs.
 
 Civilian Economy settings: `nexus.json` targets mod 2405 and pins file
 `8056605`; `steam.json` targets Workshop item 3811529417 and adds
@@ -652,7 +587,7 @@ top of that file. Summary:
 single Teladi M dock in Grand Exchange I (no accessible population, so CE never builds
 there), registered with 1B population, logging every event as `[CE Sample]`.
 `just sample-link`/`sample-unlink`/`sample-link-status` manage its junction through
-`scripts/game_link.ps1 -Source -Name`; `just sample-validate` runs toolkit x4validate
+`x4mod link --source --name`; `just sample-validate` runs toolkit x4validate
 on it and is part of `just check`. It is outside `src/` and never shipped.
 
 Save loads reuse saved definitions. `RefreshProfile` initializes a hub record from
@@ -1000,8 +935,7 @@ isolation is exercised by `just test-release`.
 profile fixture. `support_construction.py`, `support_startup.py`,
 `support_unrest.py` and `support_sales_tax.py` own focused shared fixtures;
 test suites do not import helpers or setup methods from other test suites.
-Release/archive tests share the disposable local Git fixture in
-`tests/release/release_support.py`. Lifecycle tests execute real account/manager
+Lifecycle tests execute real account/manager
 provisioning libraries with native side effects mocked.
 `tools/check.py --reference` passes its resolved path through `CE_REFERENCE` to
 all fixtures; `X4_REFERENCE` and `X4_TOOLKIT` set defaults for isolated worktrees.

@@ -4,7 +4,7 @@ from xml.etree import ElementTree as E
 from lupa.luajit21 import LuaRuntime
 root=Path(__file__).resolve().parents[2]/'src'
 lua=LuaRuntime()
-strings={int(e.get('id')):''.join(e.itertext()) for e in E.parse(str(root/'t/0001-l044.xml')).iter('t')}
+strings={int(e.get('id')):''.join(e.itertext()) for e in E.parse(str(root/'t/0001.xml')).iter('t')}
 lua.globals().translations=lua.table_from(strings)
 lua.execute('''
 local nativeffi = require('ffi')

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<language id="44">
+<language>
   <page id="974201" title="Civilian Economy" descr="Civilian hubs" voice="no">
     <t id="1">Civilian Trade Hub</t>
     <t id="2">A public delivery hub serving the sector's civilian population. Construction is funded by the planetary economy. Once completed, it purchases goods to maintain civilian reserves.</t>

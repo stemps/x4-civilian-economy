@@ -23,7 +23,7 @@ def main():
         parser.error('Supply an installed TrueType font with --font')
     font = args.font.resolve().as_posix().replace(':', r'\:').replace("'", r"\'")
     strings = {int(t.get('id')): ''.join(t.itertext())
-               for t in E.parse(MOD / 't/0001-l044.xml').iter('t')}
+               for t in E.parse(MOD / 't/0001.xml').iter('t')}
     scratch = ROOT / '.cache/news-text'
     scratch.mkdir(parents=True, exist_ok=True)
     (ROOT / 'output').mkdir(exist_ok=True)

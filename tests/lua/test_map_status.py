@@ -9,7 +9,7 @@ MOD = ROOT / 'src'
 lua = LuaRuntime()
 lua.globals().translations = lua.table_from({
     int(e.get('id')): ''.join(e.itertext()).replace(r'\n', '\n').replace(r'\(', '(').replace(r'\)', ')')
-    for e in E.parse(MOD / 't/0001-l044.xml').iter('t')
+    for e in E.parse(MOD / 't/0001.xml').iter('t')
 })
 setup = r'''
 now, reads, known, valid = 0, 0, true, true
@@ -350,7 +350,7 @@ assert(M.progressHint(sample)==M.text(89))
 deferred = LuaRuntime()
 deferred.globals().translations = deferred.table_from({
     int(e.get('id')): ''.join(e.itertext()).replace(r'\n', '\n').replace(r'\(', '(').replace(r'\)', ')')
-    for e in E.parse(MOD / 't/0001-l044.xml').iter('t')
+    for e in E.parse(MOD / 't/0001.xml').iter('t')
 })
 deferred.execute(setup)
 deferred.execute("savedMenu=menu;menu=nil")

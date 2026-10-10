@@ -88,16 +88,16 @@ class CheckSelectionTests(unittest.TestCase):
         self.assertEqual(sum('tools/check.py' in line for line in everyday), 1)
         self.assertEqual(sum('tools/generate_plans.py' in line for line in everyday), 1)
         self.assertFalse(any('unittest discover' in line for line in everyday))
-        self.assertFalse(any('tests/release/' in line for line in everyday))
-        self.assertTrue(any('tests/translations/test_translations.py' in line for line in everyday))
+        self.assertFalse(any('x4mod test' in line for line in everyday))
+        self.assertTrue(any(line.strip().endswith('x4mod translations') for line in everyday))
         self.assertTrue(any('tests/lua/test_map_status.py' in line for line in everyday))
         checks = [line for line in full if 'tools/check.py' in line]
         self.assertEqual(len(checks), 2)
         self.assertEqual(sum('--skip-tests' not in line for line in checks), 1)
         self.assertEqual(sum('--schema --skip-tests' in line for line in checks), 1)
-        for script in ('test_release.py', 'test_manual_bbcode.py', 'test_nexus.py',
-                       'test_archive.py', 'test_release_support.py', 'test_workshop.py'):
-            self.assertEqual(sum('tests/release/' + script in line for line in full), 1)
+        # Release tooling tests live in x4-modkit; the shared block runs them once.
+        for command in ('x4mod doctor', 'x4mod test'):
+            self.assertEqual(sum(line.strip().endswith(command) for line in full), 1)
         focused = commands('plans-check')
         self.assertEqual(sum('unittest discover' in line for line in focused), 2)
 
