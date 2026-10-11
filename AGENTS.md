@@ -30,8 +30,14 @@ instructions.
 - Make sure to keep all language translation files in sync with the English
   version, in which the mod is developed. Auto-translate all new and changed
   keys into all languages.
-- after each turn with code changes, inform the user whether a full restart is
-  required, or if a `/reloadui` command suffices.
+- After each turn with changes to mod code, inform the user whether a full
+  restart is required, or if one of these commands suffices:
+  - `/reloadui`: Reloads Lua scripts and UI elements.
+  - `/refreshmd`: Reloads Mission Director (MD) scripts and related
+    text/missions.
+  - `/refreshai`: Reloads AIScripts.
+  - `/reloadtext` or `/rtx`: reloads translation files (if Text Reload Command
+    mod is installed).
 - Ignore the toolkit's rule to always research a mod's Nexus page before editing
   it. All infos are also contained in this repo's md files.
 - Don't use em-dashes. The game can't render them. Use normal hyphens instead.
