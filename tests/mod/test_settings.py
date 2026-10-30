@@ -34,8 +34,9 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
     def test_defaults_save_reload_and_no_cross_save_leak(self):
         self.run.library('md.CE_Settings.Ensure')
         self.assertEqual(dict(self.state), dict(Debug=False, NewsVideos=True, DemandMultiplier=1.0,
-                         TimeMultiplier=1.0, TaxNotifications=True, TaxPercent=15, Unrest=True))
-        for key, value in [('Debug', 1), ('NewsVideos', 0), ('TaxNotifications', 0), ('Unrest', 0), ('DemandMultiplier', .3),
+                         TimeMultiplier=1.0, TaxNotifications=True, TaxPercent=15, Unrest=True,
+                         EventNotifications=True))
+        for key, value in [('Debug', 1), ('NewsVideos', 0), ('TaxNotifications', 0), ('Unrest', 0), ('EventNotifications', 0), ('DemandMultiplier', .3),
                            ('TimeMultiplier', .2), ('TaxPercent', 0)]:
             self.change(key, value)
         saved = copy.deepcopy(self.state)
@@ -49,13 +50,14 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
         self.assertEqual(another.env['CETaxPercent'], 15)
         self.assertTrue(another.env['CENewsVideos'])
         self.assertTrue(another.env['CEUnrest'])
+        self.assertTrue(another.env['CEEventNotifications'])
 
     def test_news_videos_existing_save_and_boolean_validation(self):
         self.state.update(Debug=True, DemandMultiplier=.3, TimeMultiplier=.2,
                           TaxNotifications=False, TaxPercent=0)
         previous = copy.deepcopy(self.state)
         self.run.library('md.CE_Settings.Ensure')
-        self.assertEqual(dict(self.state), dict(previous, NewsVideos=True, Unrest=True))
+        self.assertEqual(dict(self.state), dict(previous, NewsVideos=True, Unrest=True, EventNotifications=True))
         for value, expected in ((False, False), (1, True), (0, False), (True, True)):
             self.change('NewsVideos', value)
             self.assertTrue(self.run.env['SettingValid'])
@@ -69,7 +71,7 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
         self.run.library('md.CE_Settings.Ensure')
         self.run.library('md.CE_Settings.Read')
         self.assertFalse(self.run.env['CENewsVideos'])
-        self.assertEqual(dict(self.state), dict(previous, NewsVideos=False, Unrest=True))
+        self.assertEqual(dict(self.state), dict(previous, NewsVideos=False, Unrest=True, EventNotifications=True))
 
     def test_unrest_boolean_validation(self):
         for value, expected in ((0, False), (1, True), (False, False), (True, True)):
@@ -81,6 +83,17 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
             self.change('Unrest', value)
             self.assertFalse(self.run.env['SettingValid'])
             self.assertTrue(self.state.Unrest)
+
+    def test_event_notifications_boolean_validation(self):
+        for value, expected in ((0, False), (1, True), (False, False), (True, True)):
+            self.change('EventNotifications', value)
+            self.assertTrue(self.run.env['SettingValid'])
+            self.assertEqual(self.state.EventNotifications, expected)
+            self.assertFalse(self.run.env['EconomicChange'])
+        for value in (2, -1, .5, 'false', NIL):
+            self.change('EventNotifications', value)
+            self.assertFalse(self.run.env['SettingValid'])
+            self.assertTrue(self.state.EventNotifications)
 
     def test_validation_and_rounding(self):
         for key, value in [('DemandMultiplier', 0), ('DemandMultiplier', 10.1),
@@ -188,12 +201,14 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
             if cue.endswith(('Make_Slider', 'Make_CheckBox')):
                 self.assertTrue(selectable)
                 controls.append(args)
-        self.assertEqual(len(controls), 7)
+        self.assertEqual(len(controls), 8)
         from test_population_overrides import assert_slider_rows_exclusive
         assert_slider_rows_exclusive(self, calls)
         self.assertEqual([args.options[1].text for cue, args in calls if cue.endswith('Make_Dropdown')], ['Sector'])
         self.assertTrue(all(args.col + (args.colSpan or 1) - 1 <= 3 for cue, args in calls if not cue.endswith(('Add_Row', 'Call_Table_Method'))))
-        debug, demand, time, tax, notifications, unrest, news = controls
+        debug, demand, time, tax, notifications, unrest, news, events = controls
+        self.assertTrue(events.checked)
+        self.assertEqual((events.id, events.echo), ('ce_event_notifications', '$EventNotifications'))
         self.assertTrue(unrest.checked)
         self.assertEqual((unrest.id, unrest.echo), ('ce_unrest', '$Unrest'))
         self.assertFalse(debug.checked)
@@ -202,7 +217,7 @@ class SettingsTests(SalesTaxFixture, unittest.TestCase):
         self.assertTrue(notifications.checked)
         for slider in (demand, time):
             self.assertEqual((slider.min, slider.max, slider.step, slider.start), (.1, 10, .1, 1))
-        for checkbox in (debug, news, notifications, unrest):
+        for checkbox in (debug, news, notifications, unrest, events):
             self.assertEqual(checkbox.width, 'Helper.standardTextHeight')
             self.assertEqual(checkbox.height, checkbox.width)
         self.assertEqual((tax.min, tax.max, tax.step, tax.start), (0, 50, 1, 15))

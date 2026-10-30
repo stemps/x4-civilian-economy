@@ -300,6 +300,8 @@
     <t id="452">%s: civilní centrum dosáhlo úrovně %s. Nové nákupní nabídky pozastaveny.</t>
     <t id="453">Civilní nepokoje</t>
     <t id="454">Je-li zapnuto, neuspokojená civilní poptávka zvyšuje nepokoje v sektorech s centry úrovně 5 a vyšší, což vede ke ztrátě daní, pirátům a sabotážím.</t>
+    <t id="455">Zobrazovat oznámení o událostech civilního trhu</t>
+    <t id="456">Zobrazovat zprávy v informačním pásu a v deníku, když události civilního trhu začnou a skončí. Události ovlivňují poptávku i při vypnutých zprávách. Ve výchozím stavu zapnuto.</t>
     <t id="460">Civilian Economy</t>
     <t id="461">Všechna známá civilní centra s jejich zásobami a postupem. Rozbalte centrum a zobrazte jeho zboží a bonusy sektoru.</t>
     <t id="462">Centra: %d | Zásobeno: %d | Nedostatek: %d</t>

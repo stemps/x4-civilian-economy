@@ -300,6 +300,8 @@
     <t id="452">%s: sivil merkez seviye %s oldu. Yeni alım teklifleri duraklatıldı.</t>
     <t id="453">Sivil huzursuzluk</t>
     <t id="454">Etkinleştirildiğinde, seviye 5 ve üzeri merkezlere sahip sektörlerde karşılanmayan sivil talep huzursuzluğu artırır; bu da vergi kaybına, korsanlara ve sabotajlara yol açar.</t>
+    <t id="455">Sivil pazar olayı bildirimlerini göster</t>
+    <t id="456">Sivil pazar olayları başladığında ve bittiğinde haber bandında ve seyir defterinde mesaj gösterir. Mesajlar kapalıyken de olaylar talebi etkilemeye devam eder. Varsayılan olarak açıktır.</t>
     <t id="460">Civilian Economy</t>
     <t id="461">Bilinen tüm sivil merkezler, stokları ve ilerlemeleriyle. Mallarını ve sektör bonuslarını görmek için bir merkezi genişletin.</t>
     <t id="462">Merkezler: %d | Tedarik edilen: %d | Eksik: %d</t>

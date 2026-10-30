@@ -17,8 +17,12 @@
     </library>
     <library name="Show">
       <actions>
-        <show_notification text="$DEText" timeout="8s"/>
-        <write_to_logbook category="general" title="{974201,332}" text="$DEText" object="$R.$DemandEvents.$Sector" interaction="showonmap"/>
+        <!-- The toggle silences messages only; the demand effect is applied by CE_DemandEvents regardless. -->
+        <include_actions ref="md.CE_Settings.Read"/>
+        <do_if value="$CEEventNotifications">
+          <show_notification text="$DEText" timeout="8s"/>
+          <write_to_logbook category="general" title="{974201,332}" text="$DEText" object="$R.$DemandEvents.$Sector" interaction="showonmap"/>
+        </do_if>
       </actions>
     </library>
   </cues>

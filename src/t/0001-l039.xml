@@ -300,6 +300,8 @@
     <t id="452">%s: il centro civile ha raggiunto il livello %s. Nuove offerte d'acquisto sospese.</t>
     <t id="453">Disordini civili</t>
     <t id="454">Se attivato, la domanda civile insoddisfatta fa aumentare i disordini nei settori con centri di livello 5 o superiore, causando perdita di tasse, pirati e sabotaggi.</t>
+    <t id="455">Mostra notifiche degli eventi del mercato civile</t>
+    <t id="456">Mostra messaggi nel ticker e nel registro quando gli eventi del mercato civile iniziano e terminano. Gli eventi influenzano comunque la domanda anche con i messaggi disattivati. Attivo per impostazione predefinita.</t>
     <t id="460">Civilian Economy</t>
     <t id="461">Tutti i centri civili conosciuti con le loro scorte e i progressi. Espandi un centro per vedere le sue merci e i bonus del settore.</t>
     <t id="462">Centri: %d | Riforniti: %d | Carenza: %d</t>

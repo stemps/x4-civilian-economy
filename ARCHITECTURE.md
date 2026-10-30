@@ -403,9 +403,9 @@ are selected by exact hub identity.
 
 ## Player settings
 
-`CE_Settings.State` stores seven values per save: Debug=false, NewsVideos=true,
-DemandMultiplier=1.0, TimeMultiplier=1.0, TaxNotifications=true, TaxPercent=15
-and Unrest=true.
+`CE_Settings.State` stores eight values per save: Debug=false, NewsVideos=true,
+DemandMultiplier=1.0, TimeMultiplier=1.0, TaxNotifications=true, TaxPercent=15,
+Unrest=true and EventNotifications=true.
 Ensure fills only absent fields; Read provides defaults even before initialization.
 No UI userdata is written and loading another save restores that save's settings.
 `CE_Options` registers its four-section page whenever `Simple_Menu_API.Reloaded`
@@ -429,6 +429,9 @@ empty-placeholder fallback. Hiding the menu does not revoke already-authorized
 asynchronous debug construction. It leaves the read-only map panel visible.
 TaxNotifications suppresses both the ticker and logbook entry, without changing
 payouts. TaxPercent=0 skips the native tax transfer entirely.
+EventNotifications (Display section) gates the ticker and logbook entry in
+`CE_EventNotifications.Show` for market event start/end; demand effects and the
+debug event panel are unchanged.
 NewsVideos controls the shared raid, sabotage and hacking broadcast playback.
 Broadcast reads the setting each time; disabling it retains the ticker and one
 logbook entry without a replacement popup. Enabled playback still falls back to

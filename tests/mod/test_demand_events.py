@@ -135,6 +135,19 @@ class DemandEventTests(UnrestFixture, unittest.TestCase):
         self.assertEqual(self.r.DemandEvents.Active[3].End,14400)
         self.assertEqual(len(self.messages),6)
 
+    def test_disabled_notifications_silence_start_and_end_without_changing_demand(self):
+        ware=self.add_good('water',1,'water')
+        base=self.r.Wares[ware].Rate
+        self.run.env['md'].CE_Settings.State.EventNotifications=False
+        self.start(3)
+        self.assertNotEqual(self.r.Wares[ware].Rate,base)
+        self.end(3)
+        self.assertEqual(self.r.Wares[ware].Rate,base)
+        self.assertEqual(self.messages,[])
+        self.run.env['md'].CE_Settings.State.EventNotifications=True
+        self.start(3)
+        self.assertEqual([kind for kind,text in self.messages],['ticker','log'])
+
     def test_expiry_splits_consumption_and_does_not_drop_surplus(self):
         ware=self.add_good('food',reserve=1000)
         self.run.random_fraction=1

@@ -50,6 +50,9 @@
         <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,157},$wordwrap=true,$mouseOverText={974201,158}]"/>
         <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$colSpan=2,$id='ce_news_videos',$echo='$NewsVideos',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$NewsVideos,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,158}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Add_Row" param="table[$selectable=true]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_Text" param="table[$col=1,$text={974201,455},$wordwrap=true,$mouseOverText={974201,456}]"/>
+        <signal_cue_instantly cue="md.Simple_Menu_API.Make_CheckBox" param="table[$col=2,$colSpan=2,$id='ce_event_notifications',$echo='$EventNotifications',$width='Helper.standardTextHeight',$height='Helper.standardTextHeight',$checked=md.CE_Settings.State.$EventNotifications,$onClick=md.CE_Options.Checkbox,$mouseOverText={974201,456}]"/>
         <include_actions ref="md.CE_PopulationOptions.Build"/>
       </actions>
     </library>
