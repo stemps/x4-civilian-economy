@@ -1,3 +1,22 @@
+## 2026-10-16 - hub-dock-trader-stock
+
+- Player report: dock traders on CE hubs offered no wares.
+- READ: a dock trader's wares come from `libraries/stock.xml`, chosen in
+  `md/npc_itemtrader.xml` cue `OnPlatformPopulation_Itemtrader` (`set_stock_reference`
+  by godentry / `ispiratebase`, then `add_stock`). Unmatched stations use
+  `default_trader`. Vanilla sends every civilian-owned station to `civilian_trader`;
+  `stock.xml` notes civilian traders cannot sell `equipment_trade` (generaluse
+  licence), and the civilian faction defines no licences.
+- INFERRED, not verified in game: hubs (civilian-owned, no godentry) fell through to
+  `default_trader` and ended up empty. Why nothing at all is sold is unconfirmed.
+- IMPLEMENTED: `ce_civilian_hub_trader` stock = vanilla `civilian_trader` minus
+  limpets and contraband, plus `hardware_crafting` 0-3 at 30%. Selected by
+  `$actor.container.macro == macro.ce_civilian_hub_macro`, inserted after the native
+  `do_elseif[@value='false']` patch hook (same anchor as ego_dlc_timelines).
+  External hubs are not matched.
+- ASSUMED: dock NPCs are created on platform population, so existing hubs in old
+  saves pick up the stock on a later visit. Confirm in game.
+
 ## 2026-10-10 - english-source-0001
 
 - IMPLEMENTED: English moved from `t/0001-l044.xml` to `t/0001.xml` (root

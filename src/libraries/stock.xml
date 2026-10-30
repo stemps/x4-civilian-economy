@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <!-- Dock trader stock for CE civilian hubs, selected in md/npc_itemtrader.xml.
+       Based on vanilla civilian_trader: no equipment (the civilian faction holds no
+       generaluse licence), no limpets or contraband (hubs are lawful population centres),
+       plus a small hardware selection. min=0 max=0 entries are buy-only. -->
+  <add sel="/stocks">
+    <stock id="ce_civilian_hub_trader" entitytype="trader">
+      <!-- General Items -->
+      <basket ref="generalitems_trade" min="0" max="20" chance="75"/>
+      <basket ref="generalitems_crafting" min="0" max="5" chance="40"/>
+      <basket ref="generalitems_crafted" min="0" max="0"/>
+      <!-- Curiosities -->
+      <basket ref="curiosities_trade" min="0" max="0" chance="75"/>
+      <basket ref="curiosities_crafting" min="0" max="3" chance="40"/>
+      <basket ref="curiosities_crafted" min="0" max="0"/>
+      <!-- Luxury Items -->
+      <basket ref="luxuryitems_crafting" min="0" max="10" chance="75"/>
+      <basket ref="luxuryitems_crafted" min="0" max="0"/>
+      <!-- Hardware -->
+      <basket ref="hardware_crafting" min="0" max="3" chance="30"/>
+      <!-- Seminars -->
+      <basket ref="seminars_trade" min="0" max="2" chance="75"/>
+    </stock>
+  </add>
+</diff>

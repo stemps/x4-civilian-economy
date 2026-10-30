@@ -294,6 +294,7 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_reward_workforce.xml` | Tokened native workforce requests, fractional immigration and grant limits. |
 | `md/ce_reward_discovery.xml` | Bounded sector lockbox surveys and discovery ledger. |
 | `md/diplomacy.xml` | Targeted vanilla diff adding station context and CE success points without changing native rolls. |
+| `md/npc_itemtrader.xml`, `libraries/stock.xml` | Vanilla diffs selecting the `ce_civilian_hub_trader` dock trader stock on native CE hubs (by hub macro); external hubs keep their owner's stock. |
 | `ui/ce_workforce.lua` | Read-only adapter for native per-race workforce growth/target constraints. |
 | `ui/ce_reward_status.lua` | Reward payload validation and localized presentation for the hub panel. |
 | `md/ce_reserves.xml` | Synchronous reserve consumption, replenishment targets and cumulative supplied-time growth. No persistent cue namespace. |

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<diff>
+  <!-- CE civilian hubs have no god entry and are civilian-owned, so they would fall through
+       to default_trader, whose equipment needs a licence the civilian faction lacks.
+       Anchor is the native patch hook, as used by ego_dlc_timelines. -->
+  <add sel="/mdscript/cues/cue[@name='OnPlatformPopulation_Itemtrader']/actions/do_if/do_elseif[@value='false']" pos="after">
+    <do_elseif value="$actor.container.macro == macro.ce_civilian_hub_macro">
+      <set_stock_reference entity="$actor" stock="'ce_civilian_hub_trader'" />
+    </do_elseif>
+  </add>
+</diff>
