@@ -21,16 +21,10 @@
   <set_value name="$LayoutRace" exact="if $ProfileRace then $ProfileRace.id else ''"/>
   <include_actions ref="md.CE_ConstructionData.Load"/>
   <!-- Fingerprint records which generated layout data this snapshot expects. -->
-  <set_value name="$Construction" exact="table[$Plan='ce_hub_%1'.[$LayoutRace],$Levels=$LayoutMacros,$Valid=false,$Fingerprint=$LayoutFingerprint]"/>
-  <do_if value="$LayoutMacros.count == 10">
-    <set_value name="$Available" exact="[]"/>
-    <get_module_definition race="$ProfileRace" tags="tag.module" multiple="true" macro="$Choices"/>
-    <do_for_each name="$Choice" in="$Choices"><append_to_list name="$Available" exact="$Choice.id"/></do_for_each>
-    <set_value name="$Construction.$Valid" exact="true"/>
-    <do_for_each name="$Name" in="$LayoutMacros.{10}">
-      <do_if value="not $Available.indexof.{$Name}"><set_value name="$Construction.$Valid" exact="false"/></do_if>
-    </do_for_each>
-  </do_if>
+  <!-- Valid means a complete generated layout exists. Native race module groups are not
+       consulted: mods that reshuffle them (DeadAir Economy drops harbor_01 piers) must
+       not block hubs, and the plans name every macro explicitly. -->
+  <set_value name="$Construction" exact="table[$Plan='ce_hub_%1'.[$LayoutRace],$Levels=$LayoutMacros,$Valid=$LayoutMacros.count == 10,$Fingerprint=$LayoutFingerprint]"/>
 </actions></library>
 <library name="Queue"><actions>
   <set_value name="$Hub" exact="$R.$Hub"/>

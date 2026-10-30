@@ -505,7 +505,10 @@ including sectors below the hub threshold. `Init.$RaceProfiles` caches one immut
 demand/component snapshot per race. The sector owner's primary race is a population
 proxy, not a measurement of ethnicity. Conquest, reload, replacement and later
 eligibility reuse that snapshot. Newly introduced sectors capture on first discovery.
-Unknown owners cannot construct a normal hub without valid components. Debug
+A construction snapshot is valid exactly when generated layout data exists for its
+race; native race module groups are not consulted, so mods that reshuffle them
+cannot block hubs. Invalid snapshots are re-resolved on every save load. Unknown
+owners cannot construct a normal hub without a layout. Debug
 creation can save a separate Argon fallback on its record; it does not rewrite the
 sector snapshot. Migration of earlier construction schemas is not supported.
 

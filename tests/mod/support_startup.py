@@ -24,7 +24,7 @@ class StartupHarness(unittest.TestCase):
         r.env['player'].update(age=100,entity=Table(),galaxy='galaxy')
         r.native.update(can_safely_extend_build_plot=self.check_plot, extend_build_plot=self.extend_plot,
                         warp=self.warp, debug_text=self.log,
-                        get_module_definition=self.get_modules, create_station=self.create_station,
+                        create_station=self.create_station,
                         create_build_storage=self.create_storage, add_build_to_expand_station=self.add_build,
                         process_build=self.process, transfer_money=self.transfer,
                         signal_cue_instantly=self.generate, find_ship=lambda n:r.set(n.get('name'),List(self.builders)),
@@ -80,9 +80,13 @@ class StartupHarness(unittest.TestCase):
         self.run.env['player'].age += 300
         return self.start()
 
-    def get_modules(self, n):
-        nodes=E.parse(str(MOD/'libraries/constructionplans.xml')).xpath('//plan/entry/@macro')
-        self.run.set(n.get('macro'),List(Component(id=name) for name in sorted(set(nodes))))
+    def without_layouts(self):
+        # A race without generated layout data is the only invalid construction profile.
+        self.run.stubs['md.CE_ConstructionData.Load']=lambda:self.run.env.update(
+            LayoutMacros=List(),LayoutGeometry=List(),LayoutFingerprint='missing')
+
+    def with_layouts(self):
+        self.run.stubs.pop('md.CE_ConstructionData.Load',None)
 
     def remove_build(self,n):
         task=self.run.expr(n.get('build'));storage=self.run.expr(n.get('object'))

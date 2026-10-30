@@ -111,7 +111,7 @@ class DebugCreateTests(StartupHarness):
 
     def test_invalid_fallback_leaves_no_record_or_partial_override(self):
         self.sector.owner = NIL
-        self.run.native['get_module_definition'] = lambda n:self.run.set(n.get('macro'), List())
+        self.without_layouts()
         self.request()
         self.assertNotIn(self.sector, self.run.env['Registry'])
         self.assertEqual(len(self.hubs), 0)
@@ -124,7 +124,7 @@ class DebugCreateTests(StartupHarness):
         profile = self.run.env['SectorProfiles'][self.sector]
         profile.Valid = False
         before = copy.deepcopy(record)
-        self.run.native['get_module_definition'] = lambda n:self.run.set(n.get('macro'), List())
+        self.without_layouts()
         self.request()
         self.assertIs(record.PopulationOverride, NIL)
         self.assertEqual(record.Population, before.Population)

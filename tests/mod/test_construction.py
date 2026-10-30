@@ -6,17 +6,15 @@ import unittest
 
 
 class ConstructionTests(unittest.TestCase):
-    def test_supported_racial_profiles_require_every_native_macro(self):
+    def test_supported_racial_profiles_ignore_native_module_groups(self):
+        # Mods may drop layout macros from race module groups (DeadAir Economy removes
+        # harbor_01 piers); the explicit plans must stay valid without that query.
         for race in ('argon','boron','paranid','split','terran','teladi'):
             r=Runner();r.env.update(ProfileRace=Table(id=race),tag=Table(module='module'))
-            names=E.parse(str(__import__('support').MOD/'libraries/constructionplans.xml')).xpath('//plan[@id=$id]/entry/@macro',id='ce_hub_'+race)
-            r.native['get_module_definition']=lambda n:r.set(n.get('macro'),List(Component(id=x) for x in sorted(set(names))))
             r.library('md.CE_Construction.Resolve')
             profile=r.env['Construction']
             self.assertTrue(profile.Valid);self.assertEqual(profile.Plan,'ce_hub_'+race)
             self.assertEqual(profile.Levels.count,10)
-            r.native['get_module_definition']=lambda n:r.set(n.get('macro'),List())
-            r.library('md.CE_Construction.Resolve');self.assertFalse(r.env['Construction'].Valid)
 
     def test_unsupported_race_has_no_silent_argon_fallback(self):
         r=Runner();r.env['ProfileRace']=Table(id='conversion_race')

@@ -138,10 +138,10 @@ class LayoutSnapshotRefreshTests(StartupHarness):
         self.assertTrue(record.Build.exists)
 
     def test_unresolved_race_is_retried_on_load(self):
-        self.run.native['get_module_definition']=lambda n:self.run.set(n.get('macro'),List())
+        self.without_layouts()
         record=self.start()
         self.assertFalse(record.Construction.Valid);self.assertIs(record.Hub,NIL)
-        self.run.native['get_module_definition']=self.get_modules
+        self.with_layouts()
         self.run.library('md.CE_Construction.RefreshSnapshots')
         self.assertTrue(record.Construction.Valid)
         self.assertIs(record.Construction,self.run.env['SectorProfiles'][self.sector].Construction)

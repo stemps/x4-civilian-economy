@@ -2853,3 +2853,65 @@ Historical single-event model; superseded by concurrent-sector-events below.
 - Inline status icons used by vanilla lists: `\27[workshop_error]` (orange "!"
   alert), `\27[lso_error]`, `\27[lso_warning]`, `\27[lso_pause]`,
   `\27[menu_hourglass]`, `\27[menu_locked]`; they take the text color.
+
+## 2026-10-26 - deadair-scripts-hub-creation
+
+- READ (DeadAir Scripts v2.0.2, mlog4 9.x fork, `version="202"`, 37 files): suspected
+  of "hubs only in ZYA/BOR sectors". None of its files touch the hub creation gates.
+  `libraries/mapdefaults.xml` only replaces `area/@tags` on 7 datasets (no planets,
+  no `maxpopulation`). The map files only add DA gates and zones. `wares.xml` only
+  adds 78 `transport="inventory"` equipment mods. `modules.xml` only edits the
+  `prod_gen_refinedmetals` race/faction lists. No races or workforce changes.
+- READ: every DA `set_faction_relation` loops over `tag.claimspace` factions with
+  `faction.civilian` hard-excluded, so the sector-owner enemy check cannot trip.
+  No DA script destroys, recycles or transfers non-Kha'ak stations. Not tested in
+  game. The optional companion DeadAir Economy (`DeadAir_Eco`) was not examined.
+
+## 2026-10-26 - deadair-eco-removes-harbor-01-piers
+
+- READ (DeadAir Economy v2.0.2, mlog4 9.x fork): `libraries/modulegroups.xml` rewrites
+  the racial pier groups. The resulting pier sets, base + add, against vanilla:
+  argon 02/03/04 (01 gone), paranid 02/03 (01 gone), teladi 02/03 (01 gone),
+  terran 02/03/04 (01 gone), split 01/02/03 (unchanged), boron 01/02/03 (unchanged).
+  CE's level-10 layouts use `pier_<race>_harbor_01_macro` for argon, paranid, teladi
+  and terran. INFERRED: `get_module_definition race=` reads module-group
+  membership, so `CE_Construction.Resolve` marks those race profiles invalid and
+  `ReconcileSector` never creates a hub there. Only split and boron sectors get
+  hubs, which matches the user report of "hubs only in ZYA/BOR". The prediction
+  for the player's log is `[CE] Construction blocked: ... stage=invalid_components`
+  plus logbook text 974201/123. Not reproduced in game.
+- READ: DA Eco's other patches do not touch the hub gates. `mapdefaults.xml` only
+  changes economy/security. The `storage_arg_l_tradestation_01_macro` diff only
+  raises cargo. The station `plotsize` default is overridden by CE's explicit
+  `set_build_plot`.
+- Implication: validating layouts against race module availability makes CE
+  fragile against any mod that reshuffles module groups.
+- IMPLEMENTED 2026-10-26: `CE_Construction.Resolve` no longer calls
+  `get_module_definition`. `$Construction.$Valid` is now just "a 10-level layout
+  exists for the race". The query was left over from the 2026-09-22 runtime-discovery
+  design; the generated plans name every macro explicitly. READ:
+  `RefreshSnapshots` re-resolves invalid race profiles on every save load, and
+  `AdoptSnapshot` hands the result to records without an accepted stage, so
+  affected saves recover on load without migration. Trade-off: a mod that deletes
+  a layout macro outright is no longer caught up front. UNVERIFIED in game: that
+  the engine builds `harbor_01` piers once DA Eco has removed them from the race
+  groups. Supporting evidence: the hub owner `civilian` is on no vanilla pier
+  faction list, yet hubs build.
+- MEASURED 2026-10-30 (user test, DA Eco installed): new game without the fix,
+  then saved and reloaded with it. On load, `RefreshSnapshots` re-resolved argon,
+  paranid, teladi and terran as `valid=1`. 28 of 28 records adopted valid
+  snapshots, 28 construction sites were created and 28 reached level 1
+  operational, including Earth and Mars. No `Construction blocked`, stage
+  mismatch or retry lines. Profiles for race `''` and `xenon` stayed invalid as
+  designed, and no registered sector uses them. `harbor_01` first appears at
+  level 6 (argon/paranid/teladi/terran) and level 10 (split/boron), so the engine
+  building it under DA Eco is still UNVERIFIED.
+- MEASURED 2026-10-30 (same save, DA Eco installed): the debug advance took an
+  argon hub from level 1 to 6 to 10. Generate reported `STAGE ... valid=1` with
+  42/42 and 80/80 loaded entries, the build started, the forced completion
+  finished, and `Upgrade completed: level=6` / `level=10` followed. Readiness
+  requires every saved sequence entry to be operational, including the
+  `harbor_01` piers, so the engine builds plan modules that DA Eco removed from
+  the race groups. No CE errors in the session. Caveat: the debug path uses
+  native forced completion, which bypasses materials and time. The normal
+  builder path has not been run to these levels with DA Eco.
