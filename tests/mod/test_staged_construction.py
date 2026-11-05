@@ -26,10 +26,33 @@ class StagedConstructionTests(StartupHarness):
         hub=record.Hub
         hub.constructionsequence=record.TargetSequence
         hub.planmodule=Table({e.id:Component(exists=True,isoperational=True) for e in record.TargetSequence})
-        hub.isoperational=True;hub.buildstorage.builds.inprogress.clear()
-        record.Build.exists=False
+        # MEASURED in a player save: a naturally finished build stays in builds.inprogress.
+        hub.isoperational=True
         self.run.env.update(R=record,Hub=hub,Sector=hub.sector)
         self.run.library('UpdateHub')
+
+    def test_finished_build_left_in_progress_does_not_block_next_stage(self):
+        record=self.start();self.complete();self.finish(record)
+        finished=record.Hub.buildstorage.builds.inprogress
+        self.assertEqual(finished.count,1)
+        record.Target=2;self.start();self.complete(index=1)
+        self.assertFalse(record.ConstructionError)
+        self.assertTrue(record.Build.exists)
+        self.assertEqual(self.native_requests[-1][1],2)
+
+    def test_finished_build_left_in_progress_recruits_no_builder(self):
+        record=self.start();self.complete();self.finish(record)
+        self.assertEqual(record.Hub.buildstorage.builds.inprogress.count,1)
+        builder=Component(exists=True,isplayerowned=False,pilot=Component(exists=True),
+                          constructionmodule=NIL,nextorder=NIL,order=Table(id='FindBuildTasks'),
+                          owner=Component(hasrelation=Table(enemy=Table())),gatedistance=Table())
+        builder.gatedistance[record.Hub]=0
+        record.Hub.hasrelation.dock[builder]=True
+        assigned=[]
+        self.run.native['assign_construction_vessel']=lambda n:assigned.append(n)
+        self.run.native['find_ship']=lambda n:self.run.set(n.get('name'),List([builder]))
+        self.run.library('AssignBuilder')
+        self.assertEqual(assigned,[])
 
     def test_all_ten_stages_reuse_one_master_and_preserve_ids(self):
         record=self.start();self.complete();master=record.FullSequence

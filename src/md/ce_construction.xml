@@ -34,7 +34,10 @@
     <set_value name="$CheckSequence" exact="@$R.$TargetSequence"/>
     <set_value name="$CheckLevel" exact="$BuildLevel"/>
     <include_actions ref="md.CE_Construction.CheckReady"/>
-    <do_if value="not $SequenceReady and (not @$R.$CompletedSequence or $R.$Target gt 0) and (not $Hub.buildstorage.exists or $Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count == 0)">
+    <!-- Finished native builds stay in builds.inprogress until replaced, so that list
+         cannot mean busy. Like vanilla staging, only a queued build or CE's own live
+         $R.$Build (guarded above) holds back the next stage. -->
+    <do_if value="not $SequenceReady and (not @$R.$CompletedSequence or $R.$Target gt 0) and (not $Hub.buildstorage.exists or $Hub.buildstorage.builds.queued.count == 0)">
       <do_if value="$R.$Construction.$Valid and @$R.$Construction.$Levels.count == 10">
         <include_actions ref="md.CE_Placement.Prepare"/>
         <do_if value="$PlacementReady">
@@ -61,7 +64,7 @@
     <do_if value="not $Hub.buildstorage.exists"><create_build_storage station="$Hub"/></do_if>
     <set_value name="$Valid" exact="false"/>
     <set_value name="$ConstructionFailure" exact="'build_storage_unavailable_or_busy'"/>
-    <do_if value="$Hub.buildstorage.exists and $Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count == 0 and not $R.$Build.exists">
+    <do_if value="$Hub.buildstorage.exists and $Hub.buildstorage.builds.queued.count == 0 and not $R.$Build.exists">
       <include_actions ref="md.CE_ConstructionStages.Queue"/>
     </do_if>
     <do_if value="$Valid">

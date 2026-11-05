@@ -1,3 +1,94 @@
+## 2026-11-04 - finished-builds-stay-inprogress
+
+- Player report: hub stuck at "Expanding to level 3 / Planning station layout".
+  Evidence is one v0.4.0 modded save (time 413854, about 115 h) and its debug log.
+- MEASURED (save): a finished native expansion build stays in `builds.inprogress`.
+  356 of 441 non-CE expansion builds have every entry of their current stage on the
+  station, some 115 h old. CE: 30 of 31 builds likewise; Heretic's End has 14 of 14
+  entries and an open build 22.8 h old.
+- READ: `CE_Construction.Queue` and `Generate` require queued + inprogress == 0, so a
+  finished build blocks the next stage silently. Vanilla never counts builds before
+  staging: `factionlogic.xml:874` checks `buildingprocessor.isbuilding`, and
+  `factionlogic_economy.xml:2613` just adds the next stage.
+- MEASURED (save): 40 non-CE staged builds at bookmark 2+ started during play, so
+  vanilla stages do advance. INFERRED: the engine accepts a new stage over a finished
+  build. No hub is above level 2; 26 of 26 level 2 hubs hold a build.
+- READ: `ForceBuildCompletion` runs only on initial-hub and debug paths, and the 18
+  level 1 hubs with no target have empty storage, which fits force-completed builds
+  clearing the list. INFERRED: this is why debug advances never hit the block.
+- READ: `AssignBuilder` uses the same count, and `order.build.deploy` only abandons a
+  build that waits for resources or storage. INFERRED: finished hubs can hold XL
+  builders. MEASURED (log): 8 builders were newly assigned on one save load.
+- UNEXPLAINED: Perpetual Sin (13/13 entries, 11.6 h) and Great Reef (15/15, 2.2 h) sit
+  at level 1 target 2 with their stage fully present. Not caused by the block above.
+- IMPLEMENTED: `Queue` and `Generate` now block only on queued builds and CE's live
+  `$R.$Build`; `AssignBuilder` recruits only for those. `isbuilding` was rejected: its
+  docs do not cover waiting builds, and the Heretic's End builder had just refreshed
+  `$lastworktime` on a fully built stage, so it could stay true and fail silently.
+  Tests now keep finished builds in `inprogress`, matching the save. MOCKED: both new
+  tests fail on the old guards. `ce_accounts.xml:27` still counts `inprogress`.
+- VERIFIED in-game (2026-11-05, owner's `save_015`, game time 247672-296053, natural
+  play): the engine accepts the next stage over a finished build. 13 of 13 stages for
+  levels 3 and 4 started from `inprogress=1`, 7 hubs finished one, and there were 0
+  `Construction blocked` and 0 plan failures. Hubs that were force-completed list
+  `inprogress=0`, so they do not exercise this path.
+
+## 2026-11-05 - last-unit-construction-stall
+
+Owner's `save_015` run, 33 hubs. Hubs now progress, but some level 2 builds take hours.
+
+- MEASURED (log): time from level 2 start to finish was 0.6-3.5 h for 8 hubs. 4 older
+  builds took over 8 h, and 5 were still open after 11.6-12.7 h. Level 3 builds took
+  0.3-1.9 h (5 hubs) and level 4 took 0.8-1.0 h (2 hubs).
+- MEASURED (saves): a level 2 build first buys about 284 hull parts, 78 claytronics and
+  156 energy cells, then a last batch of 41, 12 and 23. Open builds are often exactly
+  1 unit short, with an offer of `desired="1"` and no or zero `amount`, so nobody can
+  sell it. Stored cargo then stays the same: `0x1cfc9b` and `0x219047d` did not change
+  across 3 autosaves (2.7 h), and their shortage stamps are 9.1 h and 7.5 h old.
+- MEASURED: this is not money. `0x204b59e` held 201298 Cr with the same offer.
+- MEASURED (autosave at 294849): the offer shape is not CE-specific. 97 of 13182 buy
+  offers outside build storages have `desired="1"` and no sellable amount, and 540 more
+  have no sellable amount with another `desired`. On builds with buy offers: 4 such
+  offers on 10 CE builds vs 1 on 351 others. Only-unsellable builds: 3 of 10 vs 14 of
+  351. The CE sample is small. Do not use all builds as the denominator: most hold no
+  offers because they are finished.
+- MEASURED: it can clear. `0x1e9733` and `0x1ea6c1` were in this state at 256441 and
+  finished their stage by about 283400. What clears it is UNKNOWN.
+- UNKNOWN: what `amount` below `desired` means. Candidates, both unverified: units
+  reserved by an inbound trader, or a fractional need rounding differently. It also
+  decides whether low trader priority explains the wait at all: an offer with amount 0
+  has nothing to prioritise, if the saved value matches what traders read.
+- READ + MEASURED: builder churn follows from this. `order.build.deploy` abandons after
+  `abandonbuildtime` (CE passes 1h) while the module waits for resources, and
+  `AssignBuilder` then recruits another. Median gap between assignments on a hub was
+  4205 s, with 110 assignments over 18 hubs.
+- Parsing trap: a build offer may omit `amount`. A regex requiring it reports "waiting
+  on nothing". That error affected the earlier 2026-11-04 tallies of what builds wait for.
+
+## 2026-11-04 - empty-list-first-item-logs-error
+
+MEASURED in `debug.txt`: `$List.{1}` on an empty `find_station` result logs `Property
+lookup failed` at load and on each 5-minute reconcile. Guard it with `@`, as vanilla
+does (`rml_retrieveitem.xml:142`). `$Null.exists` on the next line logged nothing. The
+MD test runtime reads an empty list as null with no error, so it cannot catch this:
+`test_empty_god_entry_lookup_is_guarded` asserts the guard on the XML instead.
+
+## 2026-11-01 - extra-data-api-evaluation
+
+- Evaluated Extra Data API (Nexus 2519, v1.01, description read via the API; mod not
+  installed or run). Decision input: it would not simplify CE.
+- READ: its extended keys are UI-state Lua only (ware production effects, macro bounds,
+  connections, docking bays, approach zones, build classes, loot magnet). It reads game
+  memory, is Windows-only, and answers nil on unrecognised builds.
+- READ: CE's src/ui calls none of those lookups. Layout geometry is generated offline
+  (`tools/spine_*.py`, `spine_native_bounds.json`); raids use live MD `find_dockingbay`
+  with `free="true"`, which a per-macro bay list cannot replace.
+- READ: its doc states boundingbox `max` is half extents about `centre`, matching CE's
+  own measured reconciliation (corrected-native-half-extents-and-boron-refit).
+- READ: approach zone shapes by tag are in `libraries/parameters.xml:2418`, so a future
+  docking clearance screen may not need this mod. Which module connection carries which
+  zone was not checked.
+
 ## 2026-10-16 - hub-dock-trader-stock
 
 - Player report: dock traders on CE hubs offered no wares.

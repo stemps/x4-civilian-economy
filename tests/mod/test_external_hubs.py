@@ -124,6 +124,12 @@ class ExternalHubTests(StartupHarness):
         self.run.library('md.CE_ExternalHubs.Store')
         self.assertFalse(self.run.env['ExternalValid'])
 
+    def test_empty_god_entry_lookup_is_guarded(self):
+        # The runtime reads an empty list as null; the engine logs an error unless guarded.
+        adopt = self.run.scripts['CE_ExternalHubs'].xpath('//library[@name="AdoptOne"]')[0]
+        lookup = adopt.xpath('.//find_station/following-sibling::set_value[@name="$ExternalStation"]')[0]
+        self.assertEqual(lookup.get('exact'), '@$ExternalFound.{1}')
+
     def test_wrong_owner_and_missing_station_reject_once_and_retry(self):
         self.assertTrue(self.register())
         self.reconcile(); self.reconcile()

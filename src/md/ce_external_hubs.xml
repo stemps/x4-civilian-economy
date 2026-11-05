@@ -132,7 +132,8 @@
         <set_value name="$ExternalStation" exact="$ExternalReg.$Station"/>
         <do_if value="$ExternalReg.$GodEntry">
           <find_station name="$ExternalFound" godstationentry="$ExternalReg.$GodEntry" multiple="true" space="player.galaxy"/>
-          <set_value name="$ExternalStation" exact="$ExternalFound.{1}"/>
+          <!-- The station may not exist (yet, or any more): an empty result is 'not_found' below. -->
+          <set_value name="$ExternalStation" exact="@$ExternalFound.{1}"/>
         </do_if>
         <set_value name="$ExternalReason" exact="''"/>
         <set_value name="$ExternalRecord" exact="null"/>

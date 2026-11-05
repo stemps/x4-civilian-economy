@@ -659,6 +659,9 @@ membership, civilian ownership and native build readiness before force completio
 The shared AssignBuilder routine excludes these initial hubs, including delayed
 completion and task recovery, so neither build startup nor reconciliation reserves
 a builder for seed/reset construction.
+A naturally finished native build stays in `builds.inprogress` until replaced, so
+`Queue`, `Generate` and `AssignBuilder` treat only queued builds and the live
+`$R.$Build` as active work.
 CE_Accounts retains build storage and its manager but funds it only for queued or
 active construction outside initial completion. Idle storage retains leftover
 credits and cargo without budget top-ups; the hub operating account remains funded.
