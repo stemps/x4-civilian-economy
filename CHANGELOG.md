@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - 2026-11-05
+
+- Fix stations stuck at level 2 and not expanding
+- Avoid station budgets running short for upgrades
+- Prevent notification spam about discounts and commissions
+
 ## 0.4.0 - 2026-10-31
 
 - Fix issue with Commonwealth hubs not being created when DeadAir Econ is present
