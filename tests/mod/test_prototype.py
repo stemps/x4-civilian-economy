@@ -193,7 +193,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertTrue(self.hub.tradenpc.exists)
         self.assertTrue(self.hub.buildstorage.tradenpc.exists)
         self.assertEqual(self.hub.money,sum(w.Cap*w.Price*2 for w in self.r.Wares.values()))
-        self.assertEqual(self.hub.buildstorage.money,self.hub.buildstorage.wantedmoney)
+        self.assertGreaterEqual(self.hub.buildstorage.money,self.hub.buildstorage.wantedmoney)
         self.assertEqual(set(self.r.Wares),{'foodrations','water'})
         before=self.r.Wares['foodrations'].Reserve
         for m in self.hub.planmodule.values():m['isoperational']=True

@@ -22,6 +22,11 @@
           <include_actions ref="md.CE_CivilianHub.EnsureManager"/>
           <set_object_account object="$Hub.buildstorage"/>
           <set_value name="$BuildBudget" exact="$Hub.buildstorage.wantedmoney"/>
+          <!-- Offers are capped by what the account can pay, and wantedmoney can sit a few
+               credits below their cost, leaving the last units unaffordable. Keep a margin. -->
+          <do_if value="$BuildBudget gt 0Cr">
+            <set_value name="$BuildBudget" exact="$BuildBudget + [$BuildBudget / 100, 100Cr].max"/>
+          </do_if>
           <!-- Fund real construction only; seed/reset completion needs no materials.
                Idle storage keeps leftovers without topping up a stale native budget. -->
           <do_if value="$BuildBudget gt $Hub.buildstorage.money and ($Hub.buildstorage.builds.queued.count + $Hub.buildstorage.builds.inprogress.count) gt 0 and not (@$R.$InitialHub == $Hub and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0)">

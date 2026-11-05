@@ -537,6 +537,7 @@
               <process_build build="$Hub.buildstorage.builds.queued.{1}" object="$Hub.buildstorage" buildmodule="$Hub.buildstorage.buildmodule"/>
             </do_if>
             <include_actions ref="AssignBuilder"/>
+            <include_actions ref="md.CE_BuildSupply.Tick"/>
             <debug_text text="'[CE] Reconcile: level=%s target=%s queued=%s inprogress=%s builder=%s'.[$R.$Level,$R.$Target,@$Hub.buildstorage.builds.queued.count,@$Hub.buildstorage.builds.inprogress.count,@$Hub.buildstorage.buildmodule.constructionvessel]"/>
           </do_elseif>
         </do_if>

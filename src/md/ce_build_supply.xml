@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mdscript name="CE_BuildSupply" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="md.xsd">
+  <cues>
+    <!-- Synchronous actions use the caller namespace. Saved state: $R.$SupplyWait, absent on
+         older saves. Traders can leave a build's last few units unfilled for hours, as
+         vanilla's rml_supplybuildstorage notes, so a small remainder that has not changed
+         for $SupplyWaitSeconds is added directly. Larger needs always stay with traders. -->
+    <library name="Tick">
+      <actions>
+        <set_value name="$SupplyMaxUnits" exact="3"/>
+        <set_value name="$SupplyWaitSeconds" exact="3600"/>
+        <set_value name="$SupplyWait" exact="table[]"/>
+        <set_value name="$SupplyProcessor" exact="@$Hub.buildstorage.buildprocessor"/>
+        <!-- Seed/reset builds complete through InitialTick and need no materials. -->
+        <do_if value="$SupplyProcessor and $R.$Build.exists and not @$R.$External and not (@$R.$InitialHub == $Hub and $R.$Generation == 1 and $R.$Level == 1 and $R.$Target == 0)">
+          <do_for_each name="$SupplyWare" in="$SupplyProcessor.neededsequenceresources.list">
+            <set_value name="$SupplyAmount" exact="$SupplyProcessor.neededsequenceresources.{$SupplyWare}.count"/>
+            <do_if value="$SupplyAmount gt 0 and $SupplyAmount le $SupplyMaxUnits">
+              <set_value name="$SupplySeen" exact="@$R.$SupplyWait.{$SupplyWare}"/>
+              <do_if value="not $SupplySeen or $SupplySeen.$Amount != $SupplyAmount">
+                <set_value name="$SupplyWait.{$SupplyWare}" exact="table[$Amount=$SupplyAmount,$Since=player.age]"/>
+                <debug_text text="'[CE] Build remainder: hub=%s ware=%s amount=%s'.[$Hub,$SupplyWare,$SupplyAmount]"/>
+              </do_if>
+              <do_elseif value="player.age ge $SupplySeen.$Since + $SupplyWaitSeconds">
+                <add_cargo object="$Hub.buildstorage" ware="$SupplyWare" exact="$SupplyAmount"/>
+                <debug_text text="'[CE] Build topped up: hub=%s ware=%s amount=%s'.[$Hub,$SupplyWare,$SupplyAmount]"/>
+              </do_elseif>
+              <do_else>
+                <set_value name="$SupplyWait.{$SupplyWare}" exact="$SupplySeen"/>
+              </do_else>
+            </do_if>
+          </do_for_each>
+        </do_if>
+        <set_value name="$R.$SupplyWait" exact="$SupplyWait"/>
+      </actions>
+    </library>
+  </cues>
+</mdscript>

@@ -115,7 +115,7 @@ class InitialHubTests(StartupHarness):
                 self.assertIs(record.InitialHub,NIL)
                 record.Target=2;self.start();self.complete(index=1)
                 self.assertIs(record.Hub.buildstorage.buildmodule.constructionvessel,builder)
-                self.assertEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)
+                self.assertGreaterEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)
 
     def test_idle_storage_preserves_leftovers_without_topping_up_stale_budget(self):
         record=self.initial();self.complete()
@@ -151,7 +151,7 @@ class InitialHubTests(StartupHarness):
                 self.complete(index=1)
                 self.assertTrue(record.Build.exists)
                 self.assertEqual(sum(k=='materialize' for k,_ in self.events),int(completed))
-                self.assertEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)
+                self.assertGreaterEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)
 
     def test_reload_retains_pending_permission_but_does_not_replay_completed_initialization(self):
         record=self.initial();hub=record.Hub
@@ -176,4 +176,4 @@ class InitialHubTests(StartupHarness):
         self.assertFalse(record.Operational)
         self.assertTrue(record.Build.exists)
         self.assertFalse(any(k=='materialize' for k,_ in self.events))
-        self.assertEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)
+        self.assertGreaterEqual(record.Hub.buildstorage.money,record.Hub.buildstorage.wantedmoney)

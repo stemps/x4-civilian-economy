@@ -301,6 +301,7 @@ changes require a full game restart; `/reloadui` alone is insufficient.
 | `md/ce_population_profiles.xml` | Synchronous startup population-profile resolution from loaded race workforce resources. |
 | md/ce_placement.xml | Fixed-plot construction retry counters and bounded backoff. |
 | md/ce_construction.xml | Production staged-plan admission, readiness, funding/builder handoff and initial completion authorization. |
+| `md/ce_build_supply.xml` | Adds a live build's small ware remainder directly after it stays unchanged for an hour, called from reconcile. Saved state: `$R.$SupplyWait`. |
 | `md/ce_construction_data.xml` | Generated exact macro baskets and geometry for six racial plans and ten levels. |
 | `md/ce_construction_stages.xml` | Load/reuse native master sequences and validate stage boundaries, macro order and preserved IDs. |
 | `ui/ce_initial_construction.lua` | Complete only fresh MD-authorized level-1 seed/reset builds. |
@@ -663,8 +664,10 @@ A naturally finished native build stays in `builds.inprogress` until replaced, s
 `Queue`, `Generate` and `AssignBuilder` treat only queued builds and the live
 `$R.$Build` as active work.
 CE_Accounts retains build storage and its manager but funds it only for queued or
-active construction outside initial completion. Idle storage retains leftover
-credits and cargo without budget top-ups; the hub operating account remains funded.
+active construction outside initial completion, to `wantedmoney` plus a margin (1%,
+at least 100 Cr), because offers are capped by what the account can pay. Idle storage
+retains leftover credits and cargo without budget top-ups; the hub operating account
+remains funded.
 Readiness revokes permission before any later expansion. Ordinary replacements,
 later discoveries and upgrades use funded native builds. Debug-create/advance
 shortcuts remain independently authorized. Native force completion does not

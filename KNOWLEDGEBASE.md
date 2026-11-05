@@ -54,10 +54,36 @@ Owner's `save_015` run, 33 hubs. Hubs now progress, but some level 2 builds take
   offers because they are finished.
 - MEASURED: it can clear. `0x1e9733` and `0x1ea6c1` were in this state at 256441 and
   finished their stage by about 283400. What clears it is UNKNOWN.
-- UNKNOWN: what `amount` below `desired` means. Candidates, both unverified: units
-  reserved by an inbound trader, or a fractional need rounding differently. It also
-  decides whether low trader priority explains the wait at all: an offer with amount 0
-  has nothing to prioritise, if the saved value matches what traders read.
+- READ: `desiredamount` is "really wanted amount, which may exceed affordable amount"
+  and `offeramount` adds reserved units to `amount` (`scriptproperties.xml:1517-1519`).
+- MEASURED (autosave at 294849): 3 of 5 CE offers with `amount` below `desired` are
+  explained by money, short by under 5 Cr: 201298 Cr vs 201298.92 needed, 32513 vs
+  32517.03, 176 vs 176.22. `FundAccounts` tops up only to `wantedmoney`, and CE builds
+  use their own account. 2 of 5 are NOT explained: 28 Cr for 1 unit at 14.38, and 274 Cr
+  for 1 at 197.17. Those two offers have no references anywhere else in the save, so an
+  inbound trader looks unlikely, though how reservations are saved is unverified.
+- INFERRED: most NPC build offers are not capped by their build account, since 330 of
+  336 show full amounts with less money than their cost there. That may be why CE sees
+  this more often.
+- READ: no time-based trade priority found in `aiscripts` or the economy MD (searched by
+  keyword, not read in full). `trade.find.free.xml:554-557` gives build storage offers a
+  fixed +300000 trade value for NPC traders and skips the minimum volume check, whatever
+  their age. CE build offers are native, not virtual: the save shows
+  `invertfactionrestriction` only. `virtual="true"` is used only by hub ware offers
+  (`ce_trade.xml:112`).
+- READ: vanilla knows this failure. `rml_supplybuildstorage.xml:211-219` drip-feeds a
+  storage every 15 min with `add_cargo`, at least 1 unit of each
+  `neededsequenceresources` ware, and its comment describes a trade stuck buying 1 of
+  everything that nobody fulfils. This is mission-only, and is the analogue for any CE
+  top-up.
+- IMPLEMENTED: `FundAccounts` adds a margin of 1%, at least 100 Cr. `CE_BuildSupply.Tick`
+  adds a remainder of 1-3 units of a ware once it has stayed unchanged for 1 h, per ware,
+  on live non-seed builds. MOCKED tests only. UNVERIFIED in-game: that
+  `neededsequenceresources` is net of stored cargo, which vanilla's use implies
+  (`rml_supplybuildstorage.xml:134-136`), and that adding the unit restarts the build.
+  Check with `[CE] Build remainder` for a stalled hub within 5 min, `[CE] Build topped up`
+  an hour later, then `Upgrade completed`. No remainder line on a stalled hub means the
+  property is not net and the top-up never fires.
 - READ + MEASURED: builder churn follows from this. `order.build.deploy` abandons after
   `abandonbuildtime` (CE passes 1h) while the module waits for resources, and
   `AssignBuilder` then recruits another. Median gap between assignments on a hub was
