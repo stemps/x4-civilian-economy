@@ -17,9 +17,7 @@
       <set_value name="$RewardActive" exact="false"/>
       <set_value name="$RewardReason" exact="'hub_unavailable'"/>
       <set_value name="$RewardMissing" exact="[]"/>
-      <set_value name="$RewardSupplySeconds" exact="0.0f"/>
       <do_if value="$R.$Hub.exists and not $R.$Hub.iswreck and $R.$Hub.owner == faction.civilian and $R.$Operational and @$R.$Population gt 0">
-        <set_value name="$RewardSupplySeconds" exact="86400000.0f"/>
         <set_value name="$RewardRequired" exact="0"/>
         <set_value name="$RewardElapsed" exact="[0.0f,$RewardNow - $R.$Last].max"/>
         <do_for_each name="$RewardWare" in="$R.$Wares.keys.list">
@@ -27,13 +25,12 @@
           <do_if value="@$RewardW.$Active and $RewardW.$Rate gt 0">
             <set_value name="$RewardRequired" operation="add"/>
             <set_value name="$RewardRemaining" exact="$RewardW.$Reserve * 3600.0f / $RewardW.$Rate - $RewardElapsed"/>
-            <set_value name="$RewardSupplySeconds" exact="[$RewardSupplySeconds,[0.0f,$RewardRemaining].max].min"/>
             <do_if value="$RewardRemaining le 0"><append_to_list name="$RewardMissing" exact="$RewardWare.name"/></do_if>
           </do_if>
         </do_for_each>
         <set_value name="$RewardActive" exact="$RewardRequired gt 0 and $RewardMissing.count == 0"/>
         <set_value name="$RewardReason" exact="if $RewardActive then 'active' else 'shortage'"/>
-        <do_if value="$RewardRequired == 0"><set_value name="$RewardReason" exact="'no_demand'"/><set_value name="$RewardSupplySeconds" exact="0.0f"/></do_if>
+        <do_if value="$RewardRequired == 0"><set_value name="$RewardReason" exact="'no_demand'"/></do_if>
       </do_if>
     </actions></library>
     <library name="Query" purpose="run_actions">

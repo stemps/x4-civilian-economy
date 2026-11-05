@@ -70,6 +70,51 @@ class RewardsTests(unittest.TestCase):
         self.food['Reserve']=1000;self.refresh()
         self.assertEqual(sum(c[0]=='add_player_gravidar_access_request' for c in self.calls),2)
 
+    def count(self,tag): return sum(c[0]==tag for c in self.calls)
+
+    def test_price_bonus_is_written_only_on_real_changes_and_never_expires(self):
+        times=[]
+        for tag in ('add_player_discount','add_player_commission'):
+            self.run.native[tag]=lambda n:(times.append(n.get('time')),self.calls.append((n.tag,None,n.get('id'))))
+        self.station()
+        for minute in range(5):
+            self.run.env['player']['age']=minute*60
+            self.refresh()
+        self.assertEqual(self.count('add_player_discount'),1)
+        self.assertEqual(self.count('add_player_commission'),1)
+        self.assertEqual(self.count('remove_player_discount'),0)
+        self.assertEqual(times,[None,None])
+        self.r['Level']=9;self.refresh();self.refresh()
+        self.assertEqual(self.count('remove_player_discount'),1)
+        self.assertEqual(self.count('add_player_discount'),2)
+        self.food['Reserve']=0;self.refresh();self.refresh()
+        self.assertEqual(self.count('remove_player_discount'),2)
+        self.assertEqual(self.count('remove_player_commission'),2)
+        self.assertEqual(self.count('add_player_discount'),2)
+        self.food['Reserve']=1000;self.refresh();self.refresh()
+        self.assertEqual(self.count('add_player_discount'),3)
+
+    def test_old_save_expiring_price_bonus_is_converted_once(self):
+        s=self.station();self.refresh();self.calls.clear()
+        entry=self.r.Rewards.Applied[s]
+        entry['Refresh']=30.0
+        self.run.env['player']['age']=10;self.refresh();self.refresh()
+        self.assertEqual(self.count('remove_player_discount'),1)
+        self.assertEqual(self.count('add_player_discount'),1)
+        self.assertEqual(self.count('add_player_commission'),1)
+        self.assertNotIn('Refresh',entry)
+        self.assertEqual(entry.Price,16)
+
+    def test_old_save_ledger_without_a_bonus_stays_clear_while_inactive(self):
+        s=self.station();self.food['Reserve']=0;self.refresh();self.calls.clear()
+        self.r.Rewards.Applied[s]['Refresh']=0.0
+        self.refresh()
+        self.assertEqual(self.calls,[])
+        self.food['Reserve']=1000;self.refresh();self.refresh()
+        self.assertEqual(self.count('add_player_discount'),1)
+        self.assertEqual(self.count('remove_player_discount'),0)
+        self.assertNotIn('Refresh',self.r.Rewards.Applied[s])
+
     def test_partners_include_unknown_but_not_player_ownerless_civilian_hostile_or_other_sector(self):
         self.station(isknown=False)
         self.station(isplayerowned=True)

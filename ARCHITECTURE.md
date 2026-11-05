@@ -1134,8 +1134,11 @@ announcement level and snapshot. No existing demand/construction state is migrat
 The controller receives parameterized instant refresh signals after hub updates, loss and paid
 delivery; it also refreshes every minute, on load and on relation/sector ownership
 events. Recipient discovery uses five-minute sector scans. Invalid/moved/reowned
-recipients lose only CE effects. Expiring CE price IDs provide a backstop; radar
-access uses paired native requests with persisted ownership of each request.
+recipients lose only CE effects. CE price IDs have no expiry and are written only
+when the ledger value changes, because every add fires the vanilla unlock
+notification; the minute refresh removes them when a hub stops qualifying. A saved
+`$Refresh` marks a pre-change expiring bonus, converted once. Radar access uses
+paired native requests with persisted ownership of each request.
 Reload retains the ledger rather than adding a second request. Native stacking and
 serialization still require runtime acceptance.
 

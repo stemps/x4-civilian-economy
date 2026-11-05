@@ -3032,3 +3032,28 @@ Historical single-event model; superseded by concurrent-sector-events below.
   the race groups. No CE errors in the session. Caveat: the debug path uses
   native forced completion, which bypasses materials and time. The normal
   builder path has not been run to these levels with DA Eco.
+
+## 2026-11-05 - prosperity-price-renewal-spam
+
+Every `add_player_discount` / `add_player_commission` fires
+`event_player_discount_added` / `event_player_commission_added`, and vanilla
+`md/notifications.xml:2454` (`PlayerDiscountCommission`) answers each one with a
+ticker message plus sound, a logbook entry and a `stat.*_unlocked` increment.
+Nothing in that cue tells a renewal from a new unlock.
+
+Through v0.4.0, `ce_reward_stations.xml` renewed each partner station's price
+bonus every 60 s with a 120 s lifetime, so each renewal read as a new "2 min"
+unlock. MEASURED in one `debug.txt`: 7,800 events over 85 min from 59 stations,
+one discount and one commission per station per minute (172 events at the busiest
+stations), all amount 2, duration 120.
+
+Fix: the bonus now has no `time` and is written only when the ledger value
+changes. Expect 2 messages per station when a hub starts qualifying or levels up;
+a shortage that ends repeats them. Not yet run in-game: `time` omitted on an
+object-scoped bonus is READ from `common.xsd:20034` only (vanilla's no-expiry use,
+`md/notifications.xml:2593`, is faction-scoped). Removing the mod leaves these
+bonuses on stations in that save, since nothing expires them.
+
+Unused alternative, UNTESTED: `add_discount` / `add_commission` with
+`target="faction.player"` may not fire the unlock event. They take no `id`, so
+removal may also clear other player discounts at that station.

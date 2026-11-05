@@ -9,7 +9,7 @@
         <set_value name="$B.$NextStations" exact="$RewardNow + 300.0f"/>
         <do_for_each name="$RewardStation" in="$RewardStations">
           <do_if value="not $B.$Applied.{$RewardStation}?">
-            <set_value name="$B.$Applied.{$RewardStation}" exact="table[$Price=0,$Radar=false,$Refresh=0.0f]"/>
+            <set_value name="$B.$Applied.{$RewardStation}" exact="table[$Price=0,$Radar=false]"/>
           </do_if>
         </do_for_each>
       </do_if>
@@ -24,18 +24,18 @@
         <set_value name="$DesiredPrice" exact="if $RewardActive and $PartnerEligible then $PricePoints else 0"/>
         <set_value name="$DesiredRadar" exact="$RewardActive and $PartnerEligible and $SensorUnlocked"/>
         <do_if value="$RewardStation.exists">
-          <do_if value="$Applied.$Price != $DesiredPrice or ($DesiredPrice gt 0 and $RewardNow ge $Applied.$Refresh)">
+          <!-- Every add fires the vanilla unlock notification, so write only on a real change. A saved $Refresh marks a bonus from an older save that expires by itself and must be converted once. -->
+          <do_if value="$Applied.$Price != $DesiredPrice or ($DesiredPrice gt 0 and $Applied.$Refresh?)">
             <do_if value="$Applied.$Price gt 0">
               <remove_player_discount object="$RewardStation" id="'ce_prosperity_buy'"/>
               <remove_player_commission object="$RewardStation" id="'ce_prosperity_sell'"/>
             </do_if>
             <do_if value="$DesiredPrice gt 0">
-              <set_value name="$RewardPriceDuration" exact="[120.0f,$RewardSupplySeconds].min * 1s"/>
-              <add_player_discount object="$RewardStation" id="'ce_prosperity_buy'" name="{974201,400}" amount="$DesiredPrice" time="$RewardPriceDuration" applytoshipsales="false"/>
-              <add_player_commission object="$RewardStation" id="'ce_prosperity_sell'" name="{974201,400}" amount="$DesiredPrice" time="$RewardPriceDuration"/>
+              <add_player_discount object="$RewardStation" id="'ce_prosperity_buy'" name="{974201,400}" amount="$DesiredPrice" applytoshipsales="false"/>
+              <add_player_commission object="$RewardStation" id="'ce_prosperity_sell'" name="{974201,400}" amount="$DesiredPrice"/>
             </do_if>
             <set_value name="$Applied.$Price" exact="$DesiredPrice"/>
-            <set_value name="$Applied.$Refresh" exact="$RewardNow + [60.0f,$RewardSupplySeconds].min"/>
+            <do_if value="$Applied.$Refresh?"><remove_value name="$Applied.$Refresh"/></do_if>
           </do_if>
           <do_if value="$DesiredRadar and not $Applied.$Radar"><add_player_gravidar_access_request object="$RewardStation"/></do_if>
           <do_elseif value="not $DesiredRadar and $Applied.$Radar"><remove_player_gravidar_access_request object="$RewardStation"/></do_elseif>
